@@ -1412,9 +1412,9 @@ Otherwise show '-'."
                                                    'error
                                                  'warning))))
                        (propertize "Good " 'face 'success)))
-          ('running (propertize "Checking " 'face 'flycheck-info))
+          ('running (propertize "Checking " 'face 'shadow))
           ('errored (propertize "Error " 'face 'error))
-          ('interrupted (propertize "Paused " 'face 'fringe))
+          ('interrupted (propertize "Paused " 'face 'shadow))
           ('no-checker ""))))
 
 (defun lambda-line-check-syntax ()
@@ -1542,9 +1542,8 @@ otherwise show the time as text."
            (format lambda-line-time-icon-format (char-to-string time-unicode))
            'display '(raise 0)))
       (if display-time-day-and-date
-          (propertize (format-time-string lambda-line-time-day-and-date-format))
-        (propertize (format-time-string lambda-line-time-format)
-                    'face '(:height 0.9))))))
+          (format-time-string lambda-line-time-day-and-date-format)
+        (format-time-string lambda-line-time-format)))))
 
 ;;;;; Status
 (defun lambda-line-status ()
@@ -1766,15 +1765,27 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                            (error ""))
                        "")))
 
+          ;; As with `primary' above, apply the tertiary and secondary
+          ;; faces as a fallback rather than a blanket overwrite, so faces
+          ;; already carried by individual characters (the flymake severity
+          ;; counters, the flycheck status, whatever a third-party format
+          ;; function puts in secondary) take precedence.
           (right (concat
-                   (propertize tertiary 'face face-tertiary)
-                   (propertize secondary 'face face-secondary)
+                   (let ((tertiary (copy-sequence tertiary)))
+                     (add-face-text-property 0 (length tertiary)
+                                             face-tertiary t tertiary)
+                     tertiary)
+                   (let ((secondary (copy-sequence secondary)))
+                     (add-face-text-property 0 (length secondary)
+                                             face-secondary t secondary)
+                     secondary)
                    (propertize lambda-line-hspace 'face face-modeline)))
 
           (right-len (length (format-mode-line right))))
     (concat
      left
-     (propertize " " 'face face-modeline 'display `(space :align-to (- right ,right-len)))
+     (propertize " " 'face face-modeline 'display
+                 `(space :align-to (- (+ right right-margin) ,right-len)))
      right)))
 
 ;;;; Mode Functions
@@ -1797,9 +1808,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                          ""
                          ;; Narrowed buffer
                          (concat (if (buffer-narrowed-p)
-                                     (concat
-                                      (propertize "⇥ "  'face `(:inherit lambda-line-inactive-secondary))
-                                      position " ")
+                                     (concat "⇥ " position " ")
                                    position)
                                  (lambda-line-time)))))
 
@@ -1831,8 +1840,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 
                          (concat
                           ;; Narrowed buffer
-                          (when (buffer-narrowed-p)
-                            (propertize "⇥ "  'face `(:inherit lambda-line-inactive-secondary)))
+                          (when (buffer-narrowed-p) "⇥ ")
                           (if lambda-line-syntax
                               (if (or (boundp 'flycheck-mode)
                                       (boundp 'flymake-mode))
@@ -1888,8 +1896,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                                  (when vc-info vc-info)
                                  lambda-line-display-group-end)
                          (or word-count "")
-                         (concat (when (buffer-narrowed-p)
-                                   (propertize "⇥ " 'face `(:inherit lambda-line-inactive-secondary)))
+                         (concat (when (buffer-narrowed-p) "⇥ ")
                                  position
                                  (lambda-line-time)))))
 
@@ -2264,9 +2271,15 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 			 ""
                          (concat
                           ;; Narrowed buffer
-                          (when (buffer-narrowed-p)
-                            (propertize "⇥ "  'face `(:inherit lambda-line-inactive-secondary)))
-                          org-mode-line-string
+                          (when (buffer-narrowed-p) "⇥ ")
+                          ;; Drop Org's face, which inherits the box and
+                          ;; background of `mode-line', but keep the
+                          ;; keymap, mouse face, and tooltip.
+                          (let ((clock (copy-sequence
+                                        (or org-mode-line-string ""))))
+                            (remove-text-properties 0 (length clock)
+                                                    '(face nil) clock)
+                            clock)
                           " "
                           position
                           lambda-line-hspace))))

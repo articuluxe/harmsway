@@ -200,20 +200,9 @@ See `forge-alist' for valid Git hosts."
   (setq host  (substring-no-properties host))
   (setq owner (substring-no-properties owner))
   (setq name  (substring-no-properties name))
-  (cond-let
-    ((memq demand '(:tracked :tracked? :known? :insert! :valid? :stub :stub?)))
-    ([corrected (pcase demand
-                  ('t      :tracked)
-                  ('full   :tracked?)
-                  ('nil    :known?)
-                  ('create :insert!)
-                  ('stub   :stub)
-                  ('maybe  :stub?))]
-     (message "Obsolete value for `%s's DEMAND: `%s'; use `%s' instead"
-              'forge-get-repository demand corrected)
-     (setq demand corrected))
-    ((error "Unknown value for `%s's DEMAND: `%s'"
-            'forge-get-repository demand)))
+  (unless (memq demand
+                '(:tracked :tracked? :known? :insert! :valid? :stub :stub?))
+    (error "Unknown value for `forge-get-repository's DEMAND: `%s'" demand))
   (cond-let
     ([spec (forge--get-forge-host host t)]
      (pcase-let*
@@ -328,8 +317,10 @@ an error."
                (forge-get-repository :known? nil 'notatpt)))))
 
 (defun forge-buffer-repository ()
-  (and-let ((id forge-buffer-repository))
-    (forge-get-repository :id id)))
+  (and-let* ((id forge-buffer-repository)
+             (repo (forge-get-repository :id id))
+             (_(member (forge--get-remote) (list nil (oref repo remote)))))
+    repo))
 
 (defun forge-set-buffer-repository ()
   "Initialize the value of variable `forge-buffer-repository'."
@@ -485,7 +476,7 @@ forges and hosts."
        (?P . ,(string-replace "/" "%2F" path))))))
 
 (defun forge--repo-selective-p (&optional repo)
-  (and-let ((repo (or repo (forge-get-repository :tracked))))
+  (and-let ((repo (or repo (forge-get-repository :tracked?))))
     (or (oref repo selective-p)
         ;; We do not record whether the initial pull only fetched topics
         ;; created after a certain date, so we have to use a heuristic.

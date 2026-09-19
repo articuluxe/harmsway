@@ -14,7 +14,7 @@
 ;; URL: https://github.com/greduan/emacs-theme-gruvbox
 ;; Version: 1.30.3
 
-;; Package-Requires: ((autothemer "0.2"))
+;; Package-Requires: ((autothemer "0.2.19"))
 
 ;;; Commentary:
 

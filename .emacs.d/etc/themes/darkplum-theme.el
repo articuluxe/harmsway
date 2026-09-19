@@ -1,4 +1,4 @@
-;;; darkplum-theme.el --- A Dark Plum Theme
+;;; darkplum-theme.el --- A Dark Plum Theme -*- lexical-binding: t; -*-
 
 ;; Copyright 2021 Rebecca Skinner, All rights reserved
 ;;

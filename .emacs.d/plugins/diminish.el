@@ -1,4 +1,4 @@
-;;; diminish.el --- Diminished modes are minor modes with no modeline display
+;;; diminish.el --- Diminished modes are minor modes with no modeline display  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 1998 Free Software Foundation, Inc.
 
@@ -6,7 +6,7 @@
 ;; Maintainer: Martin Yrjölä <martin.yrjola@gmail.com>
 ;; URL: https://github.com/myrjola/diminish.el
 ;; Created: Th 19 Feb 98
-;; Version: 0.46
+;; Version: 0.47
 ;; Package-Requires: ((emacs "24.3"))
 ;; Keywords: extensions, diminish, minor, codeprose
 

@@ -118,9 +118,34 @@
 
 ;;;; Topics
 
-(cl-defmethod forge--pull-topic ((repo forge-gitlab-repository) _topic
-                                 &optional callback)
-  (forge--pull repo callback)) ; TODO Pull only the one topic.
+(cl-defmethod forge--pull-topic ((repo forge-gitlab-repository) topic
+                                 &optional (callback #'forge-refresh-buffer))
+  (pcase-let
+      ((`(,type ,number)
+        (cond-let
+          ((string-match "\\`#?\\([1-9][0-9]*\\)\\'" topic)
+           `(issue   ,(string-to-number (match-string 1 topic))))
+          ((string-match "\\`!\\([1-9][0-9]*\\)\\'" topic)
+           `(pullreq ,(string-to-number (match-string 1 topic))))
+          ([obj (forge-get-issue topic)]   `(issue   ,(oref obj number)))
+          ([obj (forge-get-pullreq topic)] `(pullreq ,(oref obj number))))))
+    (pcase-exhaustive type
+      ('issue
+       (forge--glab-get repo
+         (format "/projects/:project/issues/%s" number) nil
+         :callback (lambda (data)
+                     (let ((issues (list data)))
+                       (forge--fetch-issue-posts
+                        repo issues
+                        (##forge--update-issues repo issues callback))))))
+      ('pullreq
+       (forge--glab-get repo
+         (format "/projects/:project/merge_requests/%s" number) nil
+         :callback (lambda (data)
+                     (let ((pullreqs (list data)))
+                       (forge--fetch-pullreq-posts
+                        repo pullreqs
+                        (##forge--update-pullreqs repo pullreqs callback)))))))))
 
 ;;;; Issues
 
@@ -162,9 +187,12 @@
                 (setf (alist-get 'notes (car cur)) value)
                 (funcall cb))))
 
-(cl-defmethod forge--update-issues ((repo forge-gitlab-repository) data)
+(cl-defmethod forge--update-issues ((repo forge-gitlab-repository) data
+                                    &optional callback)
   (dolist (v data)
-    (forge--update-issue repo v)))
+    (forge--update-issue repo v))
+  (when callback
+    (funcall callback)))
 
 (cl-defmethod forge--update-issue ((repo forge-gitlab-repository) data)
   (closql-with-transaction (forge-db)
@@ -290,9 +318,12 @@
                   (setf (alist-get 'target_project (car cur)) value)
                   (funcall cb)))))
 
-(cl-defmethod forge--update-pullreqs ((repo forge-gitlab-repository) data)
+(cl-defmethod forge--update-pullreqs ((repo forge-gitlab-repository) data
+                                      &optional callback)
   (dolist (v data)
-    (forge--update-pullreq repo v)))
+    (forge--update-pullreq repo v))
+  (when callback
+    (funcall callback)))
 
 (cl-defmethod forge--update-pullreq ((repo forge-gitlab-repository) data)
   (closql-with-transaction (forge-db)

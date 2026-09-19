@@ -23,6 +23,7 @@
 ;; Add a way to disable bold font
 ;; Add support for vc-* faces
 ;; Add support for link-visited face
+;; Add support for minibuffer-nonselected
 ;; Small adjustements to 256 colors terminal scheme
 ;; Improve current line / selection / region colors set and usage
 
@@ -242,6 +243,9 @@ read it before opening a new issue about your will.")
                      ,@(if dracula-alternate-mode-line-and-minibuffer
                            (list :foreground fg3)
                          (list :foreground dracula-fg)))
+               (minibuffer-nonselected :background ,dracula-yellow
+                                       :foreground ,dracula-red
+                                       :weight bold)
                (minibuffer-prompt
                 ,@(if dracula-alternate-mode-line-and-minibuffer
                       (list :weight 'normal :foreground dracula-fg)
@@ -707,7 +711,7 @@ read it before opening a new issue about your will.")
                (magit-hash :foreground ,dracula-comment)
                (magit-dimmed :foreground ,dracula-comment)
                (magit-section-heading :foreground ,dracula-pink :weight bold)
-               (magit-section-highlight :background ,dracula-region :extend t)
+               (magit-section-highlight :background ,dracula-current :extend t)
                (magit-diff-context :foreground ,fg3 :extend t)
                (magit-diff-context-highlight :inherit magit-section-highlight
                                              :foreground ,dracula-fg)

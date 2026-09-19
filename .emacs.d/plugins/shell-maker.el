@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.97.2
+;; Version: 0.97.3
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.97.2")
+(defconst shell-maker-version "0.97.3")
 
 (require 'comint)
 (require 'json)
@@ -1480,7 +1480,16 @@ short of point-max at a trailing-newline end-of-buffer, silently
 disarming auto-scroll while the user is in fact at the bottom."
   (and (eobp)
        (cl-every (lambda (window)
-                   (pos-visible-in-window-p (point-max) window))
+                   ;; Asked while narrowed, `pos-visible-in-window-p' can
+                   ;; signal `args-out-of-range': the window still shows the
+                   ;; whole buffer, so it answers about a position the
+                   ;; restriction puts out of reach.  A caller rendering
+                   ;; above the prompt narrows exactly that way, and the
+                   ;; signal would escape into whatever it was doing.  Read
+                   ;; a failure as not-visible, leaving point where the user
+                   ;; put it rather than snapping to the bottom.
+                   (ignore-errors
+                     (pos-visible-in-window-p (point-max) window)))
                  (get-buffer-window-list nil 'no-mini))))
 
 (defmacro shell-maker-with-auto-scroll-edit (&rest body)

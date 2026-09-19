@@ -313,15 +313,14 @@ which can invert any predicate or regexp."
   (lambda (str)
     (not (orderless--match-p pred regexp str))))
 
-(defun orderless--metadata ()
-  "Return completion metadata iff inside minibuffer."
+(defun orderless--metadata-get (prop)
+  "Return PROP from completion metadata."
   (when-let* (((minibufferp))
-              (table minibuffer-completion-table))
-    ;; Return non-nil metadata iff inside minibuffer
-    (or (completion-metadata (buffer-substring-no-properties
-                              (minibuffer-prompt-end) (point))
-                             table minibuffer-completion-predicate)
-        '((nil . nil)))))
+              (table minibuffer-completion-table)
+              (md (completion-metadata (buffer-substring-no-properties
+                                        (minibuffer-prompt-end) (point))
+                                       table minibuffer-completion-predicate)))
+    (compat-call completion-metadata-get md prop)))
 
 (defvar orderless--annotation nil
   "Variable used to prevent recursive annotation matching.
@@ -330,18 +329,17 @@ which is incorrect.")
 
 (defun orderless-annotation (pred regexp)
   "Match candidates where the annotation matches PRED and REGEXP."
-  (let ((md (orderless--metadata)))
-    (if-let* ((fun (compat-call completion-metadata-get md 'affixation-function)))
-        (lambda (str)
-          (unless orderless--annotation
-            (let ((orderless--annotation t))
-              (cl-loop for s in (cdar (funcall fun (list str)))
-                       thereis (orderless--match-p pred regexp s)))))
-      (when-let* ((fun (compat-call completion-metadata-get md 'annotation-function)))
-        (lambda (str)
-          (unless orderless--annotation
-            (let ((orderless--annotation t))
-              (orderless--match-p pred regexp (funcall fun str)))))))))
+  (if-let* ((fun (orderless--metadata-get 'affixation-function)))
+      (lambda (str)
+        (unless orderless--annotation
+          (let ((orderless--annotation t))
+            (cl-loop for s in (cdar (funcall fun (list str)))
+                     thereis (orderless--match-p pred regexp s)))))
+    (when-let* ((fun (orderless--metadata-get 'annotation-function)))
+      (lambda (str)
+        (unless orderless--annotation
+          (let ((orderless--annotation t))
+            (orderless--match-p pred regexp (funcall fun str))))))))
 
 ;;; Highlighting matches
 

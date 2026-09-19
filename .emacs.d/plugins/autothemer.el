@@ -2,12 +2,12 @@
 ;;
 ;; Authors: Sebastian Sturm, Jason Milkins
 ;;
-;; Copyright 2015-2022 Sebastian Sturm, Jason Milkins
+;; Copyright 2015-2026 Sebastian Sturm, Jason Milkins
 ;;
 ;; Maintainer: Jason Milkins <jasonm23@gmail.com>
 ;;
 ;; URL: https://github.com/jasonm23/autothemer
-;; Version: 0.2.18
+;; Version: 0.2.19
 ;; Package-Requires: ((dash "2.10.0") (emacs "26.1"))
 ;;
 ;;; License:

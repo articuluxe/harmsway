@@ -3,7 +3,7 @@
 ;; Author:     Rahul Martim Juliato <rahul.juliato@gmail.com>
 ;; Maintainer: Rahul Martim Juliato <rahul.juliato@gmail.com>
 ;; URL: https://github.com/LionyxML/kusanagi-theme
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "30.1") (modus-themes "5.0.0"))
 ;; Keywords: faces, themes
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -268,7 +268,7 @@ exists in the palette and is associated with a HEX-VALUE.")
     `(diff-file-header ((,c :foreground ,pink-soft)))
     `(diff-header ((,c :foreground ,neon-cyan)))
     `(diff-hunk-header ((,c :foreground ,amber)))
-;;;;; gnus
+;;;;; gnus / message
     `(gnus-button ((,c :foreground ,neon-cyan)))
     `(gnus-group-mail-3 ((,c :foreground ,neon-cyan)))
     `(gnus-group-mail-3-empty ((,c :foreground ,neon-cyan)))
@@ -276,11 +276,20 @@ exists in the palette and is associated with a HEX-VALUE.")
     `(gnus-header-from ((,c :foreground ,purple)))
     `(gnus-header-name ((,c :foreground ,neon-green)))
     `(gnus-header-subject ((,c :foreground ,neon-cyan)))
+    `(message-signature-separator ((,c :foreground ,neon-cyan)))
+    `(message-separator ((,c :foreground ,teal-dim)))
+;;;;; log-edit
+    ;; modus makes this a full-height band; restore the thin bar
+    `(log-edit-headers-separator ((,c :height 0.1 :background ,teal-dim :extend t)))
 ;;;;; newsticker
     `(newsticker-extra-face ((,c :foreground ,teal-faint :height 0.8 :slant italic)))
     `(newsticker-feed-face ((,c :foreground ,hot-pink :height 1.2 :weight bold)))
     `(newsticker-treeview-face ((,c :foreground ,fg-main)))
     `(newsticker-treeview-selection-face ((,c :background ,bg-region :foreground ,teal-soft)))
+;;;;; separator-line
+    ;; modus replaces the default thin bar with an underline in bg-active,
+    ;; which our palette maps to bg-main (invisible)
+    `(separator-line ((,c :height 0.1 :background ,teal-dim :underline nil)))
 ;;;;; tab-bar
     ;; :box nil is load-bearing: the built-in `tab-bar-tab' defface sets a
     ;; `released-button' box on dark displays, and `tab-bar-tab-inactive'

@@ -5,7 +5,7 @@
 ;; Author: Protesilaos <info@protesilaos.com>
 ;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 1.2.1
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1233,8 +1233,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     company-tooltip-common-selection
     completions-common-part
     completions-first-difference
-    completion-preview-common
-    completion-preview-exact
     consult-preview-match
     custom-visibility
     erc-underline-face
@@ -1565,6 +1563,10 @@ default to a generic text that mentions the BACKGROUND-MODE."
                   :box (:line-width (-1 . -1) :color ,fg-main))))
 
               `(company-tooltip ((t :inherit fixed-pitch :background ,bg-shadow-subtle :foreground ,fg-shadow-subtle)))
+
+              `(completion-preview ((t :foreground ,fg-shadow-subtle)))
+              `(completion-preview-common ((t :inherit completion-preview :underline t)))
+              `(completion-preview-exact ((t :inherit (bold completion-preview) :underline t)))
 
               `(corfu-default ((t :inherit fixed-pitch :background ,bg-shadow-subtle :foreground ,fg-shadow-subtle)))
 

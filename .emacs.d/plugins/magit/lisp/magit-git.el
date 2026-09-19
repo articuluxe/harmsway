@@ -1838,7 +1838,7 @@ Given as a number of seconds.")
 
 (defun magit-get-previous-branch ()
   "Return the refname of the previously checked out branch.
-Return nil if no branch can be found in the `HEAD' reflog
+Return nil if no branch can be found in the `HEAD' reflog,
 which is different from the current branch and still exists.
 The amount of time spent searching is limited by
 `magit-get-previous-branch-timeout'."

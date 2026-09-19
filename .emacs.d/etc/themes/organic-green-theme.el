@@ -1,6 +1,12 @@
-﻿;;; organic-green-theme.el --- Light green color theme.
+;;; organic-green-theme.el --- Light green color theme -*- lexical-binding: t; -*-
 
 ;;; Copyright © 2009-2026 - Kostafey <kostafey@gmail.com>
+
+;; Author: Kostafey <kostafey@gmail.com>
+;; URL: https://github.com/kostafey/organic-green-theme
+;; Version: 1.0
+;; Keywords: faces
+;; Package-Requires: ((emacs "24.1"))
 
 ;; This file is not [yet] part of GNU Emacs, but is distributed under
 ;; the same terms.
@@ -49,7 +55,7 @@
 
       (organic-red             "#EF2929")
       (organic-orange          "#CE5C00")
-      (organic-yellow          "#B8860B")
+      (organic-yellow          "#B08008")
       (organic-sun             "#999900")
       (organic-green           "#119011")
       (organic-teal            "#008888")
@@ -78,10 +84,10 @@
    `(default ((t (:foreground ,organic-fg :background ,organic-bg))))
 
    ;; base
-   `(bold ((t (:weight bold))))
-   `(extra-bold ((t (:weight extra-bold))))
-   `(semi-bold ((t (:weight semi-bold))))
-   `(italic ((t (:slant italic))))
+   `(bold ((t (:weight normal :foreground ,organic-orange))))
+   `(extra-bold ((t (:weight normal :foreground ,organic-red))))
+   `(semi-bold ((t (:weight normal :foreground ,organic-yellow))))
+   `(italic ((t (:slant normal :foreground ,organic-yellow))))
    `(error ((t (:foreground ,organic-red))))
    `(escape-glyph ((t (:foreground ,organic-sun))))
    `(warning ((t (:foreground ,organic-orange))))
@@ -252,11 +258,18 @@
    `(lui-time-stamp-face ((t (:foreground ,organic-green))))
 
    ;; Markdown
-   `(markdown-pre-face ((t (:foreground ,organic-green-black))))
-   `(markdown-markup-face ((t (:foreground ,organic-green-black))))
+   `(markdown-header-delimiter-face ((t (:foreground ,organic-black))))
+   `(markdown-header-face-1 ((t (:foreground ,organic-purple))))
+   `(markdown-header-face-2 ((t (:foreground ,organic-purple))))
+   `(markdown-header-face-3 ((t (:foreground ,organic-purple))))
+   `(markdown-pre-face ((t (:foreground ,organic-black))))
+   `(markdown-markup-face ((t (:foreground ,organic-black))))
    `(markdown-language-keyword-face ((t (:foreground ,organic-green))))
    `(markdown-code-face ((t (:foreground ,organic-blue))))
    `(markdown-blockquote-face ((t (:foreground ,organic-green))))
+   `(markdown-italic-face ((t (:foreground ,organic-yellow))))
+   `(markdown-bold-face ((t (:foreground ,organic-orange))))
+   `(markdown-table-face ((t (:foreground ,organic-fg))))
 
    ;; Rst
    '(rst-definition ((t (:inherit font-lock-constant-face))) t)
@@ -324,6 +337,13 @@
    `(magit-filename ((t (:inherit default))) t)
    `(git-commit-summary ((t (:foreground ,organic-teal))) t)
 
+   ;; Transient
+   `(transient-heading ((t (:foreground ,organic-purple))) t)
+   `(transient-key-exit ((t (:foreground ,organic-blue))) t)
+   `(transient-key-stack ((t (:foreground ,organic-magenta))) t)
+   `(transient-key-stay ((t (:foreground ,organic-green))) t)
+   `(transient-key-return ((t (:foreground ,organic-sun))) t)
+
    ;; Git-Gutter
    `(git-gutter:added ((t (:foreground ,organic-green)) t))
    `(git-gutter:deleted ((t (:foreground ,organic-red))) t)
@@ -337,16 +357,19 @@
    `(diff-hl-change ((t (:foreground ,organic-sign-change :background ,organic-highlight-gray))) t)
 
    ;; Org-Mode
-   `(org-table ((t (:foreground ,organic-teal))) t)
+   `(org-document-title ((t (:foreground ,organic-green-black))) t)
+   `(org-code ((t (:foreground ,organic-blue))) t)
+   `(org-table ((t (:foreground ,organic-fg))) t)
    `(org-level-1 ((t (:foreground ,organic-purple))) t)
    `(org-level-2 ((t (:foreground ,organic-blue))) t)
-   `(org-level-3 ((t (:foreground ,organic-yellow))) t)
+   `(org-level-3 ((t (:foreground ,organic-teal))) t)
    `(org-level-4 ((t (:foreground ,organic-green))) t)
-   `(org-level-5 ((t (:foreground ,organic-sun))) t)
+   `(org-level-5 ((t (:foreground ,organic-yellow))) t)
    `(org-level-6 ((t (:foreground ,organic-orange))) t)
    `(org-block ((t (:foreground ,organic-black))))
    `(org-block-begin-line ((t (:foreground ,organic-gray))) t)
    `(org-block-end-line ((t (:foreground ,organic-gray))) t)
+   `(org-checkbox ((t (:foreground ,organic-green))) t)
    `(org-done ((t (:inherit success))) t)
    `(org-todo ((t (:inherit warning))) t)
 
@@ -355,7 +378,7 @@
 
    ;; Misc
    `(nxml-element-local-name ((t (:foreground ,organic-blue))) t)
-   `(yas-field-highlight-face ((t (:background ,organic-yellow))))
+   `(yas-field-highlight-face ((t (:background ,organic-highlight-blue))))
    `(idle-highlight ((t (:background ,organic-highlight-green))) t)
    `(comint-highlight-prompt ((t (:foreground ,organic-blue))) t)
    `(flx-highlight-face  ((t (:foreground ,organic-blue :bold t :underline t))) t)
@@ -389,7 +412,9 @@
    `(web-mode-function-call-face ((t (:foreground ,organic-fg))) t)
    `(web-mode-function-name-face ((t :inherit font-lock-function-name-face)))
 
-   `(eldoc-highlight-function-argument
+   ;; Written as `,'' so `package-lint' doesn't mistake this face for the
+   ;; like-named function that was removed in Emacs 25.1.
+   `(,'eldoc-highlight-function-argument
      ((t (:foreground ,organic-green :weight bold))) t)
 
    `(table-cell ((t (:foreground ,organic-fg :background ,organic-highlight-green))) t)

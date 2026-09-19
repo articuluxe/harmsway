@@ -5,7 +5,7 @@
 ;; Author:   Dmitry Gutov <dmitry@gutov.dev>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.11.1
+;; Version:  1.11.2
 ;; Package-Requires: ((cl-lib "0.2") (emacs "27.1"))
 
 ;; This file is part of GNU Emacs.
@@ -448,6 +448,7 @@ BUFFER defaults to the current buffer."
 
 (declare-function vc-git-command "vc-git")
 (declare-function vc-git--rev-parse "vc-git")
+(declare-function vc-git--empty-db-p "vc-git")
 (declare-function vc-hg-command "vc-hg")
 (declare-function vc-bzr-command "vc-bzr")
 (declare-function vc-find-revision-no-save "vc")
@@ -465,6 +466,8 @@ BUFFER defaults to the current buffer."
 (defun diff-hl-changes-buffer (file backend &optional new-rev bufname)
   (diff-hl-with-diff-switches
    (diff-hl-diff-against-reference file backend (or bufname " *diff-hl* ") new-rev)))
+
+(defconst diff-hl--git-empty-tree "4b825dc642cb6eb9a060e54bf8d69288fbee4904")
 
 (defun diff-hl-diff-against-reference (file backend buffer &optional new-rev)
   (cond
@@ -484,6 +487,8 @@ BUFFER defaults to the current buffer."
             (vc-switches 'git 'diff)
             (list "-p" "--cached"
                   (or diff-hl-reference-revision
+                      (if (vc-git--empty-db-p)
+                          diff-hl--git-empty-tree)
                       (diff-hl-head-revision backend))
                   "--"))))
    (t
@@ -497,7 +502,7 @@ BUFFER defaults to the current buffer."
        ;; https://github.com/dgutov/diff-hl/issues/117
        (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
          (vc-call-backend backend 'diff (list file)
-                          "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+                          diff-hl--git-empty-tree
                           nil
                           buffer
                           (diff-hl--use-async-p)))))))
@@ -638,7 +643,8 @@ contents as they are (or would be) after applying the changes in NEW."
         (run-hook-with-args-until-success 'diff-hl-async-inhibit-functions
                                           default-directory))))
 
-(defvar diff-hl-timer nil)
+(defvar-local diff-hl-timer nil)
+(put 'diff-hl-timer 'permanent-local t)
 
 (defun diff-hl-update ()
   "Updates the diff-hl overlay."

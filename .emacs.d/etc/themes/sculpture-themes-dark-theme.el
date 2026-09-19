@@ -5,8 +5,8 @@
 ;; Author: Precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: August 19, 2026
-;; Version: 1.13
+;; Modified: September 19, 2026
+;; Version: 1.19
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -300,21 +300,35 @@
    `(evil-ex-substitute-matches     ((,class (:foreground ,cs00 :strike-through t :inherit (bold)))))
    `(evil-ex-substitute-replacement ((,class (:foreground ,ot04 :inherit (bold)))))
 
+;;;;;; dired
+   `(dired-mark           ((,class (:foreground ,cs01 :inherit bold))))
+   `(dired-marked         ((,class (:foreground ,cs01 :underline (:color ,cs01 :style dashes) :inherit (bold italic)))))
+   `(dired-directory      ((,class (:background ,ot05 :inherit bold :box (:color ,ot05 :line-width (3 . -1))))))
+   `(dired-header         ((,class (:background ,ha07 :inherit (variable-pitch bold) :height 1.15 :box (:color ,ha07 :line-width (6 . 3))))))
+   `(dired-set-id         ((,class (:foreground ,fg :background ,ha12 :inherit bold))))
+   `(dired-flagged        ((,class (:foreground ,fg :background ,cs00 :inherit (bold italic)))))
+   `(dired-ignored        ((,class (:foreground ,bw09))))
+   `(dired-special        ((,class (:underline (:color ,cs02 :style dots)))))
+   `(dired-warning        ((,class (:foreground ,bg :background ,ot19))))
+   `(dired-perm-write     ((,class (:foreground ,bg :background ,ot02 :inherit italic))))
+   `(dired-symlink        ((,class (:underline (:color ,ot04 :style dots)))))
+   `(dired-broken-symlink ((,class (:foreground ,cs00 :underline (:color ,ot04 :style dots)))))
+
 ;;;;;; diredfl
-   `(diredfl-dir-name               ((,class (:foreground ,fg :inherit (bold variable-pitch)))))
-   `(diredfl-number                 ((,class (:foreground ,bw06))))
+   `(diredfl-dir-name               ((,class (:foreground ,cs02 :inherit (bold variable-pitch)))))
+   `(diredfl-number                 ((,class (:foreground ,ot04))))
    `(diredfl-symlink                ((,class (:foreground ,ot05))))
-   `(diredfl-no-priv                ((,class (:foreground ,bw04))))
+   `(diredfl-no-priv                ((,class (:foreground ,bg))))
    `(diredfl-dir-priv               ((,class (:foreground ,ha02))))
    `(diredfl-read-priv              ((,class (:foreground ,ha01))))
    `(diredfl-rare-priv              ((,class (:foreground ,ha01))))
    `(diredfl-link-priv              ((,class (:foreground ,ha01))))
-   `(diredfl-file-name              ((,class (:foreground ,fg :inherit variable-pitch))))
+   `(diredfl-file-name              ((,class (:foreground ,cs01 :inherit variable-pitch))))
    `(diredfl-exec-priv              ((,class (:foreground ,ha11))))
-   `(diredfl-date-time              ((,class (:foreground ,bw08 :underline t))))
+   `(diredfl-date-time              ((,class (:foreground ,ot05 :underline t))))
    `(diredfl-write-priv             ((,class (:foreground ,ha01))))
    `(diredfl-other-priv             ((,class (:foreground ,ha01))))
-   `(diredfl-file-suffix            ((,class (:foreground ,bw09 :inherit variable-pitch))))
+   `(diredfl-file-suffix            ((,class (:foreground ,cs00 :inherit variable-pitch))))
    `(diredfl-dir-heading            ((,class (:foreground ,ha02 :box t))))
    `(diredfl-autofile-name          ((,class (:foreground ,bw09))))
    `(diredfl-flag-mark              ((,class (:foreground ,ha02))))
@@ -413,6 +427,24 @@
    `(+org-todo-onhold  ((,class (:inherit (bold fixed-pitch) :underline (:color ,ha04 :line-width -1)))))
    `(+org-todo-active  ((,class (:inherit (bold fixed-pitch) :underline (:color ,ha01 :line-width -1)))))
    `(+org-todo-project ((,class (:inherit (bold fixed-pitch) :underline (:color ,ot00 :line-width -1)))))
+
+;;;;;; ansi-color
+   `(ansi-color-black          ((,class (:foreground ,ha09))))
+   `(ansi-color-red            ((,class (:foreground ,ha00))))
+   `(ansi-color-green          ((,class (:foreground ,ot01))))
+   `(ansi-color-yellow         ((,class (:foreground ,cs02))))
+   `(ansi-color-blue           ((,class (:foreground ,ha01))))
+   `(ansi-color-magenta        ((,class (:foreground ,ot09))))
+   `(ansi-color-cyan           ((,class (:foreground ,ot07))))
+   `(ansi-color-white          ((,class (:foreground ,cs01))))
+   `(ansi-color-bright-black          ((,class (:foreground ,bg))))
+   `(ansi-color-bright-red            ((,class (:foreground ,cs00))))
+   `(ansi-color-bright-green          ((,class (:foreground ,ot04))))
+   `(ansi-color-bright-yellow         ((,class (:foreground ,ha04))))
+   `(ansi-color-bright-blue           ((,class (:foreground ,ot05))))
+   `(ansi-color-bright-magenta        ((,class (:foreground ,ot19))))
+   `(ansi-color-bright-cyan           ((,class (:foreground ,ot21))))
+   `(ansi-color-bright-white          ((,class (:foreground ,fg))))
 
 ;;;;;; ido
    `(ido-subdir            ((,class (:foreground ,bw13))))
@@ -569,6 +601,11 @@
    `(show-paren-mismatch         ((,class (:underline (:color ,ha11 :line-width -1)))))
    `(show-paren-match-expression ((,class (:background ,ot27))))
 
+;;;;;; completion preview
+   `(completion-preview           ((,class (:inherit italic :foreground ,cs01 :box (:color ,cs00 :line-width -1)))))
+   `(completion-preview-common    ((,class (:inherit completion-preview :box (:color ,ot05 :line-width -1)))))
+   `(completion-preview-exact     ((,class (:inherit completion-preview-common :box (:color ,cs00 :line-width -1)))))
+
 ;;;;;; Whitespace Mode
    `(whitespace-tab                    ((,class (:background ,ha09 :foreground ,ha02))))
    `(whitespace-line                   ((,class (:background ,ha09 :foreground ,ha12))))
@@ -614,7 +651,7 @@
    `(which-key-command-description-face ((,class (:foreground ,ha04))))
    `(which-key-separator-face ((,class (:foreground ,bw11 :background ,bg))))
 
-;;;;;; tabs
+;;;;;; tab-bar
    `(tab-bar               ((,class (:foreground ,fg :background ,bg :underline ,ot05))))
    `(tab-bar-tab           ((,class (:foreground ,cs02))))
    `(tab-bar-tab-inactive  ((,class (:foreground ,cs01))))
@@ -723,6 +760,12 @@
    `(ediff-even-diff-B ((,class (:background ,ot06))))
    `(ediff-even-diff-A ((,class (:background ,ot06))))
 
+;;;;;; Hyperbole
+   `(ibut-face      ((,class (:background ,cs01 :foreground ,ot05 :box (:line-width (3 . 3) :color ,cs00 :style released-button)))))
+   `(hbut-flash     ((,class (:background ,cs01 :foreground ,ot20 :box (:line-width (3 . 3) :color ,cs00 :style released-button)))))
+   `(hbut-face      ((,class (:background ,cs01 :foreground ,cs00 :box (:line-width (3 . 3) :color ,cs00 :style released-button)))))
+   `(hbut-item-face ((,class (:background ,cs01 :foreground ,ot04 :box (:line-width (3 . 3) :color ,cs00 :style released-button)))))
+
 ;;;;;; vertico
    `(vertico-current     ((,class (:underline (:line-width -1 :color ,ot04) :inherit (bold)))))
    `(vertico-group-title ((,class (:inherit (sculpture-themes-dark-head-outline-7 variable-pitch)))))
@@ -761,6 +804,10 @@
    `(flymake-warning-echo-at-eol ((,class (:inherit flymake-warning))))
    `(flymake-end-of-line-diagnostics-face ((,class (:inherit region font-lock-keyword-face))))
 
+;;;;;; elisp-mode
+   ;; elisp-unknown-call
+   ;; elisp-non-local-exit
+   ;; elisp-rx
 ;;;;;; tree-sitter
    `(tree-sitter-hl-face:embedded ((,class (:foreground ,bw13))))
 

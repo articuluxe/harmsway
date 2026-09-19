@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/hyperstitional-themes
 ;; Created: April 16, 2024
-;; Modified: August 20, 2026
-;; Version: 3.8
+;; Modified: September 19, 2026
+;; Version: 3.13
 ;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -203,6 +203,20 @@ Returns a color in hex as a string."
      `(evil-ex-substitute-matches     ((,class (:foreground ,c1-dim :strike-through t :inherit bold))))
      `(evil-ex-substitute-replacement ((,class (:foreground ,c4-dim :inherit bold))))
 
+;;;;;; dired
+     `(dired-mark           ((,class (:foreground ,c6 :inherit bold))))
+     `(dired-marked         ((,class (:foreground ,c6 :background ,c2-light :underline (:color ,c6 :style dashes) :inherit (bold italic)))))
+     `(dired-directory      ((,class (:foreground ,bg :background ,c6 :inherit bold :box (:color ,c6 :line-width (3 . -1)) ))))
+     `(dired-header         ((,class (:foreground ,bg :background ,c3-dim :box (:color ,c3-dim :line-width (6 . 3)) :inherit (variable-pitch bold) :height 1.15))))
+     `(dired-set-id         ((,class (:foreground ,bg :background ,c4-dim :inherit bold))))
+     `(dired-flagged        ((,class (:foreground ,bg :background ,c6-dark :inherit (bold italic)))))
+     `(dired-ignored        ((,class (:foreground ,c3-dark))))
+     `(dired-special        ((,class (:underline (:color ,c2 :style dots)))))
+     `(dired-warning        ((,class (:foreground ,c6-dark :background ,c1-light))))
+     `(dired-perm-write     ((,class (:foreground ,c1-dim :background ,c6-light :inherit italic))))
+     `(dired-symlink        ((,class (:underline (:color ,c4 :style dots)))))
+     `(dired-broken-symlink ((,class (:foreground ,c1-dark :underline (:color ,c4 :style dots)))))
+
 ;;;;;; diredfl
      `(diredfl-dir-name               ((,class (:foreground ,c6 :background ,c6-light :inherit (bold variable-pitch)))))
      `(diredfl-number                 ((,class (:foreground ,c1-dim))))
@@ -231,12 +245,12 @@ Returns a color in hex as a string."
      `(diredfl-compressed-file-suffix ((,class (:foreground ,c2-dim))))
 
 ;;;;;; dired-subtree
-     `(dired-subtree-depth-1-face ((,class (:background ,c6-light))))
-     `(dired-subtree-depth-2-face ((,class (:background ,c5-light))))
-     `(dired-subtree-depth-3-face ((,class (:background ,c4-light))))
-     `(dired-subtree-depth-4-face ((,class (:background ,c3-light))))
-     `(dired-subtree-depth-5-face ((,class (:background ,c2-light))))
-     `(dired-subtree-depth-6-face ((,class (:background ,c1-light))))
+     `(dired-subtree-depth-1-face ((,class (:overline (:color ,c6 :line-height 3)))))
+     `(dired-subtree-depth-2-face ((,class (:overline (:color ,c5 :line-height 3)))))
+     `(dired-subtree-depth-3-face ((,class (:overline (:color ,c4 :line-height 3)))))
+     `(dired-subtree-depth-4-face ((,class (:overline (:color ,c3 :line-height 3)))))
+     `(dired-subtree-depth-5-face ((,class (:overline (:color ,c2 :line-height 3)))))
+     `(dired-subtree-depth-6-face ((,class (:overline (:color ,c1 :line-height 3)))))
 
 ;;;;;; Ivy
      `(ivy-action                      ((,class (:foreground ,fg :slant italic))))
@@ -309,6 +323,24 @@ Returns a color in hex as a string."
 ;;;;;; woman
      `(woman-bold   ((,class (:foreground ,c6 :weight bold))))
      `(woman-italic ((,class (:inherit italic :background ,c6-light))))
+
+;;;;;; ansi-color
+     `(ansi-color-black   ((,class (:foreground ,c0-dark))))
+     `(ansi-color-red     ((,class (:foreground ,c4))))
+     `(ansi-color-green   ((,class (:foreground ,c2))))
+     `(ansi-color-yellow  ((,class (:foreground ,c6))))
+     `(ansi-color-blue    ((,class (:foreground ,c0))))
+     `(ansi-color-magenta ((,class (:foreground ,c3))))
+     `(ansi-color-cyan    ((,class (:foreground ,c1))))
+     `(ansi-color-white   ((,class (:foreground ,c5))))
+     `(ansi-color-bright-black   ((,class (:foreground ,fg))))
+     `(ansi-color-bright-red     ((,class (:foreground ,c4-light))))
+     `(ansi-color-bright-green   ((,class (:foreground ,c2-light))))
+     `(ansi-color-bright-yellow  ((,class (:foreground ,c6-light))))
+     `(ansi-color-bright-blue    ((,class (:foreground ,c0-light))))
+     `(ansi-color-bright-magenta ((,class (:foreground ,c3-light))))
+     `(ansi-color-bright-cyan    ((,class (:foreground ,c1-light))))
+     `(ansi-color-bright-white   ((,class (:foreground ,c5-light))))
 
 ;;;;;; imenu-list
      `(imenu-list-entry-face            ((,class (:inherit variable-pitch :foreground ,fg))))
@@ -442,6 +474,11 @@ Returns a color in hex as a string."
      `(show-paren-match            ((,class (:underline (:color ,c4-dim :line-width -1)))))
      `(show-paren-mismatch         ((,class (:underline (:color ,c6-dark :line-width -1)))))
      `(show-paren-match-expression ((,class (:background ,c6-light))))
+
+;;;;;; completion preview
+     `(completion-preview           ((,class (:inherit italic :foreground ,bg :background ,c6))))
+     `(completion-preview-common    ((,class (:inherit completion-preview :background ,c3))))
+     `(completion-preview-exact     ((,class (:inherit completion-preview-common :background ,c0))))
 
 ;;;;;; Whitespace Mode
      `(whitespace-tab                    ((,class (:background ,bg :foreground ,c0))))
@@ -594,6 +631,12 @@ Returns a color in hex as a string."
      `(ediff-even-diff-C ((,class (:background ,c4-light))))
      `(ediff-even-diff-B ((,class (:background ,c2-light))))
      `(ediff-even-diff-A ((,class (:background ,c0-light))))
+
+;;;;;; Hyperbole
+     `(ibut-face      ((,class (:background ,c6-light :foreground ,c0-dark :box (:line-width (3 . 3) :color ,c0-dark :style released-button)))))
+     `(hbut-flash     ((,class (:background ,c6-light :foreground ,c2-dark :box (:line-width (3 . 3) :color ,c0-dark :style released-button)))))
+     `(hbut-face      ((,class (:background ,c6-light :foreground ,c4-dark :box (:line-width (3 . 3) :color ,c0-dark :style released-button)))))
+     `(hbut-item-face ((,class (:background ,c6-light :foreground ,c6-dark :box (:line-width (3 . 3) :color ,c0-dark :style released-button)))))
 
 ;;;;;; vertico
      `(vertico-current     ((,class (:underline (:line-width -1 :color ,c5) :inherit bold))))
@@ -857,7 +900,7 @@ Returns a color in hex as a string."
      `(font-lock-comment-face              ((,class (:foreground ,bb :background ,bg))))
      `(font-lock-comment-delimiter-face    ((,class (:foreground ,bb :background ,bg :weight bold))))
      `(font-lock-constant-face             ((,class (:foreground ,ba :weight bold))))
-     `(font-lock-function-name-face        ((,class (:foreground ,ra :slant italic))))
+     `(font-lock-function-name-face        ((,class (:foreground ,ra :slant italic :weight bold))))
      `(font-lock-keyword-face              ((,class (:foreground ,rb :weight bold))))
      `(font-lock-string-face               ((,class (:foreground ,bb :underline (:color ,bb :style dots :position 0)))))
      `(font-lock-type-face                 ((,class (:foreground ,gb :underline (:color ,gb :style dots :position 0)))))
@@ -913,6 +956,20 @@ Returns a color in hex as a string."
      `(evil-ex-search                 ((,class (:foreground ,gc :background ,rg :weight bold))))
      `(evil-ex-substitute-matches     ((,class (:foreground ,ra :strike-through t :weight bold))))
      `(evil-ex-substitute-replacement ((,class (:foreground ,ga :weight bold))))
+
+;;;;;; dired
+     `(dired-mark           ((,class (:foreground ,ba :inherit bold))))
+     `(dired-marked         ((,class (:foreground ,ga :underline (:color ,ga :style dashes) :inherit (bold italic)))))
+     `(dired-directory      ((,class (:foreground ,ba :background ,bg :inherit bold :box (:color ,bg :line-width (3 . -1)) ))))
+     `(dired-header         ((,class (:foreground ,ww :background ,gc :box (:color ,gc :line-width (6 . 3)) :inherit (variable-pitch bold) :height 1.15))))
+     `(dired-set-id         ((,class (:foreground ,ba :background ,bg :inherit bold))))
+     `(dired-flagged        ((,class (:foreground ,ra :underline (:color ,ra :style dashes) :inherit (bold italic)))))
+     `(dired-warning        ((,class (:foreground ,ra :background ,rg :inherit (bold italic)))))
+     `(dired-ignored        ((,class (:foreground ,bc))))
+     `(dired-special        ((,class (:underline (:color ,bg :style dots)))))
+     `(dired-perm-write     ((,class (:foreground ,ga :background ,gg :inherit italic))))
+     `(dired-symlink        ((,class (:underline (:color ,wf :style dots)))))
+     `(dired-broken-symlink ((,class (:foreground ,re :underline (:color ,wf :style dots)))))
 
 ;;;;;; diredfl
      `(diredfl-dir-name               ((,class (:foreground ,ra :background ,rg :weight bold :inherit variable-pitch))))
@@ -982,6 +1039,24 @@ Returns a color in hex as a string."
 ;;;;;; woman
      `(woman-bold   ((,class (:foreground ,ba :weight bold))))
      `(woman-italic ((,class (:inherit italic :background ,gd))))
+
+;;;;;; ansi-color
+     `(ansi-color-black   ((,class (:foreground ,wb))))
+     `(ansi-color-red     ((,class (:foreground ,rc))))
+     `(ansi-color-green   ((,class (:foreground ,gc))))
+     `(ansi-color-yellow  ((,class (:foreground ,gf))))
+     `(ansi-color-blue    ((,class (:foreground ,bc))))
+     `(ansi-color-magenta ((,class (:foreground ,rf))))
+     `(ansi-color-cyan    ((,class (:foreground ,bf))))
+     `(ansi-color-white   ((,class (:foreground ,wd))))
+     `(ansi-color-bright-black   ((,class (:foreground ,wa))))
+     `(ansi-color-bright-red     ((,class (:foreground ,ra))))
+     `(ansi-color-bright-green   ((,class (:foreground ,ga))))
+     `(ansi-color-bright-yellow  ((,class (:foreground ,gd))))
+     `(ansi-color-bright-blue    ((,class (:foreground ,ba))))
+     `(ansi-color-bright-magenta ((,class (:foreground ,rd))))
+     `(ansi-color-bright-cyan    ((,class (:foreground ,bd))))
+     `(ansi-color-bright-white   ((,class (:foreground ,wd))))
 
 ;;;;;; imenu-list
      `(imenu-list-entry-face            ((,class (:inherit variable-pitch :foreground ,ba :background ,bg))))
@@ -1113,6 +1188,11 @@ Returns a color in hex as a string."
      `(show-paren-match            ((,class (:underline (:color ,gc :postion 0 :style dashes)))))
      `(show-paren-mismatch         ((,class (:underline (:color ,rc :postion 0 :style dashes)))))
      `(show-paren-match-expression ((,class (:inherit show-paren-match))))
+
+;;;;;; completion preview
+     `(completion-preview           ((,class (:inherit italic :foreground ,wc :box (:color ,ba :line-width -1)))))
+     `(completion-preview-common    ((,class (:inherit completion-preview :box (:color ,ra :line-width -1)))))
+     `(completion-preview-exact     ((,class (:inherit completion-preview-common :box (:color ,ga :line-width -1)))))
 
 ;;;;;; Whitespace Mode
      `(whitespace-tab                    ((,class (:background ,ww :foreground ,wb))))
@@ -1248,6 +1328,12 @@ Returns a color in hex as a string."
      `(ediff-even-diff-B ((,class (:background ,ge))))
      `(ediff-even-diff-A ((,class (:background ,gd))))
 
+;;;;;; Hyperbole
+     `(ibut-face      ((,class (:background ,gg :foreground ,ba :box (:line-width (3 . 3) :color ,ba :style released-button)))))
+     `(hbut-flash     ((,class (:background ,gg :foreground ,ra :box (:line-width (3 . 3) :color ,ba :style released-button)))))
+     `(hbut-face      ((,class (:background ,gg :foreground ,ga :box (:line-width (3 . 3) :color ,ba :style released-button)))))
+     `(hbut-item-face ((,class (:background ,gg :foreground ,gc :box (:line-width (3 . 3) :color ,ba :style released-button)))))
+
 ;;;;;; flycheck
      `(flycheck-info    ((,class (:underline (:position 0 :color ,gc)))))
      `(flycheck-error   ((,class (:underline (:position 0 :color ,rc)))))
@@ -1299,6 +1385,7 @@ Returns a color in hex as a string."
      `(eglot-inlay-hint-face  ((,class (:foreground ,bd :background ,bg :weight bold :box (:line-width -1 :color ,bd)))))
      `(eglot-type-hint-face  ((,class (:foreground ,rd :background ,bg :weight bold :box (:line-width -1 :color ,bd)))))
      `(eglot-parameter-hint-face  ((,class (:foreground ,gd :background ,bg :weight bold :box (:line-width -1 :color ,bd)))))
+     `(eglot-semantic-operator ((,class (:inherit font-lock-function-name-face :slant normal))))
 
 ;;;;;; rjsx
      `(rjsx-tag-bracket-face ((,class :inherit font-lock-keyword-face)))

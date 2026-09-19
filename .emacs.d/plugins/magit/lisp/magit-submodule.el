@@ -609,24 +609,36 @@ These sections can be expanded to show the respective commits."
                     'font-lock-face 'magit-branch-remote)
         ":")
       (dolist (module modules)
-        (when-let* ((default-directory (expand-file-name module))
-                    (_(file-exists-p (expand-file-name ".git")))
-                    (lines (magit-git-lines "-c" "push.default=current"
-                                            "log" "--oneline" range))
-                    (count (length lines))
-                    (_(> count 0)))
+        (when-let*
+            ((default-directory (expand-file-name module))
+             (_(file-exists-p (expand-file-name ".git")))
+             (all-tags " ")
+             (lines (mapcar (lambda (line)
+                              (pcase-let*
+                                  ((`(,rev ,msg ,tags)
+                                    (split-string line ""))
+                                   (tags (and (not (equal tags ""))
+                                              (magit-format-ref-labels tags))))
+                                (setq all-tags (concat all-tags tags))
+                                (list rev msg tags)))
+                            (magit-git-lines
+                             "-c" "push.default=current"
+                             "log" "--format=%h%x0c%s%x0c%D"
+                             "--decorate=full" "--decorate-refs=refs/tags/"
+                             range)))
+             (count (length lines))
+             (_(> count 0)))
           (magit-insert-section
               ( module module t
                 :range range)
             (magit-insert-heading count
-              (propertize module 'font-lock-face 'magit-diff-file-heading))
-            (dolist (line lines)
-              (string-match magit-log-module-re line)
-              (let ((rev (match-str 1 line))
-                    (msg (match-str 2 line)))
-                (magit-insert-section (module-commit rev t)
-                  (insert (propertize rev 'font-lock-face 'magit-hash) " "
-                          (magit-log--wash-summary msg) "\n")))))))
+              (propertize module 'font-lock-face 'magit-diff-file-heading)
+              (and (not (equal all-tags " ")) all-tags))
+            (pcase-dolist (`(,rev ,msg ,tags) lines)
+              (magit-insert-section (module-commit rev t)
+                (insert (propertize rev 'font-lock-face 'magit-hash) " "
+                        (if tags (concat tags " ") "")
+                        (magit-log--wash-summary msg) "\n"))))))
       (magit-cancel-section 'if-empty)
       (insert ?\n))))
 

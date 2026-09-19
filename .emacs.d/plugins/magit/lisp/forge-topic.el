@@ -703,25 +703,35 @@ Limit list to topics for which a review by the given user was requested."
 
 ;;; Read
 
-(defun forge-read-topic (prompt)
+(defun forge-read-topic (prompt &optional no-require-match)
   "Read an active topic with completion using PROMPT.
 
-Open, unread and pending topics are considered active.
-Default to the current topic, even if it isn't active.
+Open, unread and pending topics are considered active.  Default to the
+current topic, even if it isn't active.  Return the ID of the selected
+topic.
 
-\\<forge-read-topic-minibuffer-map>While completion is in \
-progress, \\[forge-read-topic-lift-limit] lifts the limit, extending
-the completion candidates to include all topics.
+\\<forge-read-topic-minibuffer-map>While completion is in progress, \
+\\[forge-read-topic-lift-limit] lifts the limit, extending the
+completion candidates to include all topics.
 
-If `forge-limit-topic-choices' is nil, then all candidates
-can be selected from the start."
+If `forge-limit-topic-choices' is nil, then all candidates can be
+selected from the start.
+
+If optional NO-REQUIRE-MATCH is non-nil, then a topic that isn't among
+the completion candidates can be selected.  If such a topic is selected,
+no topic ID can be returned.  Instead return an integer or the input.
+For a Github repository the input must be an integer, which is returned.
+For a Gitlab repository the input must have the form \"#N\" or \"!N\",
+(because here just an integer N would be ambiguous), which is returned
+as a string."
   (forge--read-topic prompt
                      #'forge-current-topic
                      (forge--topics-spec :type 'topic :active t)
                      (forge--topics-spec :type 'topic :active nil
-                                         :state nil :limit nil)))
+                                         :state nil :limit nil)
+                     (and no-require-match 'any)))
 
-(defun forge--read-topic (prompt current active all)
+(defun forge--read-topic (prompt current active all &optional require-match)
   (let* ((current (funcall current))
          (repo    (forge-get-repository (or current :tracked)))
          (default (and current (forge--format-topic-line current)))
@@ -734,38 +744,48 @@ can be selected from the start."
                               (not (member default choices)))
                          (push (cons default (oref current id)) alist)
                          (cons default choices))
-                        (choices)))
-         (choice
-          (if forge-limit-topic-choices
-              (minibuffer-with-setup-hook
-                  (lambda ()
-                    (use-local-map (make-composed-keymap
-                                    forge-read-topic-minibuffer-map
-                                    (current-local-map))))
-                (magit-completing-read
-                 (substitute-command-keys
-                  (format "%s (\\<%s>\\[%s] for all)" prompt
-                          'forge-read-topic-minibuffer-map
-                          'forge-read-topic-lift-limit))
-                 (completion-table-dynamic
-                  (let (all-choices)
-                    (lambda (_string)
-                      ;; For other frameworks, the minibuffer is current
-                      ;; when this function is called, but for Helm we
-                      ;; have to make it so.  Starting with Helm commit
-                      ;; 5e7c8498, this isn't necessary anymore.  See
-                      ;; https://github.com/emacs-helm/helm/issues/2744.
-                      (with-selected-window (minibuffer-window)
-                        (cond
-                          (all-choices)
-                          (forge-limit-topic-choices choices)
-                          (t
-                           (setq alist (forge--topic-collection
-                                        (forge--list-topics all repo)))
-                           (setq all-choices (mapcar #'car alist))))))))
-                 nil t nil nil default))
-            (magit-completing-read prompt choices nil t nil nil default))))
-    (cdr (assoc choice alist))))
+                        (choices))))
+    (catch 'return
+      (while t
+        (let ((input
+               (if forge-limit-topic-choices
+                   (minibuffer-with-setup-hook
+                       (lambda ()
+                         (use-local-map (make-composed-keymap
+                                         forge-read-topic-minibuffer-map
+                                         (current-local-map))))
+                     (magit-completing-read
+                      (substitute-command-keys
+                       (format "%s (\\<%s>\\[%s] for all)" prompt
+                               'forge-read-topic-minibuffer-map
+                               'forge-read-topic-lift-limit))
+                      (completion-table-dynamic
+                       (let (all-choices)
+                         (lambda (_string)
+                           (cond
+                             (all-choices)
+                             (forge-limit-topic-choices choices)
+                             (t
+                              (setq alist (forge--topic-collection
+                                           (forge--list-topics all repo)))
+                              (setq all-choices (mapcar #'car alist)))))))
+                      nil require-match nil nil default))
+                 (magit-completing-read
+                  prompt choices nil require-match nil nil default))))
+          (cond-let
+            ([known (cdr (assoc input alist))]
+             (throw 'return known))
+            ((not (equal require-match 'any))
+             (message "Please select one of the listed choices"))
+            ((forge--childp repo 'forge-gitlab-repository)
+             (if (string-match-p "\\`[#!][1-9][0-9]*\\'" input)
+                 (throw 'return input)
+               (message "To select an unknown issue use #N, %s"
+                        "To select an unknown pull-request use !N")))
+            ((string-match "\\`#?\\([1-9][0-9]*\\)\\'" input)
+             (throw 'return (string-to-number (match-string 1 input))))
+            ((message "To select an unknown topic enter an integer")))
+          (sit-for 2))))))
 
 (defun forge--topic-collection (topics)
   (mapcar (##cons (forge--format-topic-line %)
@@ -798,7 +818,7 @@ can be selected from the start."
   (when (minibufferp)
     (save-excursion
       (goto-char (point-min))
-      (when (re-search-forward " (.+? for all)" (minibuffer-prompt-end) t)
+      (when (re-search-forward " ([^(]+? for all)" (minibuffer-prompt-end) t)
         (let ((inhibit-read-only t))
           (replace-match ""))))))
 
@@ -2036,10 +2056,10 @@ When point is on the answer, then unmark it and mark no other."
           `(((prompt . ,(concat (propertize "Blank issue" 'face 'bold)
                                 " — Create a new issue from scratch")))))
      (mapcar (lambda (link)
-               `(,@link
-                 (prompt . ,(let-alist link
+               `((prompt . ,(let-alist link
                               (concat (propertize .name 'face 'bold)
-                                      " — " .about)))))
+                                      " — " .about)))
+                 ,@link))
              .contact_links))))
 
 (defun forge--topic-parse-template (name)

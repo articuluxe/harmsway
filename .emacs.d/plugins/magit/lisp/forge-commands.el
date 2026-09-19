@@ -122,7 +122,6 @@ Takes the pull-request as only argument and must return a directory."
 (transient-define-prefix forge-configure ()
   "Configure current repository and global settings."
   :transient-non-suffix #'transient--do-call
-  :refresh-suffixes t
   :environment #'forge--menu-environment
   :column-widths forge--topic-menus-column-widths
   [forge--topic-menus-group
@@ -203,14 +202,16 @@ repository cannot be determined, instead invoke `forge-add-repository'."
     (forge--pull-notifications 'forge-github-repository "github.com")))
 
 ;;;###autoload(autoload 'forge-pull-topic "forge-commands" nil t)
-(transient-define-suffix forge-pull-topic (number)
-  "Read a topic TYPE and NUMBER pull data about it from its forge."
-  :inapt-if-not (lambda () (and (forge-get-repository :tracked?)
-                           (forge--get-github-repository)))
+(transient-define-suffix forge-pull-topic (topic)
+  "Pull a TOPIC from its forge."
+  :inapt-if-not (##forge-get-repository :tracked?)
   (interactive
-    (list (read-number "Pull topic: "
-                       (and$ (forge-current-topic) (oref $ number)))))
-  (forge--pull-topic (forge-get-repository :tracked) number))
+    (list (if (cl-typep (forge-get-repository :tracked)
+                        'forge-gitlab-repository)
+              (forge-read-topic
+               "Pull topic (existing or !N for pullreq, #N for issue)" t)
+            (forge-read-topic "Pull topic" t))))
+  (forge--pull-topic (forge-get-repository :tracked) topic))
 
 ;;;###autoload(autoload 'forge-pull-this-topic "forge-commands" nil t)
 (transient-define-suffix forge-pull-this-topic ()
@@ -1289,7 +1290,6 @@ upstream remote."
 ;;;###autoload(autoload 'forge-add-repository "forge-commands" nil t)
 (transient-define-prefix forge-add-repository (&optional repo limit callback)
   "Add a repository to the database."
-  :refresh-suffixes t
   [:class transient-subgroups
 
    ;; Already tracked.

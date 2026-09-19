@@ -1,7 +1,7 @@
 ;;; cppinsights.el --- Integration with cppinsights tool -*- lexical-binding: t; -*-
 
 ;; Author: Chris Chen <chrischen@ignity.xyz>
-;; Version: 0.2
+;; Version: 0.3
 ;; Keywords: c++, tools, cppinsights
 ;; Package-Requires: ((emacs "28.1"))
 ;; URL: https://github.com/ignity21/cppinsights.el
@@ -26,14 +26,34 @@
   "Integration with cppinsights tool."
   :group 'cppinsights)
 
+(define-obsolete-variable-alias 'cppinsights-binary 'cppinsights-program "0.3")
+(define-obsolete-variable-alias 'cppinsights-extra-args 'cppinsights-clang-opts "0.3")
+
 (defcustom cppinsights-program "insights"
   "The name or path of the cppinsights program."
   :type 'string
   :group 'cppinsights)
 
 (defcustom cppinsights-clang-opts '("-O0" "-std=c++20")
-  "Additional arguments to pass to clang."
+  "Fallback Clang arguments used only without a compilation database.
+Use `cppinsights-extra-clang-opts' for arguments needed in both modes."
   :type '(repeat string)
+  :group 'cppinsights)
+
+(defcustom cppinsights-extra-clang-opts nil
+  "Clang arguments appended in both compilation database and fallback modes.
+Each string is one argument, not a shell command.  In database mode,
+relative paths are resolved against the compilation command's directory;
+use absolute paths for SDKs and additional include directories."
+  :type '(repeat string)
+  :group 'cppinsights)
+
+(defcustom cppinsights-compilation-database-directory nil
+  "Directory containing compile_commands.json, or nil for automatic discovery.
+Relative paths are resolved against the project root, or the source file's
+directory outside a project.  When nil, search upward from the source file.
+An explicitly configured directory must contain a readable database file."
+  :type '(choice (const :tag "Automatic" nil) directory)
   :group 'cppinsights)
 
 (defcustom cppinsights-window-width 0.5
@@ -73,28 +93,43 @@ Returns the filename on success or signals an error if requirements aren't met."
 
 (defun cppinsights--project-root (filename)
   "Return the project root for FILENAME, or its directory if not in a project.
-Used both to look up `compile_commands.json' for fallback-detection
-and as `default-directory' when launching the `insights' subprocess,
-so any relative paths in `cppinsights-clang-opts' and in compiler
-diagnostics are anchored at a single, predictable location."
+Used to resolve the configured compilation database directory and as
+`default-directory' when launching the `insights' subprocess.
+Relative fallback compiler arguments are anchored here."
   (let ((proj (project-current)))
     (if proj
         (project-root proj)
       (file-name-directory filename))))
 
+(defun cppinsights--database-directory (filename)
+  "Find the compilation database directory for FILENAME, or return nil.
+Signal a user error if the selected database is not a readable regular file."
+  (let* ((directory
+          (if cppinsights-compilation-database-directory
+              (expand-file-name cppinsights-compilation-database-directory
+                                (cppinsights--project-root filename))
+            (locate-dominating-file (file-name-directory filename)
+                                    "compile_commands.json")))
+         (database (and directory
+                        (expand-file-name "compile_commands.json" directory))))
+    (when (and database
+               (not (and (file-regular-p database) (file-readable-p database))))
+      (user-error "Compilation database is not a readable file: %s" database))
+    (when directory
+      (file-name-as-directory (expand-file-name directory)))))
+
 (defun cppinsights--build-command (filename)
   "Build the command to run cppinsights on FILENAME.
-Detects if a compile_commands.json exists in the project root and uses
-an appropriate command format based on this discovery.  Will use
-project-provided compilation settings when available, otherwise
-falls back to configured options."
-  (let* ((proj-root (cppinsights--project-root filename))
-         (use-compile-db (file-exists-p
-                          (expand-file-name "compile_commands.json" proj-root)))
-         (base (list cppinsights-program filename)))
-    (if use-compile-db
-        base
-      (append base '("--") cppinsights-clang-opts))))
+Select a compilation database with -p when available; otherwise use
+`cppinsights-clang-opts'.  Always append `cppinsights-extra-clang-opts'."
+  (let ((directory (cppinsights--database-directory filename))
+        (base (list cppinsights-program filename)))
+    (if directory
+        (append base (list "-p" directory)
+                (mapcar (lambda (arg) (concat "--extra-arg=" arg))
+                        cppinsights-extra-clang-opts))
+      (append base '("--") cppinsights-clang-opts
+              cppinsights-extra-clang-opts))))
 
 (defun cppinsights--handle-process-success (stdout-buffer stderr-buffer)
   "Handle successful cppinsights process.
@@ -168,10 +203,10 @@ trigger the failure path with a spurious \"killed\" status."
 ;;;###autoload
 (defun cppinsights-run ()
   "Run cppinsights on the current buffer and show results.
-- Is there a compile_commands.json in project root? or in current directory?
-  Run `insights compile_commands.json` on the current buffer.
-- Or Run `insights <filename> -- <cppinsights-clang-opts>`
-- If C++ insights failed, show the error in `compilation-mode'."
+Use the configured or discovered compilation database, falling back to
+`cppinsights-clang-opts' when none is found.  Additional arguments from
+`cppinsights-extra-clang-opts' apply in both modes.
+If C++ Insights fails, show the error in `compilation-mode'."
   (interactive)
   (let ((buffer-name (buffer-name)))
     (when (buffer-modified-p)
@@ -199,11 +234,8 @@ trigger the failure path with a spurious \"killed\" status."
       (with-current-buffer stderr-buffer (setq default-directory proj-root))
 
       ;; Start the process (no buffer displayed initially).
-      ;; Bind `default-directory' to the project root for predictability:
-      ;; relative paths in `cppinsights-clang-opts' and in any diagnostics
-      ;; from clang are anchored there, rather than to the source file's
-      ;; subdirectory.  (libclang Tooling's lookup of `compile_commands.json'
-      ;; is independent of cwd -- it walks up from FILENAME's own path.)
+      ;; Anchor fallback arguments at the project root.  In database mode,
+      ;; Clang uses the directory recorded in each compilation command.
       (let* ((default-directory proj-root)
              (proc (make-process
                     :name "C++ Insights"

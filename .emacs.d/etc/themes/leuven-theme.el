@@ -5,7 +5,7 @@
 ;; Author: Fabrice Niessen <(concat "fniessen" at-sign "pirilampo.org")>
 ;; URL: https://github.com/fniessen/emacs-leuven-theme
 ;; Version: 2.6.0213
-;; Last-Updated: 2026-08-26 10:54
+;; Last-Updated: 2026-09-17 21:42
 ;; Keywords: color theme
 
 ;; This file is part of GNU Emacs.
@@ -450,6 +450,7 @@ more...")
    `(circe-originator-face ((,class (:foreground "blue"))))
    `(circe-prompt-face ((,class (:foreground "red"))))
    `(circe-server-face ((,class (:foreground "#99CAE5"))))
+   `(display-fill-column-indicator-warning-face ((,class (:foreground "orange3" :weight bold))))
 
    ;; `(ac-selection-face ((,class ,completion-selected-candidate)))
    `(ac-selection-face ((,class (:weight bold :foreground "white" :background "orange")))) ; TEMP For diff'ing AC from Comp.
@@ -458,6 +459,8 @@ more...")
    `(ac-candidate-mouse-face ((,class (:inherit highlight))))
    `(popup-scroll-bar-background-face ((,class (:background "#EBF4FE"))))
    `(popup-scroll-bar-foreground-face ((,class (:background "#D1DAE4")))) ; Scrollbar (visible).
+
+   `(ert-test-result-unexpected ((,class (:weight bold :foreground "#000000" :background "#FFB5B0"))))
 
    ;; Company.
    `(company-tooltip-common-selection ((,class (:weight bold :foreground "#0474B6" :inherit company-tooltip-selection)))) ; Prefix + common part in tooltip (for selection).
