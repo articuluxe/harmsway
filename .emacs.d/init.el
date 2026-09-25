@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-25 15:01:31 dharms>
+;; Modified Time-stamp: <2026-09-25 15:12:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -89,7 +89,6 @@
                      ,(concat my/plugins-directory "icons/")
                      ,(concat my/plugins-directory "ipe/")
                      ,(concat my/plugins-directory "js2/")
-                     ,(concat my/plugins-directory "lsp/")
                      ,(concat my/plugins-directory "magit/lisp/")
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
@@ -2809,7 +2808,7 @@ ARGS are the additional arguments."
   )
 (use-package treemacs-magit
   :after treemacs)
-(use-package lsp-treemacs
+(use-package lsp-treemacs :disabled
   :commands (lsp-treemacs-errors-list lsp-treemacs-quick-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dirvish ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3299,23 +3298,6 @@ ARGS are the additional arguments."
                ("b" . harmsway-toggle-eldoc-box-mode)
                ("?" . eldoc-box-help-at-point)))
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package lsp-mode
-  :commands lsp
-  :bind ("C-c =" . lsp)
-  :init
-  ;; (setq lsp-enable-symbol-highlighting nil)
-  (setq lsp-pyls-plugins-rope-completion-enabled nil)
-  )
-
-(use-package lsp-ui
-  :after lsp-mode)
-
-(use-package company-lsp
-  :disabled
-  :config
-  (setq-default company-alt-backend 'company-lsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-toggle-flyspell-prog-mode ()
