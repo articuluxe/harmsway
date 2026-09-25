@@ -3715,6 +3715,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :init
   (setq flymake-wrap-around t)
   (setq flymake-mode-line-lighter "Fly")
+  ;; (setq flymake-show-diagnostics-at-end-of-line t) ;t, short or fancy
   (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
   )
 
