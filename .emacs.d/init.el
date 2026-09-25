@@ -1920,10 +1920,6 @@ ARGS are the additional arguments."
   (setq lv-use-separator t)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package wgrep
-  :after grep)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ag ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ag
   :if (executable-find "ag")
@@ -1932,8 +1928,6 @@ ARGS are the additional arguments."
   :bind (("C-c gaa" . ag)
          ("C-c gap" . ag-project)
          )
-  :config
-  (require 'wgrep-ag)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep-context ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
