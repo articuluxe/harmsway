@@ -798,40 +798,11 @@ line."
   :init
   (setq ibuffer-expert t)
   (setq ibuffer-show-empty-filter-groups nil)
+  (setq ibuffer-human-readable-size t)
   (add-hook 'ibuffer-mode-hook
             (lambda()
               (ibuffer-auto-mode 1)
-              ))
-  :config
-  ;; human-readable sizes
-  (define-ibuffer-column size-h
-    (:name "Size" :inline t)
-    (cond
-     ((> (buffer-size) 1048576)
-      (format "%7.1fM" (/ (buffer-size) 1048576.0)))
-     ((> (buffer-size) 131072)
-      (format "%7.0fk" (/ (buffer-size) 1024.0)))
-     ((> (buffer-size) 1024)
-      (format "%7.1fk" (/ (buffer-size) 1024.0)))
-     (t (format "%8d" (buffer-size)))))
-  (setq ibuffer-formats
-        '((mark modified read-only vc-status-mini " "
-                (name 18 18 :left :elide)
-                " "
-                (size-h 9 -1 :right)
-                " "
-                (mode 16 16 :left :elide)
-                " "
-               filename-and-process)
-          (mark modified read-only vc-status-mini " "
-                (size-h 9 -1 :right)
-                " "
-                (name 26 -1))
-          (mark modified read-only vc-status-mini " "
-                (size-h 9 -1 :right)
-                " "
-               (filename-and-process 26 -1))
-          )))
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer-vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-ibuffer-magit-status ()
