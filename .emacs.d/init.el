@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-18 16:23:12 dharms>
+;; Modified Time-stamp: <2026-09-25 15:01:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -138,6 +138,7 @@
 (setq inhibit-startup-echo-area-message user-login-name)
 (setq inhibit-default-init t)
 (setq initial-scratch-message nil)
+(setq warning-minimum-level :error)
 (add-hook 'after-init-hook
           (lambda ()
             (message (concat "Emacs started in " (emacs-init-time)))))
@@ -175,6 +176,11 @@ up to 10 times."
   (advice-add 'pop-to-mark-command :around
               #'my/multi-pop-to-mark))
 (electric-pair-mode 1)
+(setq delete-pair-push-mark t)
+(setq kill-region-dwim 'emacs-word)
+(setq view-lossage-auto-refresh t)
+(setq native-comp-async-on-battery-power nil)
+(setq display-fill-column-indicator-warning nil)
 ;; show current function
 (setq which-func-unknown "?")
 (setq which-func-maxout 2000000)
@@ -1170,6 +1176,9 @@ From `manuel-oberti.github.io' on 20190806."
 (when (< emacs-major-version 26)
   (bind-key "C-x vh" #'vc-region-history))
 (global-set-key "\C-xve" #'vc-ediff)
+;; (setq vc-auto-revert-mode nil)
+(setq vc-allow-rewriting-published-history 'ask)
+(setq vc-dir-auto-hide-up-to-date 'revert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
@@ -1387,6 +1396,7 @@ Only one letter is shown, the first that applies."
 (setq-default comint-input-ignoredups t)
 (setq comint-terminfo-terminal "ansi")
 (setq tty-select-active-regions t)
+(setq tty-tip-mode t)
 (add-hook 'comint-output-filter-functions 'comint-truncate-buffer)
 (setq comint-buffer-maximum-size 1024)
 
@@ -1779,10 +1789,10 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package uniquify
-  :config
+  :init
+  (setq uniquify-after-kill-buffer-flag t)
   ;; append unique parent directory to buffers of same name
   (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
-  (setq uniquify-after-kill-buffer-p t)
   (setq uniquify-ignore-buffers-re "^\\*")
   )
 
@@ -2602,6 +2612,7 @@ ARGS are the additional arguments."
   (setq dired-mouse-drag-files 'move)
   (setq dired-free-space 'first)
   (setq dired-make-directory-clickable t)
+  (setq dired-hide-details-hide-absolute-location t)
   :config
   (use-package dired-x) ; C-x C-j now runs 'dired-jump
   ;; (use-package dired+
@@ -2770,7 +2781,10 @@ ARGS are the additional arguments."
   :bind ("M-I" . speedbar)
   :init
   (setq speedbar-prefer-window t)
-  (setq speedbar-use-images nil))
+  (setq speedbar-use-images nil)
+  (setq speedbar-window-default-width 25)
+  (setq speedbar-window-max-width 40)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; treemacs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-treemacs-keymap)
@@ -3263,6 +3277,14 @@ ARGS are the additional arguments."
                        :flake8 (:enabled t :maxLineLength 95))))))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq eldoc-idle-delay 0.5)
+(setq eldoc-print-after-edit nil)
+(setq eldoc-help-at-pt t)
+(setq eldoc-echo-area-display-truncation-message t)
+(setq eldoc-echo-area-prefer-doc-buffer 'maybe)
+(setq eldoc-echo-area-use-multiline-p 'truncate-sym-name-if-fit)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-toggle-eldoc-box-mode ()
   "Toggle `eldoc-box-hover-mode' in current buffer."
@@ -3373,6 +3395,9 @@ ARGS are the additional arguments."
 ;; Don't ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+(setq minibuffer-visible-completions 'up-down)
+(setq completion-eager-update t)
+(setq completion-eager-display 'auto)
 
 (use-package completion-preview
   :disabled
@@ -3686,6 +3711,14 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package quick-peek)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flymake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun flymake-toggle-fancy ()
+  "Toggle flymake fancy-error-display."
+  (interactive)
+  (flymake-mode -1)
+  (setopt flymake-show-diagnostics-at-end-of-line
+          (if flymake-show-diagnostics-at-end-of-line nil 'fancy))
+  (flymake-mode))
+
 (define-prefix-command 'harmsway-flymake-keymap)
 (global-set-key "\C-c!" 'harmsway-flymake-keymap)
 (use-package flymake
