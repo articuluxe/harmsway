@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-25 15:12:06 dharms>
+;; Modified Time-stamp: <2026-09-25 15:32:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2991,7 +2991,10 @@ ARGS are the additional arguments."
     (diff-hl-show-hunk)))
 
 (use-package  diff-hl-dired
-  :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
+  :init
+  (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote)
+  (setq diff-hl-dired-extra-indicators nil) ;for emacs 31 issue
+  )
 (use-package diff-hl
   :bind (:map diff-hl-command-map
               ("*" . harmsway-diff-hl-show-hunk))
