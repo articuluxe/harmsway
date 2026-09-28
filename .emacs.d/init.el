@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-25 15:32:36 dharms>
+;; Modified Time-stamp: <2026-09-28 11:26:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -186,12 +186,14 @@ up to 10 times."
 (which-function-mode 1)
 ;; winner mode
 (winner-mode 1)
+(setq view-read-only t)
 ;; don't try to create "other files"
 (setq ff-always-try-to-create nil)
 (setq ff-quiet-mode t)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 (setq auto-window-vscroll nil)
+(setq shell-command-prompt-show-cwd t)
 (setq show-paren-context-when-offscreen 'overlay)
 (show-paren-mode t)
 (size-indication-mode 1)
@@ -711,6 +713,7 @@ line."
 (transient-mark-mode 1)
 ;; Insertion while text is selected deletes the selected text
 (delete-selection-mode 1)
+(setq save-interprogram-paste-before-kill t)
 (setq delete-selection-temporary-region nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1178,6 +1181,7 @@ From `manuel-oberti.github.io' on 20190806."
 ;; (setq vc-auto-revert-mode nil)
 (setq vc-allow-rewriting-published-history 'ask)
 (setq vc-dir-auto-hide-up-to-date 'revert)
+(setq vc-find-revision-no-save t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
@@ -2137,7 +2141,7 @@ ARGS are the additional arguments."
 (use-package luwak :commands (luwak-open luwak-search))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frog-jump-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package frog-jump-buffer
+(use-package frog-jump-buffer :disabled
   :bind ("M-i" . frog-jump-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2151,6 +2155,9 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package popup-imenu
   :bind ("C-c C-j" . popup-imenu)
+  :init
+  (setq imenu-auto-rescan nil)          ;set to t to auto-rescan
+  (setq imenu-auto-rescan-maxout 60000)
   :config
   (setq popup-imenu-position 'point)
   )
@@ -3373,8 +3380,10 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq completions-detailed t)
+(setq completions-group t)
 (setq tab-always-indent 'complete)      ;or t to avoid completion
 (add-to-list 'completion-styles 'initials t)
+;; (setq completion-auto-select 'second-tab)
 (setq completion-auto-help nil)
 (setq completion-cycle-threshold t)     ;always cycle
 ;; Don't ignore case when completing file names
