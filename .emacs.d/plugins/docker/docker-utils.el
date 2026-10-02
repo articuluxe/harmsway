@@ -22,9 +22,6 @@
 ;;; Commentary:
 
 ;;; Code:
-(eval-when-compile
-  (setq-local byte-compile-warnings '(not docstrings)))
-
 (require 's)
 (require 'aio)
 (require 'dash)
@@ -32,15 +29,134 @@
 (require 'tramp)
 (require 'tablist)
 (require 'transient)
+(require 'docker-group)
+
+(defvar docker-utils-history nil
+  "History list bound while reading with `docker-utils-with-history'.")
+
+(defun docker-utils-with-history (key reader)
+  "Call READER with a history variable holding the `transient-history' entry KEY.
+READER receives the symbol to pass as HIST; the updated list is stored back
+under KEY, so it is saved with the other transient histories."
+  (let ((docker-utils-history (alist-get key transient-history)))
+    (prog1 (funcall reader 'docker-utils-history)
+      (setf (alist-get key transient-history) docker-utils-history))))
+
+(defun docker-utils-read-string (prompt key)
+  "Read a string with PROMPT using the history KEY."
+  (docker-utils-with-history key (lambda (history) (read-string prompt nil history))))
+
+(defun docker-utils-completing-read (prompt collection key)
+  "Read a string with PROMPT, completing from COLLECTION, using the history KEY."
+  (docker-utils-with-history key (lambda (history) (completing-read prompt collection nil nil nil history))))
+
+(defconst docker-option-separator-regexp "[ \t]*|[ \t]*"
+  "Regexp separating the values of a repeatable `docker-option'.")
+
+(defclass docker-option (transient-option)
+  ((always-read :initform t))
+  "Command-line option whose current value is edited in place.
+A repeatable option (`:multi-value repeat') reads all its values in one prompt,
+separated by \"|\".")
+
+(cl-defmethod transient-prompt ((obj docker-option))
+  "Prompt for OBJ based on its description."
+  (let ((description (oref obj description)))
+    (if (or (oref obj prompt) (not (stringp description)))
+        (cl-call-next-method)
+      (format (if (eq (oref obj multi-value) 'repeat) "%s (separate with |): " "%s: ")
+              description))))
+
+(cl-defmethod transient-infix-read ((obj docker-option))
+  "Read the value of OBJ, starting from its current value.
+When OBJ is unset and `transient-read-with-initial-input' is non-nil, start
+from the last history entry instead.  Empty input unsets the option."
+  (let* ((enable-recursive-minibuffers t)
+         (repeat (eq (oref obj multi-value) 'repeat))
+         (key (or (oref obj history-key) (oref obj command)))
+         (value (oref obj value))
+         (initial-input (cond ((and value repeat) (string-join value "|"))
+                              (value)
+                              (transient-read-with-initial-input (car (alist-get key transient-history)))))
+         (reader (or (oref obj reader) #'docker-option-read-string))
+         (input (docker-utils-with-history key
+                                           (lambda (history)
+                                             (funcall reader (transient-prompt obj) initial-input history)))))
+    (cond ((not (stringp input)) input)
+          (repeat (split-string input docker-option-separator-regexp t))
+          ((not (string-empty-p input)) input))))
+
+(defun docker-option-read-string (prompt initial-input history)
+  "Read a string with PROMPT, INITIAL-INPUT and HISTORY."
+  (read-string prompt initial-input history))
+
+(cl-defmethod transient-format-value ((obj docker-option))
+  "Format the value of OBJ, without the argument's trailing space when unset."
+  (let ((formatted (cl-call-next-method))
+        (argument (oref obj argument)))
+    (if (or (oref obj value) (not (string-suffix-p " " argument)))
+        formatted
+      (concat (substring formatted 0 (1- (length argument)))
+              (substring formatted (length argument))))))
+
+(transient-define-infix docker-option-env ()
+  :description "Env KEY=VAL"
+  :class 'docker-option
+  :argument "-e "
+  :multi-value 'repeat
+  :history-key 'docker-container-environment)
+
+(transient-define-infix docker-option-user ()
+  :description "User"
+  :class 'docker-option
+  :argument "-u "
+  :history-key 'docker-container-user)
+
+(transient-define-infix docker-option-workdir ()
+  :description "Workdir"
+  :class 'docker-option
+  :argument "-w "
+  :history-key 'docker-container-workdir)
+
+(transient-define-infix docker-option-entrypoint ()
+  :description "Entrypoint"
+  :class 'docker-option
+  :argument "--entrypoint "
+  :history-key 'docker-container-entrypoint)
+
+(transient-define-infix docker-option-name ()
+  :description "Name"
+  :class 'docker-option
+  :argument "--name "
+  :history-key 'docker-container-name)
+
+(transient-define-infix docker-option-host ()
+  :description "Host"
+  :class 'docker-option
+  :argument "--host "
+  :history-key 'docker-host)
+
+(transient-define-infix docker-option-tail ()
+  :description "Tail"
+  :class 'docker-option
+  :argument "--tail "
+  :history-key 'docker-logs-tail)
+
+(transient-define-infix docker-option-timeout ()
+  :description "Timeout"
+  :class 'docker-option
+  :argument "-t "
+  :reader #'transient-read-number-N0)
 
 (defun docker-utils-get-marked-items-ids ()
   "Get the id part of `tablist-get-marked-items'."
   (-map #'car (tablist-get-marked-items)))
 
-(defun docker-utils-compute-args (default custom)
-  "Helper function for merging DEFAULT and CUSTOM args."
-  (let* ((objs (tablist-get-marked-items))
-         (name (caar objs))
+(defun docker-utils-compute-args (default custom &optional name)
+  "Return the CUSTOM args whose regexp matches NAME, or DEFAULT when none does.
+
+CUSTOM holds (REGEXP ARGS) elements.  NAME defaults to the first marked item."
+  (let* ((name (or name (caar (tablist-get-marked-items))))
          (matched-args (when name
                          (--first (string-match (car it) name)
                                   custom))))
@@ -55,7 +171,7 @@
 
 (defun docker-utils-generate-new-buffer-name (program &rest args)
   "Wrapper around `generate-new-buffer-name' using PROGRAM and ARGS."
-  (generate-new-buffer-name (format "* %s %s *" program (s-join " " args))))
+  (generate-new-buffer-name (format "* %s *" (s-join " " (cons program args)))))
 
 (defun docker-utils-generate-new-buffer (program &rest args)
   "Wrapper around `generate-new-buffer' using PROGRAM and ARGS."
@@ -74,7 +190,10 @@ Execute BODY in a buffer named with the help of NAME."
      (pop-to-buffer (current-buffer))))
 
 (defmacro docker-utils-transient-define-prefix (name arglist &rest args)
-  "Wrapper around `transient-define-prefix' forwarding NAME, ARGLIST and ARGS and calling `docker-utils-ensure-items'."
+  "Wrapper around `transient-define-prefix' that requires a selection.
+
+NAME, ARGLIST and ARGS are forwarded to it, and `docker-utils-ensure-items'
+runs before the transient is set up."
   `(transient-define-prefix ,name ,arglist
      ,@args
      (interactive)
@@ -82,7 +201,9 @@ Execute BODY in a buffer named with the help of NAME."
      (transient-setup ',name)))
 
 (defmacro docker-utils-define-transient-arguments (name)
-  "Define the transient arguments function using NAME that return the latest transient value or its default."
+  "Define NAME-arguments, returning the latest value of the NAME transient.
+
+It falls back to the transient default value when the history is empty."
   `(defun ,(intern (format "%s-arguments" name)) ()
      ,(format "Return the latest used arguments in the `%s' transient." name)
      (let ((history (alist-get ',name transient-history))
@@ -99,16 +220,67 @@ Execute BODY in a buffer named with the help of NAME."
        (setq tabulated-list-entries entries)
        (tabulated-list-print t))))
 
-(defvar docker-pop-to-buffer-action nil
-  "Action to use internally when `docker-utils-pop-to-buffer' calls `pop-to-buffer'.")
+(defcustom docker-pop-to-buffer-action nil
+  "Action `docker-utils-pop-to-buffer' passes to `pop-to-buffer'."
+  :group 'docker
+  :type 'sexp)
 
 (defun docker-utils-pop-to-buffer (name)
-  "Like `pop-to-buffer', but suffix NAME with the host if on a remote host."
+  "Like `pop-to-buffer', but suffix NAME with the host if on a remote host.
+
+The suffix includes the user when the file name has one, so a sudo directory
+gets its own buffer rather than reusing the one opened as the login user."
   (pop-to-buffer
    (if (file-remote-p default-directory)
-       (with-parsed-tramp-file-name default-directory nil (concat name " - " host))
+       (with-parsed-tramp-file-name default-directory nil
+         (concat name " - " (if user (concat user "@" host) host)))
      name)
    docker-pop-to-buffer-action))
+
+(defun docker-utils-entry-set-property (entry property face)
+  "Return ENTRY with PROPERTY set on its id and FACE applied to its columns.
+
+ENTRY is the output of a docker-X-entries function, and PROPERTY is the
+symbol the matching docker-X-dangling-p predicate looks for."
+  (list (propertize (car entry) property t)
+        (apply #'vector (--map (propertize it 'font-lock-face face) (cadr entry)))))
+
+(defun docker-utils-mark-dangling (predicate)
+  "Mark the entries of the current buffer that satisfy PREDICATE.
+
+PREDICATE is called with the tabulated list id of each entry.  Lines carrying
+no id, such as the header when `tabulated-list-use-header-line' is nil, are
+skipped.  Any user marks are cleared first, and any tablist filter applied to
+the buffer is respected."
+  (tablist-unmark-all-marks)
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (let ((id (tabulated-list-get-id)))
+        (when (and id (funcall predicate id))
+          (tablist-put-mark)))
+      (forward-line))))
+
+;; Absent before Emacs 29, where hops always stay in the file name.
+(defvar tramp-show-ad-hoc-proxies)
+
+(defun docker-utils-sudo-directory (directory)
+  "Return DIRECTORY as a sudo TRAMP file name on the same host.
+A local DIRECTORY becomes \"/sudo::DIRECTORY\", a remote one gets a sudo hop
+appended, and a DIRECTORY already using sudo is returned unchanged."
+  (if (not (file-remote-p directory))
+      (concat "/sudo::" (expand-file-name directory))
+    (let ((vec (tramp-dissect-file-name directory)))
+      (cond
+       ((equal (tramp-file-name-method vec) "sudo") directory)
+       ((not (tramp-multi-hop-p vec)) (user-error "Cannot add a sudo hop to %s" directory))
+       (t (let ((tramp-show-ad-hoc-proxies t))
+            (tramp-make-tramp-file-name
+             (make-tramp-file-name :method "sudo"
+                                   :user "root"
+                                   :host (tramp-file-name-host vec)
+                                   :localname (tramp-file-name-localname vec)
+                                   :hop (tramp-make-tramp-hop-name vec)))))))))
 
 (defun docker-utils-unit-multiplier (str)
   "Return the correct multiplier for STR."
@@ -127,21 +299,23 @@ Execute BODY in a buffer named with the help of NAME."
 
 (defun docker-utils-human-size-predicate (a b)
   "Sort A and B by image size."
-    (< (docker-utils-human-size-to-bytes a) (docker-utils-human-size-to-bytes b)))
+  (< (docker-utils-human-size-to-bytes a) (docker-utils-human-size-to-bytes b)))
 
 (defun docker-utils-columns-list-format (columns-spec)
-  "Convert COLUMNS-SPEC (a list of plists) to 'tabulated-list-format', i.e. a vector of (name width sort-fn)."
+  "Convert COLUMNS-SPEC, a list of plists, to a `tabulated-list-format' vector.
+
+Each element of the vector is (NAME WIDTH SORT-FN)."
   (apply 'vector
-  (--map-indexed
-   (-let* (((&plist :name name :width width :sort sort-fn-inner) it)
-           (sort-fn (if sort-fn-inner
-                        (let ((idx it-index)) ;; Rebind the closure var!
-                          ;; Sort fn is called with (id [entries..])
-                          ;; Extract the column value and pass to inner function
-                          (-on sort-fn-inner (lambda (x) (elt (cadr x) idx))))
-                      t)))
-     (list name width sort-fn))
-   columns-spec)))
+         (--map-indexed
+          (-let* (((&plist :name name :width width :sort sort-fn-inner) it)
+                  (sort-fn (if sort-fn-inner
+                               (let ((idx it-index)) ;; Rebind the closure var!
+                                 ;; Sort fn is called with (id [entries..])
+                                 ;; Extract the column value and pass to inner function
+                                 (-on sort-fn-inner (lambda (x) (elt (cadr x) idx))))
+                             t)))
+            (list name width sort-fn))
+          columns-spec)))
 
 (defun docker-utils-make-format-string (id-template column-spec)
   "Make the format string to pass to docker-ls commands.
@@ -156,8 +330,9 @@ COLUMN-SPEC is the value of docker-X-columns."
 (defun docker-utils-parse (column-specs line)
   "Convert a LINE from \"docker ls\" to a `tabulated-list-entries' entry.
 
-LINE is expected to be a JSON formatted array, and COLUMN-SPECS is the relevant
-defcustom (e.g. `docker-image-columns`) used to apply any custom format functions."
+LINE is expected to be a JSON formatted array.  COLUMN-SPECS is the relevant
+defcustom (e.g. `docker-image-columns') used to apply any custom format
+functions."
   (condition-case nil
       (let* ((data (json-read-from-string line)))
         ;; apply format function, if any

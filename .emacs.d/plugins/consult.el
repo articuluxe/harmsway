@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 3.9
+;; Version: 3.10
 ;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -3285,8 +3285,9 @@ Optional source fields:
                    :preview-key (consult--multi-preview-key sources)
                    :narrow      (consult--multi-narrow sources)
                    :state       (consult--multi-state sources))))))
-    (when-let* ((history (plist-get (cdr selected) :history)))
-      (add-to-history history (car selected)))
+    (when-let* ((history (plist-get (cdr selected) :history))
+                (elem (car selected)))
+      (add-to-history history (if (bufferp elem) (buffer-name elem) elem)))
     (if (plist-member (cdr selected) :match)
         (when-let* ((fun (plist-get (cdr selected) :new)))
           (funcall fun (car selected))

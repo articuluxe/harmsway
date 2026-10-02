@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.97.3
+;; Version: 0.97.5
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,8 +32,9 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.97.3")
+(defconst shell-maker-version "0.97.5")
 
+(require 'cl-lib)
 (require 'comint)
 (require 'json)
 (require 'map)
@@ -41,9 +42,7 @@
 (require 'shell)
 (require 'view)
 
-(eval-when-compile
-  (require 'cl-lib)
-  (declare-function json-pretty-print "ext:json" (begin end &optional minimize)))
+(declare-function json-pretty-print "ext:json" (begin end &optional minimize))
 
 (defcustom shell-maker-display-function #'pop-to-buffer-same-window
   "Function to display the shell.  Set to `display-buffer' or custom function."
@@ -260,7 +259,7 @@ Optionally use MODE-MAP."
       (eval `(define-derived-mode ,(shell-maker-major-mode config) comint-mode
                ,(shell-maker-config-name config)
                ,(format "Major mode for %s shell." (shell-maker-config-name config))
-               (use-local-map ,mode-map)))
+               (use-local-map ',mode-map)))
     (let ((mode-map-symbol (intern (format "%s-shell-mode-map"
                                            (downcase (shell-maker-config-name config))))))
       (when (boundp mode-map-symbol)
@@ -1479,18 +1478,17 @@ than compared against `window-end', whose value can land one position
 short of point-max at a trailing-newline end-of-buffer, silently
 disarming auto-scroll while the user is in fact at the bottom."
   (and (eobp)
-       (cl-every (lambda (window)
-                   ;; Asked while narrowed, `pos-visible-in-window-p' can
-                   ;; signal `args-out-of-range': the window still shows the
-                   ;; whole buffer, so it answers about a position the
-                   ;; restriction puts out of reach.  A caller rendering
-                   ;; above the prompt narrows exactly that way, and the
-                   ;; signal would escape into whatever it was doing.  Read
-                   ;; a failure as not-visible, leaving point where the user
-                   ;; put it rather than snapping to the bottom.
-                   (ignore-errors
-                     (pos-visible-in-window-p (point-max) window)))
-                 (get-buffer-window-list nil 'no-mini))))
+       ;; Callers rendering above the prompt narrow, but the window
+       ;; still shows the whole buffer, so ask about its real end.
+       ;; Asked while narrowed, `pos-visible-in-window-p' can signal
+       ;; `args-out-of-range', and the jit-lock pass it runs fontifies
+       ;; the narrowed buffer, which hangs `visual-wrap-prefix-mode'
+       ;; (see agent-shell#842).
+       (save-restriction
+         (widen)
+         (cl-every (lambda (window)
+                     (pos-visible-in-window-p (point-max) window))
+                   (get-buffer-window-list nil 'no-mini)))))
 
 (defmacro shell-maker-with-auto-scroll-edit (&rest body)
   "Execute BODY, preserving point unless already at end of buffer."

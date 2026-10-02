@@ -22,9 +22,6 @@
 ;;; Commentary:
 
 ;;; Code:
-(eval-when-compile
-  (setq-local byte-compile-warnings '(not docstrings)))
-
 (require 's)
 (require 'aio)
 (require 'dash)
@@ -42,7 +39,7 @@
 
 (defconst docker-context-id-template
   "{{ json .Name }}"
-  "This Go template extracts the context id which will be passed to transient commands.")
+  "Go template extracting the context id passed to transient commands.")
 
 (defcustom docker-context-default-sort-key '("Name" . nil)
   "Sort key for docker contexts.
@@ -65,13 +62,11 @@ and FLIP is a boolean to specify the sort order."
     (:name "Endpoint" :width 40 :template "{{ json .DockerEndpoint }}" :sort nil :format nil))
   "Column specification for docker contexts.
 
-The order of entries defines the displayed column order.
-'Template' is the Go template passed to `docker-context-ls' to create the column
-data.   It should return a string delimited with double quotes.
-'Sort function' is a binary predicate that should return true when the first
-argument should be sorted before the second.
-'Format function' is a function from string to string that transforms the
-displayed values in the column."
+The order of entries defines the displayed column order.  Template is the Go
+template passed to `docker-context-ls' to create the column data; it should
+return a string delimited with double quotes.  Sort function is a binary
+predicate returning non-nil when the first argument sorts before the second.
+Format function transforms the displayed value from string to string."
   :group 'docker-context
   :set 'docker-utils-columns-setter
   :get 'docker-utils-columns-getter
@@ -95,10 +90,13 @@ displayed values in the column."
     (-map (-partial #'docker-utils-parse docker-context-columns) lines)))
 
 (aio-defun docker-context-active-name (&rest args)
+  "Return a promise with the name of the active context.
+
+ARGS are passed to \"docker context ls\"."
   (let* ((fmt "{{ json .Current }} {{ json .Name }}")
-	 (data (aio-await (docker-run-docker-async "context" "ls" args (format "--format=\"%s\"" fmt))))
-	 (lines (s-split "\n" data t))
-	 (active-line (-first (lambda (line) (string-match-p "true" (car (s-split " " line)))) lines)))
+         (data (aio-await (docker-run-docker-async "context" "ls" args (format "--format=\"%s\"" fmt))))
+         (lines (s-split "\n" data t))
+         (active-line (-first (lambda (line) (string-match-p "true" (car (s-split " " line)))) lines)))
     (when active-line
       (cadr (split-string active-line "\"")))))
 
@@ -111,11 +109,9 @@ displayed values in the column."
 (defun docker-context-entry-set-active (entry)
   "Mark ENTRY (output of `docker-context-entries') as active.
 
-The result is the tabulated list id for an entry is propertized with
-'docker-context-active and the entry is fontified with 'docker-face-active."
-  (list (propertize (car entry) 'docker-context-active t)
-        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-active) (cadr entry)))))
-
+The tabulated list id is propertized with the docker-context-active property
+and the entry is fontified with the docker-face-active face."
+  (docker-utils-entry-set-property entry 'docker-context-active 'docker-face-active))
 
 (aio-defun docker-context-update-status-async ()
   "Write the status to `docker-status-strings'."
@@ -137,29 +133,33 @@ The result is the tabulated list id for an entry is propertized with
 (docker-utils-define-transient-arguments docker-context-ls)
 
 (transient-define-prefix docker-context-ls ()
-  "Empty transient to list contexts.
+  "Transient for listing contexts.
 
-Contrary to other menus no option is required to list the context, yet
-this definition is required to ensure the context listing.")
+\"docker context ls\" takes no argument worth exposing, but the prefix must
+exist: `docker-context-ls-arguments' reads its default value on every refresh."
+  :man-page "docker-context-ls"
+  ["Actions"
+   ("l" "List" tablist-revert)])
 
 (docker-utils-transient-define-prefix docker-context-rm ()
   "Transient for removing contexts."
   :man-page "docker-context-rm"
   [:description docker-generic-action-description
-		("D" "Remove" docker-generic-action-multiple-ids)])
+   ("D" "Remove" docker-generic-action-multiple-ids)])
 
 (docker-utils-transient-define-prefix docker-context-use ()
   "Transient for using contexts."
   :man-page "docker-context-use"
   [:description docker-generic-action-description
-		("X" "Use" docker-generic-action)])
+   ("X" "Use" docker-generic-action)])
 
 (transient-define-prefix docker-context-help ()
   "Help transient for docker contexts."
   ["Docker contexts help"
    ("D" "Remove"  docker-context-rm)
    ("I" "Inspect" docker-context-inspect)
-   ("X" "Use"     docker-context-use)])
+   ("X" "Use"     docker-context-use)
+   ("l" "List"    docker-context-ls)])
 
 (defvar docker-context-mode-map
   (let ((map (make-sparse-keymap)))
@@ -167,6 +167,7 @@ this definition is required to ensure the context listing.")
     (define-key map "D" 'docker-context-rm)
     (define-key map "I" 'docker-context-inspect)
     (define-key map "X" 'docker-context-use)
+    (define-key map "l" 'docker-context-ls)
     map)
   "Keymap for `docker-context-mode'.")
 

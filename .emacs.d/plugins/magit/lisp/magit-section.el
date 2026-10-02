@@ -48,7 +48,6 @@
 (require 'cond-let)
 (require 'eieio)
 (require 'llama) ; For (##these ...) see M-x describe-function RET # # RET.
-(require 'subr-x)
 
 (defun magit--display-core-upgrade-instructions (package version)
   (display-warning 'magit
@@ -105,7 +104,6 @@ similar defect."
   (magit--display-core-upgrade-instructions 'transient "0.13"))
 
 (require 'cursor-sensor)
-(require 'format-spec)
 
 (eval-when-compile (require 'benchmark))
 

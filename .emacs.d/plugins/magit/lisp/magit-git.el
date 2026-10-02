@@ -26,9 +26,10 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'subr-x)) ; For macros thread-{first,last}.
+
 (require 'magit-base)
 
-(require 'format-spec)
 (require 'server)
 
 ;; From `magit-branch'.
@@ -2460,28 +2461,39 @@ Signal an error if STRING is not a string."
 
 (defvar magit-main-branch-names
   '("main" "master" "trunk" "development")
-  "Branch names reserved for use by the primary branch.
+  "Branch names intended to be used for the primary branch.
 Use function `magit-main-branch' to get the name actually used in
 the current repository.")
 
 (defvar magit-long-lived-branches
   (append magit-main-branch-names (list "maint" "next"))
-  "Branch names reserved for use by long lived branches.")
+  "Branch names intended to be used for long lived branches.")
 
-(defun magit-main-branch ()
+(defun magit-main-branch (&optional remote)
   "Return the main branch.
 
 If a branch exists whose name matches `init.defaultBranch', then
 that is considered the main branch.  If no branch by that name
 exists, then the branch names in `magit-main-branch-names' are
 tried in order.  The first branch from that list that actually
-exists in the current repository is considered its main branch."
-  (let ((branches (magit-list-local-branch-names)))
-    (seq-find (##member % branches)
-              (delete-dups
-               (delq nil
-                     (cons (magit-get "init.defaultBranch")
-                           magit-main-branch-names))))))
+exists in the current repository is considered its main branch.
+
+If optional REMOTE is non-nil, return its default branch.  If the
+symbolic ref \"refs/remotes/<REMOTE>/HEAD\" exists, return the branch
+it refers to, else use the same heuristic as when determining the
+local default."
+  (or (and remote
+           (magit-git-string "symbolic-ref" "--short"
+                             (format "refs/remotes/%s/HEAD" remote)))
+      (let* ((branches (if remote
+                           (magit-list-remote-branch-names remote t)
+                         (magit-list-local-branch-names)))
+             (branch (seq-find (##member % branches)
+                               (delete-dups
+                                (delq nil
+                                      (cons (magit-get "init.defaultBranch")
+                                            magit-main-branch-names))))))
+        (if (and remote branch) (concat remote "/" branch) branch))))
 
 (defun magit-rev-diff-count (a b &optional first-parent)
   "Return the commits in A but not B and vice versa.

@@ -6,10 +6,10 @@
 ;; Homepage: https://github.com/tarsius/keycast
 ;; Keywords: multimedia
 
-;; Package-Version: 1.4.8
+;; Package-Version: 1.4.9
 ;; Package-Requires: (
 ;;     (emacs   "28.1")
-;;     (compat  "31.0")
+;;     (compat  "31.1")
 ;;     (cond-let "1.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -43,6 +43,10 @@
 ;;
 ;; - `keycast-log-mode' displays a list of recent bindings in a dedicated
 ;;   frame.
+;;
+;; A fifth mode, `keycast-invisible-mode', determines the current binding,
+;; but without displaying it anywhere.  Use `keycast-format' to format the
+;; current binding, and write your own code to display it somewhere.
 
 ;;; Code:
 
@@ -50,8 +54,6 @@
 (require 'compat)
 (require 'cond-let)
 (require 'format-spec)
-
-(eval-when-compile (require 'subr-x))
 
 ;;; Options
 ;;;; Common
@@ -358,12 +360,17 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defvar keycast-header-line-mode)
 (defvar keycast-tab-bar-mode)
 (defvar keycast-log-mode)
+(defvar keycast-invisible-mode)
 
 (defun keycast--mode-active-p (&optional line)
   (or keycast-mode-line-mode
       keycast-header-line-mode
       keycast-tab-bar-mode
-      (and (not line) keycast-log-mode)))
+      (and (not line) keycast-log-mode)
+      ;; Not actually a "line" mode by itself, but likely to be used
+      ;; in combination with third-party code that effectively turns
+      ;; it into one.
+      keycast-invisible-mode))
 
 (defvar keycast--this-command-desc nil)
 (defvar keycast--this-command-keys nil)
@@ -469,7 +476,16 @@ t to show the actual COMMAND, or a symbol to be shown instead."
       (and (not (stringp (car-safe format)))
            (not (listp (car-safe format))))))
 
-(defun keycast--format (format)
+(defun keycast-format (format)
+  "Format the current command and/or its binding using FORMAT.
+
+%s Some spaces, intended to be used like so: %10s.
+%k The key using the `keycast-key' face and padding.
+%K The key with no styling and without any padding.
+%c The command using the `keycast-command' face.
+%C The command with no styling.
+%r The times the command was repeated.
+%R The times the command was repeated using the `shadow' face."
   (and (not keycast--reading-passwd)
        (let* ((key (ignore-errors
                      (key-description keycast--this-command-keys)))
@@ -604,7 +620,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defvar keycast-mode-line
   '(:eval
     (and (funcall keycast-mode-line-window-predicate)
-         (keycast--format keycast-mode-line-format))))
+         (keycast-format keycast-mode-line-format))))
 
 (put 'keycast-mode-line 'risky-local-variable t)
 (make-variable-buffer-local 'keycast-mode-line)
@@ -667,7 +683,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defvar keycast-header-line
   '(:eval
     (and (funcall keycast-mode-line-window-predicate)
-         (keycast--format keycast-header-line-format))))
+         (keycast-format keycast-header-line-format))))
 
 (put 'keycast-header-line 'risky-local-variable t)
 (make-variable-buffer-local 'keycast-header-line)
@@ -731,7 +747,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
   "Produce key binding information for the tab bar."
   (and$ keycast-tab-bar-mode
         (keycast--active-frame-p)
-        (keycast--format keycast-tab-bar-format)
+        (keycast-format keycast-tab-bar-format)
         (string-pad $ keycast-tab-bar-minimal-width)))
 
 ;;; Log-Buffer
@@ -761,7 +777,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
     (unless (get-buffer-window buf t)
       (display-buffer-pop-up-frame
        buf `((pop-up-frame-parameters . ,keycast-log-frame-alist))))
-    (when-let ((output (keycast--format keycast-log-format)))
+    (when-let ((output (keycast-format keycast-log-format)))
       (with-current-buffer buf
         (goto-char (if keycast-log-newest-first (point-min) (point-max)))
         (let ((inhibit-read-only t))
@@ -792,6 +808,29 @@ t to show the actual COMMAND, or a symbol to be shown instead."
       (with-current-buffer buf
         (let ((inhibit-read-only t))
           (erase-buffer))))))
+
+;;; Invisible
+
+;;;###autoload
+(define-minor-mode keycast-invisible-mode
+  "Determine current command and its key binding for third-party use.
+
+All keycast modes determine that information.  While all other keycast
+modes also display it somewhere, this mode only stores it in variables.
+Use `keycast-format' (which see) to format the current binding and write
+your own code to display it somewhere.
+
+This can be useful, for example, when using a mode-line packages, that
+prevents other packages from easily adding their own elements, the way
+the authors of the mode-line abstraction had intended."
+  :global t
+  (cond
+    (keycast-invisible-mode
+     (add-hook 'post-command-hook #'keycast--update t)
+     (add-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit t))
+    ((not (keycast--mode-active-p))
+     (remove-hook 'post-command-hook #'keycast--update)
+     (remove-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit))))
 
 ;;; _
 (provide 'keycast)

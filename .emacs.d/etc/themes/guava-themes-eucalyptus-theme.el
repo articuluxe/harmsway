@@ -181,18 +181,18 @@
    `(which-func ((,eucalyptus-class (:foreground ,eucalyptus-white))))
 
    ;; tab-bar
-   `(tab-bar ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :weight bold))))
    `(tab-bar-tab ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :weight bold))))
    `(tab-line-tab ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,eucalyptus-class (:foreground ,eucalyptus-deep-red :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,eucalyptus-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,eucalyptus-class (:foreground ,eucalyptus-deep-red :weight bold))))
+   `(tab-line-tab-special ((,eucalyptus-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-bell))))
@@ -280,6 +280,7 @@
 
    ;; custom-button
    `(custom-button ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

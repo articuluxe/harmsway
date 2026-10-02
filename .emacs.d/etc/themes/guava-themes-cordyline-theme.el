@@ -181,18 +181,18 @@
    `(which-func ((,cordyline-class (:foreground ,cordyline-white))))
 
    ;; tab-bar
-   `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold))))
    `(tab-bar-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold))))
    `(tab-line-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,cordyline-class (:foreground ,cordyline-steel-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,cordyline-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,cordyline-class (:foreground ,cordyline-steel-blue :weight bold))))
+   `(tab-line-tab-special ((,cordyline-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
@@ -280,6 +280,7 @@
 
    ;; custom-button
    `(custom-button ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

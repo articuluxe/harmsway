@@ -6,7 +6,7 @@
 ;; Maintainer: Jonas Bernoulli <emacs.emacsql@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/emacsql
 
-;; Package-Version: 4.4.1
+;; Package-Version: 4.4.2
 ;; Package-Requires: ((emacs "28.1"))
 
 ;; SPDX-License-Identifier: Unlicense
@@ -18,10 +18,10 @@
 ;; PostgreSQL and MySQL are also supported, but use of these connectors
 ;; is not recommended.
 
-;; Any readable lisp value can be stored as a value in EmacSQL,
+;; Any readable Lisp value can be stored as a value in EmacSQL,
 ;; including numbers, strings, symbols, lists, vectors, and closures.
-;; EmacSQL has no concept of TEXT values; it's all just lisp objects.
-;; The lisp object `nil' corresponds 1:1 with NULL in the database.
+;; EmacSQL has no concept of TEXT values; it's all just Lisp objects.
+;; The Lisp object `nil' corresponds 1:1 with NULL in the database.
 
 ;; See README.md for much more complete documentation.
 
@@ -37,7 +37,7 @@
   "The EmacSQL SQL database front-end."
   :group 'comm)
 
-(defconst emacsql-version "4.4.1")
+(defconst emacsql-version "4.4.2")
 
 (defvar emacsql-global-timeout 30
   "Maximum number of seconds to wait before bailing out on a SQL command.

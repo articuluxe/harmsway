@@ -198,7 +198,7 @@ Semantic mappings come from `modus-flexoki-common-palette-mappings'.")
 (defcustom modus-flexoki-dark-palette-overrides nil
   "Palette overrides for `modus-flexoki-dark'.
 Entries here take precedence over both the theme palette and
-`modus-flexoki-common-palette-overrides'.
+`modus-themes-common-palette-overrides'.
 See `modus-themes-common-palette-overrides' for the format."
   :group 'modus-flexoki
   :type '(repeat (list symbol (choice symbol string))))

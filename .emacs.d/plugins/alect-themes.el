@@ -1,11 +1,11 @@
-;;; alect-themes.el --- Configurable light, dark and black themes for Emacs 24 or later   -*- lexical-binding: t -*-
+;;; alect-themes.el --- Configurable light, dark and black themes  -*- lexical-binding: t -*-
 
-;; Copyright © 2013–2025 Alex Kost
+;; Copyright © 2013–2026 Alex Kost
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 10 Jul 2013
 ;; Version: 0.11
-;; Package-Requires: ((emacs "24.0"))
+;; Package-Requires: ((emacs "25.0"))
 ;; URL: https://github.com/alezost/alect-themes
 ;; Keywords: color theme
 
@@ -64,7 +64,8 @@
 
 ;;; Code:
 
-(require 'cl-lib)
+(eval-when-compile (require 'cl-lib))
+(require 'seq)
 
 (defun alect-put-colors (color-name theme-names color-vals var)
   "Put theme colors into the variable VAR.
@@ -132,6 +133,12 @@ Used for author faces like `magit-log-author' or `change-log-name'."
   '((t nil))
   "Auxiliary face for inheriting by some other faces.
 Used for key faces like `apropos-keybinding' or `magit-popup-key'."
+  :group 'alect-faces)
+
+(defface alect-text-field
+  '((t nil))
+  "Auxiliary face for inheriting by some other faces.
+Used for text fields like `widget-field' or `eww-form-text'."
   :group 'alect-faces)
 
 (defface alect-selected-item
@@ -464,8 +471,7 @@ For INVERT, see `alect-get-color'."
                                    :box (:line-width 1
                                          :color ,(gc 'fg+2)
                                          :style nil))))
-         (highlight           ((,c :foreground ,(gc 'gray+2)
-                                   :background ,(gc 'gray-2))))
+         (highlight           ((,c :background ,(gc 'blue-bg))))
          (shadow              ((,c :foreground ,(gc 'gray))))
          (success             ((,c :foreground ,(gc 'green)
                                    :weight bold)))
@@ -482,6 +488,8 @@ For INVERT, see `alect-get-color'."
                                    :foreground ,(gc 'cyan+2)
                                    :background ,(gc 'bg-2))))
          (minibuffer-prompt   ((,c :inherit alect-prompt)))
+         (minibuffer-nonselected ((,c :foreground ,(gc 'red)
+                                      :strike-through t)))
          (secondary-selection ((,c :background ,(gc 'bg+1))))
          (trailing-whitespace ((,c :background ,(gc 'red-bg-1))))
          (vertical-border     ((,c :foreground ,(gc 'fg+1))))
@@ -502,6 +510,10 @@ For INVERT, see `alect-get-color'."
          (alect-author         ((,c :foreground ,(gc 'magenta-1))))
          (alect-key            ((,c :foreground ,(gc 'red-2)
                                     :weight bold)))
+         (alect-text-field     ((,c :background ,(gc 'bg)
+                                    :box (:line-width -1
+                                          :color ,(gc 'fg-2)
+                                          :style nil))))
          (alect-selected-item  ((,c :background ,(gc 'bg)
                                     :box (:line-width -1
                                           :color ,(gc 'fg+1)
@@ -854,6 +866,15 @@ For INVERT, see `alect-get-color'."
          (eshell-ls-special     ((,c :foreground ,(gc 'fg+1) :weight bold)))
          (eshell-ls-symlink     ((,c :inherit dired-symlink)))
 
+         ;; eww
+         (eww-form-text         ((,c :inherit alect-text-field)))
+         (eww-form-submit       ((,c :inherit alect-button)))
+         (eww-form-select       ((,c :inherit alect-button-mouse)))
+         (eww-form-file         ((,c :inherit alect-button
+                                     :background ,(gc 'green-bg+1))))
+         (eww-form-checkbox     ((,c :inherit alect-button
+                                     :background ,(gc 'cyan-bg+1))))
+
          ;; ffap
          (ffap ((,c :foreground ,(gc 'fg+1)
                     :background ,(gc 'blue-bg))))
@@ -1106,8 +1127,7 @@ For INVERT, see `alect-get-color'."
                                 :height 1.3 :weight bold)))
          (info-title-4     ((,c :inherit alect-color-level-4
                                 :height 1.2 :weight bold)))
-         (info-menu-header ((,c :inherit alect-color-level-5
-                                :height 1.1 :weight bold)))
+         (info-menu-header ((,c :inherit alect-title)))
          (info-node        ((,c :foreground ,(gc 'red+1))))
          (info-menu-star   ((,c :foreground ,(gc 'red))))
          (Info-quoted      ((,c :foreground ,(gc 'fg+2) :weight bold)))
@@ -1632,6 +1652,7 @@ For INVERT, see `alect-get-color'."
 
          ;; SLIME
          (slime-error-face                 ((,c :inherit error)))
+         (slime-reader-conditional-face    ((,c :inherit alect-block)))
          (slime-repl-input-face            ((,c :inherit comint-highlight-input)))
          (slime-repl-output-face           ((,c :foreground ,(gc 'green-1))))
          (slime-repl-inputed-output-face   ((,c :foreground ,(gc 'red))))
@@ -1645,6 +1666,19 @@ For INVERT, see `alect-get-color'."
          (sldb-detailed-frame-line-face    ((,c :weight bold)))
          (sldb-restartable-frame-line-face ((,c :foreground ,(gc 'green+1))))
          (sldb-non-restartable-frame-line-face ((,c :foreground ,(gc 'red+1))))
+
+         ;; SLY
+         (sly-action-face           ((,c :inherit alect-button)))
+         (sly-part-button-face      ((,c :inherit button)))
+         (sly-mrepl-note-face       ((,c :inherit font-lock-comment-face)))
+         (sly-mrepl-output-face     ((,c :inherit default)))
+         (sly-mrepl-prompt-face     ((,c :inherit comint-highlight-prompt)))
+         (sly-db-section-face       ((,c :inherit alect-title)))
+         (sly-db-local-name-face    ((,c :inherit font-lock-variable-name-face)))
+         (sly-db-restartable-frame-line-face     ((,c :inherit link)))
+         (sly-db-non-restartable-frame-line-face ((,c :inherit link-visited)))
+         (sly-db-restart-number-face             ((,c :foreground ,(gc 'green-2)
+                                                      :weight bold)))
 
          ;; smerge
          (smerge-base            ((,c :background ,(gc 'yellow-bg))))
@@ -1874,10 +1908,7 @@ For INVERT, see `alect-get-color'."
                                            :foreground ,(gc 'blue))))
 
          ;; widget
-         (widget-field             ((,c :background ,(gc 'bg)
-                                        :box (:line-width -1
-                                              :color ,(gc 'fg-2)
-                                              :style nil))))
+         (widget-field             ((,c :inherit alect-text-field)))
          (widget-button            ((,c :inherit alect-button)))
          (widget-button-pressed    ((,c :inherit alect-button-pressed)))
          (widget-documentation     ((,c :inherit font-lock-doc-face)))
@@ -1891,7 +1922,11 @@ For INVERT, see `alect-get-color'."
 
          ;; woman
          (woman-bold     ((,c :inherit Man-overstrike)))
-         (woman-italic   ((,c :inherit Man-underline))))
+         (woman-italic   ((,c :inherit Man-underline)))
+
+         ;; xref
+         (xref-file-header ((,c :inherit alect-title)))
+         (xref-line-number ((,c :inherit alect-line-number))))
 
        ;; VARIABLES
        `((ansi-color-names-vector
@@ -2034,12 +2069,11 @@ OVERRIDING list, add new faces from OVERRIDING list, and return the
 resulting list.
 
 This function is destructive: ORIGINAL list may not stay the same."
-  (mapc (lambda (face)
-          (let ((orig-face (assoc (car face) original)))
-            (and orig-face
-                 (setq original (delete orig-face original)))
-            (add-to-list 'original face)))
-        overriding)
+  (dolist (face overriding)
+    (let ((orig-face (assoc (car face) original)))
+      (and orig-face
+           (setq original (delete orig-face original)))
+      (push face original)))
   original)
 
 (defcustom alect-ignored-faces nil
@@ -2085,8 +2119,8 @@ This function is destructive to ORIGINAL."
   (cond
    ((null ignored) original)
    ((eq t ignored) nil)
-   (t (cl-delete-if (lambda (elt) (memq (car elt) ignored))
-                    original))))
+   (t (seq-remove (lambda (elt) (memq (car elt) ignored))
+                  original))))
 
 (defmacro alect-create-theme (theme &optional invert)
   "Define and provide a color theme THEME.
@@ -2104,9 +2138,12 @@ For INVERT, see `alect-get-color'."
                        (cdr theme-vals) alect-ignored-variables)))
 
     `(progn
-       (deftheme ,theme-name ,(format "The %s color theme."
-                                      (concat (and invert "alternative ")
-                                              (symbol-name theme))))
+       (deftheme ,theme-name
+         ,(format "The %s color theme."
+                  (concat (and invert "alternative ")
+                          (symbol-name theme)))
+         :family 'alect
+         :background-mode ',theme)
        (apply 'custom-theme-set-variables ',theme-name ',theme-vars)
        (apply 'custom-theme-set-faces     ',theme-name ',theme-faces)
        (provide-theme ',theme-name))))

@@ -35,7 +35,7 @@
 (defcustom modus-vague-palette-overrides nil
   "Overrides for `modus-vague-palette'."
   :group 'modus-vague
-  :package-version '(modus-vague . "0.1.7")
+  :package-version '(modus-vague . "0.2.0")
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
@@ -103,6 +103,7 @@
 
      ;; Visual text
      (fg-region unspecified)
+     (bg-region graphite)
 
      ;; Mail (GNUS, mu4e, notmuch)
      (mail-cite-0 yellow)
@@ -145,11 +146,11 @@
     `(git-commit-summary ((,c :inherit bold :foreground ,iris)))
     `(tab-bar-tab-inactive ((,c :foreground ,gray)))
     `(font-lock-type-face ((,c :weight normal :foreground ,green)))
-    `(font-lock-variable-name-face ((,c :foreground ,peach)))
+    `(font-lock-function-name-face ((,c :foreground ,peach)))
+    `(compilation-info ((,c :weight bold :foreground ,gold)))
     `(org-scheduled-previously ((,c :foreground ,peach))))
   "Custom faces overriding the default faces of Modus themes.")
 
-;;;###autoload
 (modus-themes-theme
  'modus-vague
  'modus-vague

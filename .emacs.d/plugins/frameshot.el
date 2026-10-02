@@ -6,10 +6,10 @@
 ;; Homepage: https://github.com/tarsius/frameshot
 ;; Keywords: multimedia
 
-;; Package-Version: 1.2.2
+;; Package-Version: 1.2.3
 ;; Package-Requires: (
 ;;     (emacs  "28.1")
-;;     (compat "31.0"))
+;;     (compat "31.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -35,14 +35,12 @@
 
 ;; This package optionally uses the `import' and `convert' binaries
 ;; from the `imagemagick' package.  By default `import' isn't used
-;; to take screenshots but if you want to add a drop shadow, then
+;; to take screenshots, but if you want to add a drop shadow, then
 ;; `convert' is required.
 
 ;;; Code:
 
 (require 'compat)
-
-(eval-when-compile (require 'subr-x))
 
 (defgroup frameshot nil
   "Take screenshots of a frame."

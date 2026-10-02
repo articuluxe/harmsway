@@ -180,18 +180,18 @@
    `(which-func ((,jacaranda-class (:foreground ,jacaranda-white))))
 
    ;; tab-bar
-   `(tab-bar ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :weight bold))))
    `(tab-bar-tab ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :weight bold))))
    `(tab-line-tab ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,jacaranda-class (:foreground ,jacaranda-orange :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,jacaranda-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,jacaranda-class (:foreground ,jacaranda-orange :weight bold))))
+   `(tab-line-tab-special ((,jacaranda-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-bell))))
@@ -279,6 +279,7 @@
 
    ;; custom-button
    `(custom-button ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

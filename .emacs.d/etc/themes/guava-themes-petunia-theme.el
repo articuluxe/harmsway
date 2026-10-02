@@ -179,18 +179,18 @@
    `(which-func ((,petunia-class (:foreground ,petunia-white))))
 
    ;; tab-bar
-   `(tab-bar ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :weight bold))))
    `(tab-bar-tab ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :weight bold))))
    `(tab-line-tab ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,petunia-class (:foreground ,petunia-light-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,petunia-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,petunia-class (:foreground ,petunia-light-blue :weight bold))))
+   `(tab-line-tab-special ((,petunia-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,petunia-class (:foreground ,petunia-black :background ,petunia-bell))))
@@ -278,6 +278,7 @@
 
    ;; custom-button
    `(custom-button ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

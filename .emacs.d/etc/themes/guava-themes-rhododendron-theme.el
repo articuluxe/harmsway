@@ -183,18 +183,18 @@
    `(which-func ((,rhododendron-class (:foreground ,rhododendron-white))))
 
    ;; tab-bar
-   `(tab-bar ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold))))
    `(tab-bar-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold))))
    `(tab-line-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,rhododendron-class (:foreground ,rhododendron-purple-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,rhododendron-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,rhododendron-class (:foreground ,rhododendron-purple-blue :weight bold))))
+   `(tab-line-tab-special ((,rhododendron-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,rhododendron-class (:foreground ,rhododendron-black :background ,rhododendron-bell))))
@@ -282,6 +282,7 @@
 
    ;; custom-button
    `(custom-button ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

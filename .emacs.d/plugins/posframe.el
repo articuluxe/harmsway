@@ -760,7 +760,8 @@ ACCEPT-FOCUS."
                        (width . 1)
                        (height . 1)
                        (no-special-glyphs . t)
-                       (skip-taskbar . t)
+                       ,(unless parent-frame
+                          (cons 'skip-taskbar t))
                        (inhibit-double-buffering . ,posframe-inhibit-double-buffering)
                        ;; Do not save child-frame when use desktop.el
                        (desktop-dont-save . t))))
@@ -813,18 +814,22 @@ ACCEPT-FOCUS."
 
 (defun posframe--find-existing-posframe (buffer &optional last-args)
   "Find existing posframe with BUFFER and LAST-ARGS."
-  (let ((posframe
-         (cl-find-if
-          (lambda (frame)
-            (let* ((buffer-info (frame-parameter frame 'posframe-buffer))
-                   (buffer-equal-p
-                    (or (equal (buffer-name buffer) (car buffer-info))
-                        (equal buffer (cdr buffer-info)))))
-              (if last-args
-                  (and buffer-equal-p
-                       (equal last-args (frame-parameter frame 'last-args)))
-                buffer-equal-p)))
-          (frame-list))))
+  (let* ((selected-terminal (frame-terminal))
+         (posframe
+          (cl-find-if
+           (lambda (frame)
+             (let* ((buffer-info (frame-parameter frame 'posframe-buffer))
+                    (buffer-equal-p
+                     (or (equal (buffer-name buffer) (car buffer-info))
+                         (equal buffer (cdr buffer-info))))
+                    (terminal-equal-p
+                     (eq (frame-terminal frame) selected-terminal)))
+               (if last-args
+                   (and buffer-equal-p
+                        terminal-equal-p
+                        (equal last-args (frame-parameter frame 'last-args)))
+                 (and buffer-equal-p terminal-equal-p))))
+           (frame-list))))
     (when posframe
       (set-frame-parameter posframe 'existing-posframe t))
     posframe))

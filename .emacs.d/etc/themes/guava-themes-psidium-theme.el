@@ -178,18 +178,18 @@
    `(which-func ((,psidium-class (:foreground ,psidium-white))))
 
    ;; tab-bar
-   `(tab-bar ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :weight bold))))
    `(tab-bar-tab ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :weight bold))))
    `(tab-line-tab ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,psidium-class (:foreground ,psidium-deep-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,psidium-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,psidium-class (:foreground ,psidium-deep-blue :weight bold))))
+   `(tab-line-tab-special ((,psidium-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,psidium-class (:foreground ,psidium-black :background ,psidium-bell))))
@@ -277,6 +277,7 @@
 
    ;; custom-button
    `(custom-button ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

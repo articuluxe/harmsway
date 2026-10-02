@@ -185,18 +185,18 @@
    `(which-func ((,ceiba-class (:foreground ,ceiba-white))))
 
    ;; tab-bar
-   `(tab-bar ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :weight bold))))
    `(tab-bar-tab ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :weight bold))))
    `(tab-line-tab ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,ceiba-class (:foreground ,ceiba-purple-red :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,ceiba-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,ceiba-class (:foreground ,ceiba-purple-red :weight bold))))
+   `(tab-line-tab-special ((,ceiba-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-bell))))
@@ -284,6 +284,7 @@
 
    ;; custom-button
    `(custom-button ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

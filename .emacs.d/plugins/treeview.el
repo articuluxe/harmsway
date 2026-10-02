@@ -1,11 +1,11 @@
 ;;; treeview.el --- A generic tree navigation library -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2024 Tilman Rassy
+;; Copyright (C) 2018-2026 Tilman Rassy
 
 ;; Author: Tilman Rassy <tilman.rassy@googlemail.com>
 ;; URL: https://github.com/tilmanrassy/emacs-treeview
-;; Version: 1.3.1
-;; Package-Requires: ((emacs "25.1"))
+;; Version: 1.4.0
+;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: lisp, tools, internal, convenience
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -80,6 +80,9 @@
 ;;   icon-overlay
 ;;          The overlay containing the node icon
 ;;
+;;   search-overlay
+;;          The overlay containing the matched part in the current search
+;;
 ;;   start  A marker at the position where the node begins
 ;;
 ;;   end    A marker at the position where the node ends
@@ -88,6 +91,15 @@
 ;;
 ;;   selected
 ;;          Whether the node is selected (non-nil if selected, nil if not)
+;;
+;;   search-matched
+;;          Whether the node matches the current search.
+;;
+;;   search-previous-node
+;;          The next matching node in the current search.
+;;
+;;   search-next-node
+;;          The previous matching node in the current search.
 ;;
 ;; Node states: Each node is in exactly one of three states, which are represented by the
 ;; following Lisp symbols:
@@ -126,9 +138,12 @@
 ;;   treeview-get-control-mouse-face-function
 ;;   treeview-get-selected-node-face-function
 ;;   treeview-get-highlighted-node-face-function
+;;   treeview-get-search-match-face-function
+;;   treeview-get-search-selected-face-function
 ;;   treeview-get-label-keymap-function
 ;;   treeview-get-label-face-function
 ;;   treeview-get-label-mouse-face-function
+;;   treeview-add-more-node-components-function
 ;;   treeview-get-icon-keymap-function
 ;;   treeview-get-icon-face-function
 ;;   treeview-get-icon-mouse-face-function
@@ -424,6 +439,11 @@ The default implementation is `treeview-return-nil'.")
 
 (make-variable-buffer-local 'treeview-get-label-function)
 
+(defun treeview-get-label (node)
+  "Return the label of NODE.
+Simply calls `treeview-get-label-function' for NODE."
+  (funcall treeview-get-label-function node))
+
 (defvar treeview-get-label-margin-left-function 'treeview-return-nil
   "Function to create the left margin of a node label.
 Called with one argument, the node.  The return value is inserted with
@@ -497,6 +517,25 @@ The default implementation is `treeview-return-nil'.")
 
 (make-variable-buffer-local 'treeview-get-highlighted-node-face-function)
 
+(defvar treeview-get-search-match-face-function 'treeview-return-nil
+  "Function to get the face to highlighted a search match.
+Called with one argument, the node.  The return value must be a face or nil.
+If a face, it is used to highlight the matched part.
+
+The default implementation is `treeview-return-nil'.")
+
+(make-variable-buffer-local 'treeview-get-search-match-face-function)
+
+(defvar treeview-get-search-selected-face-function 'treeview-return-nil
+  "Function to get the face to highlighted a the selected search result.
+Called with one argument, the node.  The return value must be a face or nil.
+If a face, it is used to highlight the matched part of the selected search
+ result.
+
+The default implementation is `treeview-return-nil'.")
+
+(make-variable-buffer-local 'treeview-get-search-selected-face-function)
+
 (defvar treeview-get-label-keymap-function 'treeview-return-nil
   "Function to get the keymap of the label of a node.
 Called with one argument, the node.  The return value is passed as the KEYMAP
@@ -526,6 +565,14 @@ return value must be a face or nil.
 The default implementation is `treeview-return-nil'.")
 
 (make-variable-buffer-local 'treeview-get-label-mouse-face-function)
+
+(defvar treeview-add-more-node-components-function 'treeview-do-nothing
+  "Function to add application-specific node components.
+Called from `treeview-render-node' after the last standard node component, the
+label, has been created.  The node under construction is passed as an argument.
+Intended to add additional node components.  Default is `treeview-do-nothing'.")
+
+(make-variable-buffer-local 'treeview-add-more-node-components-function)
 
 (defvar treeview-get-icon-keymap-function 'treeview-return-nil
   "Function to get the keymap of the icon of a node.
@@ -577,6 +624,18 @@ node."
   (let ( (nodes ()) )
     (treeview-for-each-node (lambda (node) (when (funcall filter node) (push node nodes))))
     nodes))
+
+(defun treeview-get-visible-nodes (&optional node)
+  "Return NODE and all descendents which are visible if NODE is visible, as a list.
+Thus, the returned list contains NODE, and all descendents of NODE for which all
+anchestors up to and including NODE are expanded.  NODE defaults to the root
+node."
+  (unless node (setq node (treeview-get-root-node)))
+  (let ( (visible-nodes (list node)) )
+    (when (treeview-node-expanded-p node)
+      (dolist (child (treeview-get-node-children node))
+        (setq visible-nodes (append visible-nodes (treeview-get-visible-nodes child))) ))
+    visible-nodes))
 
 (defun treeview-get-node-at-pos (pos)
   "Return the node at the buffer position POS.
@@ -714,7 +773,7 @@ the return value is the list (FACE-TO-ADD FACE1 FACE2 ...)."
 (defun treeview-remove-face (base-face face-to-remove)
   "Remove FACE-TO-REMOVE from BASE-FACE.
 
-This is an auxiliary function to modify face (or face lists) of overlays.
+This is an auxiliary function to modify the face (or face lists) of overlays.
 BASE-FACE should be a face or a list of faces.  FACE-TO-REMOVE should be a face.
 
 If BASE-FACE is a list of faces, it is checked if FACE-TO-REMOVE is a member.
@@ -736,7 +795,7 @@ than FACE-TO-REMOVE, BASE-FACE is returned unchecnged."
     base-face)
 
 (defun treeview-add-node-label-face (node face-to-add)
-  "Add FACE-TO-ADD the the face of the label of NODE.
+  "Add FACE-TO-ADD to the face of the label of NODE.
 FACE-TO-ADD is added to the face(s) of the overlay of NODE by means of
 `'treeview-add-face."
   (let* ( (label-overlay (treeview-get-node-prop node 'label-overlay))
@@ -833,6 +892,8 @@ This is an auxiliary function used in `treeview-display-node'."
     (setq label-overlay
           (treeview-make-node-component-overlay node label-content label-keymap label-face label-mouse-face))
     (treeview-set-node-prop node 'label-overlay label-overlay)
+    ;; Additional components, if any.
+    (funcall treeview-add-more-node-components-function node)
     ;; Node line:
     (setq node-line-overlay (treeview-make-node-line-overlay node start (point)))
     (treeview-set-node-prop node 'node-line-overlay node-line-overlay)
@@ -1371,6 +1432,177 @@ If there is no highlightwd node, does nothing."
   (treeview-unhighlight-node)
   (treeview-add-node-label-face node (funcall treeview-get-highlighted-node-face-function node))
   (setq treeview-highlighted-node node))
+
+(defvar treeview-search-data nil
+  "Internal auxiliary variable, stores data while `treeview-search' is in action.
+When `treeview-search' is not running, the variable is always nil.
+When `treeview-search' is running, the variable is a property list with Lisp
+symbols as keys.  It contains the following properties:
+
+  buffer         The Treeview buffer in which the search is made
+  visible-nodes  The visible nodes in the Treeview buffer, as a list
+  selected-node  The currently selected node
+  
+When there is no currently selected node, the latter is missing or nil.")
+
+(defun treeview-search-data-get (key)
+  "Return the value of KEY in `treeview-search-data'.
+If KEY is not present in `treeview-search-data', returns nil."
+  (plist-get treeview-search-data key))
+
+(defun treeview-search-data-set (key value)
+  "Set the value of KEY to VALUE in `treeview-search-data'."
+  (setq treeview-search-data (plist-put treeview-search-data key value)))
+
+(defun treeview-search-unmark-node (node)
+  "Un-mark NODE as a search match.
+If NODE is a search match, all search-related node properties are removed, so
+that NODE is not a search match any more.  In particular, NODE is no longer
+highlighted as a match, since the search overlay with its particular face is
+removed as well.
+
+If NODE is not a search match, the function has no effect."
+  (let ( (trv-search-overlay (treeview-get-node-prop node 'search-overlay)) )
+    (when trv-search-overlay
+      (treeview-set-node-prop node 'search-overlay nil)
+      (treeview-set-node-prop node 'search-matched nil)
+      (treeview-set-node-prop node 'search-previous-node nil)
+      (treeview-set-node-prop node 'search-next-node nil)
+      (delete-overlay trv-search-overlay) )) )
+ 
+(defun treeview-search-clear ()
+  "Remove all markings of nodes as search matches.
+Simply calls `treeview-search-unmark-node' for each node.  The effect is that
+no nodes are marked as search matches, so the search is cleared."
+  (treeview-for-each-node 'treeview-search-unmark-node))
+
+(defun treeview-search-set-point (pos)
+  "Move point to POS in the window of the current buffer (auxiliary function).
+This function exists because it's not enough to move the point with `goto-char'.
+In addition, `set-window-point' must be called with the window of the current
+buffer and the new position POS.  Otherwise, Emacs might not scroll to the new
+position if the latter is outside the visible area of the window.  There may be
+multiple windows displaying the current buffer.  This function uses the window
+returned by `get-buffer-window'.  If that is nil, the call to `set-window-point'
+is suppressed."
+  (let ( (window (get-buffer-window)) )
+    (goto-char pos)
+    (when window (set-window-point window pos)) ))
+
+(defun treeview-search-update (text)
+  "Update the search according to the search text TEXT.
+Previous search matches are cleared.  All visible nodes are checked for a match.
+A match exists if, and only if, the node label contains TEXT.  All matching
+nodes are marked as such be setting the corresponding properties.  The first
+matching node at or after point, if exists, becomes the new selected node.  It
+is highlighted specially, and point is moved to it."
+  (if (= (length text) 0)
+      (dolist (node (treeview-search-data-get 'visible-nodes))
+        (treeview-search-unmark-node node))
+    (let ( (pos (point)) sel-node first-node prev-node )
+      (dolist (node (treeview-search-data-get 'visible-nodes))
+        (treeview-search-unmark-node node)
+        (let ( (label-overlay (treeview-get-node-prop node 'label-overlay)) )
+          (goto-char (overlay-start label-overlay))
+          (when (search-forward text (overlay-end label-overlay) t)
+            (let* ( (start (match-beginning 0))
+                    (end (match-end 0))
+                    (overlay (make-overlay start end)) )
+              (overlay-put overlay 'treeview t)
+              (overlay-put overlay 'treeview-node node)
+              (overlay-put overlay 'priority 400)
+              (overlay-put overlay 'face (funcall treeview-get-search-match-face-function node))
+              (treeview-set-node-prop node 'search-overlay overlay)
+              (treeview-set-node-prop node 'search-matched t)
+              (unless first-node (setq first-node node))
+              (when prev-node
+                (treeview-set-node-prop node 'search-previous-node prev-node)
+                (treeview-set-node-prop prev-node 'search-next-node node))
+              (when (and (not sel-node) (<= pos start))
+                (setq sel-node node))
+              (setq prev-node node) ))))
+      (unless sel-node (setq sel-node first-node))
+      (when sel-node
+        (let ( (overlay (treeview-get-node-prop sel-node 'search-overlay)) )
+          (overlay-put overlay 'face (funcall treeview-get-search-selected-face-function sel-node))
+          (treeview-search-set-point (overlay-start overlay))
+          (treeview-search-data-set 'selected-node sel-node) )))) )
+
+(defun treeview-search-after-change (&rest _any)
+  "Call `treeview-search-update' with the current minibuffer contents as argument.
+The function is called from the `after-change-functions' hook in the minibuffer
+when reading the serach string.  It guaranties that the search results displayed
+in the treeview buffer always reflect what the user has typed.  The function is
+executed in the minibuffer, but it calls `treeview-search-update' with the
+treeview buffer as the current buffer."
+  (let ( (search-text (minibuffer-contents-no-properties)) )
+    (with-current-buffer (treeview-search-data-get 'buffer)
+      (treeview-search-update search-text) )) )
+
+(defun treeview-search-to-next-match ()
+  "Move point to the next search match.
+Th next match becomes the new selected match.  If there is no next match, does
+nothing."
+  (interactive)
+  (with-current-buffer (treeview-search-data-get 'buffer)
+    (let ( (sel-node (treeview-search-data-get 'selected-node)) )
+      (when sel-node
+        (let ( (next-node (treeview-get-node-prop sel-node 'search-next-node)) )
+          (when next-node
+            (let ( (sel-overlay (treeview-get-node-prop sel-node 'search-overlay))
+                   (next-overlay (treeview-get-node-prop next-node 'search-overlay)) )
+              (overlay-put sel-overlay 'face (funcall treeview-get-search-match-face-function sel-node))
+              (overlay-put next-overlay 'face (funcall treeview-get-search-selected-face-function next-node))
+              (treeview-search-set-point (overlay-start next-overlay))
+              (treeview-search-data-set 'selected-node next-node) )))))) )
+
+(defun treeview-search-to-previous-match ()
+  "Move point to the previous search match.
+Th previous match becomes the new selected match.  If there is no previous
+match, does nothing."
+  (interactive)
+  (with-current-buffer (treeview-search-data-get 'buffer)
+    (let ( (sel-node (treeview-search-data-get 'selected-node)) )
+      (when sel-node
+        (let ( (prev-node (treeview-get-node-prop sel-node 'search-previous-node)) )
+          (when prev-node
+            (let ( (sel-overlay (treeview-get-node-prop sel-node 'search-overlay))
+                   (prev-overlay (treeview-get-node-prop prev-node 'search-overlay)) )
+              (overlay-put sel-overlay 'face (funcall treeview-get-search-match-face-function sel-node))
+              (overlay-put prev-overlay 'face (funcall treeview-get-search-selected-face-function prev-node))
+              (treeview-search-set-point (overlay-start prev-overlay))
+              (treeview-search-data-set 'selected-node prev-node) )))))) )
+
+(defun treeview-search ()
+  "Search for a visible node by label.
+Does an incremental search, like command `isearch-forward'.  As the user types,
+the matching nodes are highlighted; and point is moved to the next matching node
+\(if any), which is highlighted specially.  A node matches if (and only if) its
+label starts with the text the user typed in the minibuffer so far.  <up> and
+<down> jump to the previous or next match, respectively.  TAB provides completion.
+RET ends the search with the current match."
+  (interactive)
+  (when treeview-search-data
+    (with-current-buffer (treeview-search-data-get 'buffer) (treeview-search-clear))
+    (setq treeview-search-data nil))
+  (let* ( (visible-nodes (treeview-get-visible-nodes))
+          (completions (delete-dups (seq-map 'treeview-get-label visible-nodes)))
+          (keymap (define-keymap :parent minibuffer-local-completion-map
+                    "<up>" #'treeview-search-to-previous-match
+                    "<down>" #'treeview-search-to-next-match)) )
+    (treeview-search-data-set 'buffer (current-buffer))
+    (treeview-search-data-set 'visible-nodes visible-nodes)
+    (unwind-protect
+        (minibuffer-with-setup-hook
+            #'(lambda ()
+                (add-hook 'after-change-functions 'treeview-search-after-change nil t)
+                (use-local-map keymap)
+                (setq-local completion-styles '(substring)) )
+          (completing-read "Search node: " completions) )
+      (treeview-search-clear))
+    (let ( (sel-node (treeview-search-data-get 'selected-node)) )
+      (when sel-node (treeview-place-point-in-node sel-node)))
+    (setq treeview-search-data nil) ) )
 
 (defun treeview-make-keymap (key-table)
   "Create and return a keymap from KEY-TABLE.

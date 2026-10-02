@@ -1,6 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 ;; It's a shadowy dusk here, and I am merely mortal.
 ;; a theme wherein we play with the hct colorspace
+;; somewhat lower contrast than the other myron-themes at this time
 
 (require 'myron-themes)
 
@@ -19,7 +20,9 @@
                (+ og-hue o)
                (+ og-hue 180)
                (+ og-hue o 180)))
-           (contrast-boost 0.7))
+           (contrast-boost 0.7)
+           ;; (contrast-boost 1.2)
+           )
 
     (when print?
       ;; visualize
@@ -37,7 +40,7 @@
     ;; "#d3cdff"
     (->> (list
            ;; contrast hue chroma
-           :foreground  4.0  a 7
+           :foreground  4.5  a 7
            :assumed     4.0  c 40
            :alt         3.5  b 20
            :primary     3.0  a 100
@@ -58,24 +61,54 @@
   "Create the colors for the mortal theme."
   (-let* (
            ;; (ct-rotation-hct 12 "#fbe6e1")
-           (seed "#fbe6e1")
+           (seed
+             ;; original, colors tailored for this specifically
+             "#fbe6e1"
+
+             ;; ------
+             ;; "#e4eceb"
+             ;; "#eae9f2"
+             ;; "#e7ece1"
+             ;; "#f8e6ea"
+
+             ;; seeds derived from other themes
+             ;; "#eeeeee" ; myron-grayscale
+             ;; "#d2cecb" ; myron-kobo
+
+             )
 
            ;; the seed origin. uncomment to randomize, but results vary (often bad)
-           ;; (seed (ns/random-list (ct-rotation-hct 12 "#fbe6e1")))
+           ;; (seed (ns/random-list (ct-rotation-hct 48 "#fbe6e1")))
+
+           ;; "cool" backgrounds
+           ;; (seed (->> (ct-rotation-hct 48 "#fbe6e1")
+           ;;         (--remove (< (ct-warmth it) 0))
+           ;;         (ns/random-list)))
+
+           ;; (seed (or mortal-oneshot-seed seed))
 
            ;; (b seed)
            ;; (b (ct-edit-hct-t-inc seed 2))
 
-           (b (ct-edit-hct-t-inc seed 1.6))
-           (b> (ct-aedit-hct seed  (list h (* 1.5 c) (- tt 5))))
-           (b>> (ct-aedit-hct seed (list h (* 2 c)   (- tt 8))))
-           (b+ (-> b>
-                 (ct-complement-hct)
-                 (ct-edit-hct-c 25)
-                 ;; this clamp allows tampering with b value for future me
-                 (ct-contrast-min b 1.1863))))
+           ;; (seed (or (when (buon) ns/mortal-override-seed) seed))
+
+           (b   (ct-edit-hct-t-inc seed 1.6))
+           (b>  (ct-aedit-hct seed (list h (* c 1.5) (- tt 5))))
+           (b>> (ct-aedit-hct seed (list h (* c 2)   (- tt 8))))
+           (b+  (-> b>
+                  (ct-complement-hct)
+                  (ct-edit-hct-c 25)
+
+                  ((lambda (c)
+                     (if (string= seed "#fbe6e1") c
+                       ;; better default for alt-seeds
+                       (ct-edit-hct-t-inc c 7))))
+
+                  ;; this clamp allows tampering with b value for future me
+                  (ct-contrast-min b 1.1863))))
     (ht<-plist
       (list
+        :mortal-seed seed
         :focused (myron-mortal-colors b+)
         :normal  (myron-mortal-colors b)
         :weak    (myron-mortal-colors b>)

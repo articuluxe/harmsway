@@ -22,9 +22,6 @@
 ;;; Commentary:
 
 ;;; Code:
-(eval-when-compile
-  (setq-local byte-compile-warnings '(not docstrings)))
-
 (require 's)
 (require 'aio)
 (require 'dash)
@@ -69,13 +66,11 @@ and FLIP is a boolean to specify the sort order."
     (:name "Size" :width 10 :template "{{ json .Size }}" :sort docker-utils-human-size-predicate :format nil))
   "Column specification for docker images.
 
-The order of entries defines the displayed column order.
-'Template' is the Go template passed to `docker-image-ls' to create the column
-data.   It should return a string delimited with double quotes.
-'Sort function' is a binary predicate that should return true when the first
-argument should be sorted before the second.
-'Format function' is a function from string to string that transforms the
-displayed values in the column."
+The order of entries defines the displayed column order.  Template is the Go
+template passed to `docker-image-ls' to create the column data; it should
+return a string delimited with double quotes.  Sort function is a binary
+predicate returning non-nil when the first argument sorts before the second.
+Format function transforms the displayed value from string to string."
   :group 'docker-image
   :set 'docker-utils-columns-setter
   :get 'docker-utils-columns-getter
@@ -113,13 +108,11 @@ and FLIP is a boolean to specify the sort order."
     (:name "Comment" :width 20 :template "{{ json .Comment }}" :sort nil :format nil))
   "Column specification for docker image history.
 
-The order of entries defines the displayed column order.
-'Template' is the Go template passed to `docker-image-history' to create the column
-data.   It should return a string delimited with double quotes.
-'Sort function' is a binary predicate that should return true when the first
-argument should be sorted before the second.
-'Format function' is a function from string to string that transforms the
-displayed values in the column."
+The order of entries defines the displayed column order.  Template is the Go
+template passed to `docker-image-history' to create the column data; it should
+return a string delimited with double quotes.  Sort function is a binary
+predicate returning non-nil when the first argument sorts before the second.
+Format function transforms the displayed value from string to string."
   :group 'docker-image
   :set 'docker-utils-columns-setter
   :get 'docker-utils-columns-getter
@@ -147,7 +140,8 @@ Its elements should be of the form (REGEX ARGS) where
 REGEX is a (string) regular expression and ARGS is a list of strings
 corresponding to arguments.
 
-Also note if you do not specify `docker-image-run-default-args', they will be ignored."
+Note that they are ignored unless `docker-image-run-default-args' is also
+set."
   :group 'docker-image
   :type '(repeat (list string (repeat string))))
 
@@ -179,19 +173,19 @@ be the list (repository tag id).  See `docker-image-id-template'."
         (dangling (aio-await (docker-image-entries args "--filter dangling=true"))))
     (--map-when (-contains? dangling it) (docker-image-entry-set-dangling it) entries)))
 
-(defun docker-image-dangling-p (entry-id)           ;
-  "Predicate for if ENTRY-ID is dangling.
+(defun docker-image-dangling-p (entry-id)
+  "Return non-nil when ENTRY-ID is dangling.
 
-For example (docker-image-dangling-p (tabulated-list-get-id)) is t when the entry under point is dangling."
+For example (docker-image-dangling-p (tabulated-list-get-id)) is non-nil when
+the entry under point is dangling."
   (get-text-property 0 'docker-image-dangling entry-id))
 
 (defun docker-image-entry-set-dangling (entry)
   "Mark ENTRY (output of `docker-image-entries') as dangling.
 
-The result is the tabulated list id for an entry is propertized with
-'docker-image-dangling and the entry is fontified with 'docker-face-dangling."
-  (list (propertize (car entry) 'docker-image-dangling t)
-        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-dangling) (cadr entry)))))
+The tabulated list id is propertized with the docker-image-dangling property
+and the entry is fontified with the docker-face-dangling face."
+  (docker-utils-entry-set-property entry 'docker-image-dangling 'docker-face-dangling))
 
 (aio-defun docker-image-update-status-async ()
   "Write the status to `docker-status-strings'."
@@ -215,7 +209,7 @@ The result is the tabulated list id for an entry is propertized with
 
 (defun docker-image-read-name ()
   "Read an image name."
-  (completing-read "Image: " (-map #'car (aio-wait-for (docker-image-entries)))))
+  (docker-utils-completing-read "Image: " (-map #'car (aio-wait-for (docker-image-entries))) 'docker-image-name))
 
 (defvar-local docker-image-history-image nil
   "Image name used by the current history buffer.")
@@ -236,7 +230,7 @@ The result is the tabulated list id for an entry is propertized with
    (apply #'docker-image-history-entries docker-image-history-image docker-image-history-args)))
 
 (defun docker-image-history-show (image &optional args)
-  "Display history for IMAGE."
+  "Display the history of IMAGE, passing ARGS to \"docker image history\"."
   (let ((buffer (docker-utils-generate-new-buffer "docker-image-history" image)))
     (with-current-buffer buffer
       (docker-image-history-mode)
@@ -262,7 +256,7 @@ The result is the tabulated list id for an entry is propertized with
 
 (defun docker-image-run-selection (command)
   "Run \"docker image run\" with COMMAND on the images selection."
-  (interactive "sCommand: ")
+  (interactive (list (docker-utils-read-string "Command: " 'docker-container-command)))
   (docker-utils-ensure-items)
   (--each (docker-utils-get-marked-items-ids)
     (docker-run-docker-async-with-buffer-interactive "container" "run" (transient-args 'docker-image-run) it command)))
@@ -272,29 +266,23 @@ The result is the tabulated list id for an entry is propertized with
   (interactive)
   (docker-utils-ensure-items)
   (let* ((ids (docker-utils-get-marked-items-ids))
-         (promises (--map (docker-run-docker-async "tag" it (read-string (format "Tag for %s: " it))) ids)))
+         (promises (--map (docker-run-docker-async "tag" it (docker-utils-read-string (format "Tag for %s: " it) 'docker-image-tag)) ids)))
     (aio-await (aio-all promises))
     (tablist-revert)))
 
 (defun docker-image-mark-dangling ()
-  "Mark only the dangling images listed in *docker-images*.
-
-This clears any user marks first and respects any tablist filters
-applied to the buffer."
+  "Mark only the dangling images listed in the current buffer."
   (interactive)
-  (switch-to-buffer "*docker-images*")
-  (tablist-unmark-all-marks)
-  (save-excursion
-    (goto-char (point-min))
-    (while (not (eobp))
-      (when (docker-image-dangling-p (tabulated-list-get-id))
-        (tablist-put-mark))
-      (forward-line))))
+  (unless (derived-mode-p 'docker-image-mode)
+    (user-error "Not in a docker images buffer"))
+  (docker-utils-mark-dangling #'docker-image-dangling-p))
 
 (aio-defun docker-image-default-runtime ()
+  "Return a promise with the default runtime reported by docker."
   (s-trim (aio-await (docker-run-docker-async "info" "-f" "{{.DefaultRuntime}}"))))
 
 (aio-defun docker-image-runtimes ()
+  "Return a promise with the available runtimes, the default one first."
   (let ((default (aio-await (docker-image-default-runtime))))
     (--> (docker-run-docker-async "info" "-f" "'{{range $name, $_ := .Runtimes}}{{println $name}}{{end}}'")
          aio-await
@@ -305,7 +293,8 @@ applied to the buffer."
          (remove default it)
          (cons default it))))
 
-(defun docker-image-read-runtime (prompt &rest _)
+(defun docker-image-read-runtime (prompt initial-input history)
+  "Read a docker runtime using PROMPT, INITIAL-INPUT and HISTORY."
   (completing-read prompt
                    (let ((runtimes (aio-wait-for (docker-image-runtimes))))
                      ;; Complete with the runtimes in the order given by
@@ -321,7 +310,9 @@ applied to the buffer."
                              (cycle-sort-function . identity))
                          (complete-with-action action runtimes string predicate))))
                    nil
-                   t))
+                   t
+                   initial-input
+                   history))
 
 (docker-utils-define-transient-arguments docker-image-ls)
 
@@ -330,13 +321,11 @@ applied to the buffer."
   :man-page "docker-image-ls"
   ["Arguments"
    ("a" "All" "--all")
-   ("d" "Dangling" "--filter dangling=true")
-   ("f" "Filter" "--filter " read-string)
+   ("d" "Dangling" "--filter=dangling=true")
+   ("f" "Filter" "--filter " :class docker-option :multi-value repeat :history-key docker-image-filter)
    ("n" "Don't truncate" "--no-trunc")]
   ["Actions"
    ("l" "List" tablist-revert)])
-
-(docker-utils-define-transient-arguments docker-image-history)
 
 (docker-utils-transient-define-prefix docker-image-history ()
   "Transient for showing image history."
@@ -374,7 +363,9 @@ applied to the buffer."
 (defclass docker-image-run-prefix (transient-prefix) nil)
 
 (cl-defmethod transient-init-value ((obj docker-image-run-prefix))
-  "Helper that modify OBJ DOCKER-IMAGE-RUN-PREFIX to handle `docker-image-run-custom-args'."
+  "Set the OBJ value from the docker run arguments.
+
+See `docker-image-run-default-args' and `docker-image-run-custom-args'."
   (oset obj value
         (docker-utils-compute-args docker-image-run-default-args docker-image-run-custom-args)))
 
@@ -383,27 +374,27 @@ applied to the buffer."
   :man-page "docker-image-run"
   :class 'docker-image-run-prefix
   ["Arguments"
-   ("D" "With display" "-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY")
-   ("M" "Mount volume" "--mount " read-string)
-   ("N" "Network" "--network " read-string)
+   ("D" "With display" "-v=/tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY")
+   ("M" "Mount volume" "--mount " :class docker-option :multi-value repeat :history-key docker-container-mount)
+   ("N" "Network" "--network " :class docker-option :multi-value repeat :history-key docker-container-network)
    ("P" "Privileged" "--privileged")
-   ("T" "Synchronize time" "-v /etc/localtime:/etc/localtime:ro")
-   ("W" "Web ports" "-p 80:80 -p 443:443 -p 8080:8080")
+   ("T" "Synchronize time" "-v=/etc/localtime:/etc/localtime:ro")
+   ("W" "Web ports" "-p=80:80 -p=443:443 -p=8080:8080")
    ("d" "Detach" "-d")
-   ("e" "Environment" "-e " read-string)
-   ("f" "Platform" "--platform " read-string)
+   ("e" docker-option-env)
+   ("f" "Platform" "--platform " :class docker-option :history-key docker-container-platform)
    ("i" "Interactive" "-i")
-   ("l" "Link" "--link " read-string)
-   ("m" "Name" "--name " read-string)
-   ("n" "Entrypoint" "--entrypoint " read-string)
+   ("l" "Link" "--link " :class docker-option :multi-value repeat :history-key docker-container-link)
+   ("m" docker-option-name)
+   ("n" docker-option-entrypoint)
    ("o" "Read only" "--read-only")
-   ("p" "Port" "-p " read-string)
+   ("p" "Port" "-p " :class docker-option :multi-value repeat :history-key docker-container-port)
    ("r" "Remove container when it exits" "--rm")
    ("t" "TTY" "-t")
-   ("u" "User" "-u " read-string)
-   ("v" "Volume" "-v " read-string)
-   ("w" "Workdir" "-w " read-string)
-   ("x" "Runtime" "--runtime " docker-image-read-runtime)]
+   ("u" docker-option-user)
+   ("v" "Volume" "-v " :class docker-option :multi-value repeat :history-key docker-container-volume)
+   ("w" docker-option-workdir)
+   ("x" "Runtime" "--runtime " docker-image-read-runtime :class docker-option :history-key docker-container-runtime)]
   [:description docker-generic-action-description
    ("R" "Run" docker-image-run-selection)])
 

@@ -88,19 +88,33 @@ beginning of the buffer."
   :group 'forge
   :type 'natnum)
 
+(defcustom forge-browse-topics-using-forge t
+  "Whether to visit topic URLs using Forge.
+
+If non-nil, `bug-reference-push-button' (on a reference such as #521)
+and `browse-url' (on a supported topic url) visit the topic using a
+Forge buffer.  If the topic isn't known locally, it is visited using
+a browser anyway.  Invoke these commands with a prefix argument to
+force them to use a browser even when the topic is known."
+  :package-version '(forge . "0.7.0")
+  :group 'forge
+  :type 'boolean)
+
 (defcustom forge-bug-reference-hooks
   '(find-file-hook
     forge-post-mode-hook
     git-commit-setup-hook
-    magit-mode-hook)
+    magit-mode-hook
+    forge-notifications-mode-hook)
   "Hooks to which `forge-bug-reference-setup' is added.
 This variable has to be customized before `forge' is loaded."
-  :package-version '(forge . "0.2.0")
+  :package-version '(forge . "0.7.0")
   :group 'forge
   :options '(find-file-hook
              forge-post-mode-hook
              git-commit-setup-hook
-             magit-mode-hook)
+             magit-mode-hook
+             forge-notifications-mode-hook)
   :type '(list :convert-widget custom-hook-convert-widget))
 
 (defvar forge-format-avatar-function nil
@@ -722,7 +736,7 @@ the completion candidates can be selected.  If such a topic is selected,
 no topic ID can be returned.  Instead return an integer or the input.
 For a Github repository the input must be an integer, which is returned.
 For a Gitlab repository the input must have the form \"#N\" or \"!N\",
-(because here just an integer N would be ambiguous), which is returned
+\(because here just an integer N would be ambiguous), which is returned
 as a string."
   (forge--read-topic prompt
                      #'forge-current-topic
@@ -921,6 +935,8 @@ as a string."
 
 (defun forge--format-topic-line (topic &optional width)
   (concat
+   (string-pad (forge--format-topic-slug topic) (or width 6))
+   " "
    (and (or (and (derived-mode-p 'forge-notifications-mode)
                  (eq forge-notifications-display-style 'flat))
             (and (derived-mode-p 'forge-topics-mode)
@@ -931,8 +947,6 @@ as a string."
                  forge-topic-repository-slug-width
                  nil ?\s t)
                 " "))
-   (string-pad (forge--format-topic-slug topic) (or width 5))
-   " "
    (forge--format-topic-title topic)))
 
 (defun forge--format-topic-slug (topic)
@@ -1205,7 +1219,7 @@ of topics in a dedicated buffer."
 
 (defun forge--insert-topic (topic &optional width)
   (magit-insert-section ((eval (oref topic closql-table)) topic t)
-    (insert (forge--format-topic-line topic (or width 5)))
+    (insert (forge--format-topic-line topic width))
     (forge--insert-topic-marks topic t)
     (forge--insert-topic-labels topic t)
     (insert "\n")
@@ -2102,6 +2116,28 @@ When point is on the answer, then unmark it and mark no other."
     `((prompt . ,(propertize name 'face 'bold))
       (text   . ,(string-trim (buffer-str))))))
 
+;;; Browse-Url
+
+(defun forge--browse-url-handler-predicate (url)
+  (and-let* ((_ forge-browse-topics-using-forge)
+             (_ (not current-prefix-arg))
+             (_ (string-match "\
+/\\(issues\\|pull\\|discussions\\|merge_requests\\)/\\([0-9]+\\)\\'" url))
+             (number (string-to-number (match-string 2 url)))
+             (repo-url (substring url 0 (match-beginning 1)))
+             (repo (forge-get-repository repo-url nil :tracked?)))
+    ;; Unlike in `forge-visit-topic-from-url' this cannot fetch a
+    ;; missing topic first, because that is done asynchronously,
+    ;; and as a predicate, this needs an immediately answer.
+    (forge-get-topic repo number)))
+
+(defun forge--browse-url-handler (url _)
+  (forge-visit-topic-from-url url))
+
+(cl-pushnew (cons #'forge--browse-url-handler-predicate
+                  #'forge--browse-url-handler)
+            browse-url-default-handlers :test #'equal)
+
 ;;; Bug-Reference
 
 (defvar forge-bug-reference-remote-files t
@@ -2117,30 +2153,28 @@ modify `bug-reference-bug-regexp' if appropriate."
               (not (forge-db t))
               (and buffer-file-name
                    (not forge-bug-reference-remote-files)
-                   (file-remote-p buffer-file-name))
-              ;; TODO Allow use in these modes again.
-              (derived-mode-p 'forge-topics-mode 'forge-notifications-mode))
+                   (file-remote-p buffer-file-name)))
     (magit--with-safe-default-directory nil
       (when-let ((repo (forge-get-repository :tracked?)))
-        (when (derived-mode-p 'magit-status-mode
-                              'forge-notifications-mode)
-          (setq-local
-           bug-reference-auto-setup-functions
-           (let ((hook bug-reference-auto-setup-functions))
-             (list (lambda ()
-                     ;; HOOK is not allowed to be a lexical var:
-                     ;; (run-hook-with-args-until-success 'hook)
-                     (catch 'success
-                       (dolist (f hook)
-                         (when (funcall f)
-                           (setq bug-reference-bug-regexp
-                                 (concat "." bug-reference-bug-regexp))
-                           (throw 'success t)))))))))
         (if (derived-mode-p 'prog-mode)
             (bug-reference-prog-mode 1)
           (bug-reference-mode 1))
         (add-hook 'completion-at-point-functions
                   #'forge-topic-completion-at-point nil t)))))
+
+(put 'forge-bug-reference-setup 'safe-local-eval-function t)
+
+(define-advice bug-reference--run-auto-setup (:after () forge)
+  "Change regexp to ignore references at bol in certain Magit/Forge buffers.
+Such references can be visited using `forge-visit-this-topic' and should
+not be highlighted using the `link' face."
+  (when (and bug-reference-bug-regexp
+             (derived-mode-p 'magit-status-mode
+                             'forge-topics-mode
+                             'forge-notifications-mode)
+             (not (string-prefix-p "." bug-reference-bug-regexp)))
+    (setq-local bug-reference-bug-regexp
+                (concat "." bug-reference-bug-regexp))))
 
 (unless noninteractive
   (dolist (hook forge-bug-reference-hooks)

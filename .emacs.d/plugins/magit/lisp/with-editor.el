@@ -88,7 +88,6 @@
 (require 'llama)
 (require 'server)
 (require 'shell)
-(eval-when-compile (require 'subr-x))
 
 (declare-function dired-get-filename "dired"
                   (&optional localp no-error-if-not-filep))
@@ -435,10 +434,7 @@ And some tools that do not handle $EDITOR properly also break."
   ;; Manually enabling the mode is dangerous because canceling the buffer
   ;; deletes the visited file.  The mode must not be disabled manually,
   ;; either `with-editor-finish' or `with-editor-cancel' must be used.
-  :interactive nil                    ; >= 28.1
-  (when (called-interactively-p 'any) ; <  28.1
-    (setq with-editor-mode (not with-editor-mode))
-    (user-error "With-Editor mode is not intended for interactive use"))
+  :interactive nil
   ;; The buffer must also not be killed using regular kill commands.
   (add-hook 'kill-buffer-query-functions
             #'with-editor-kill-buffer-noop nil t)
@@ -827,7 +823,7 @@ This command can be used in `shell-mode', `term-mode', `eshell-mode',
                                (format " export EMACS_SERVER_FILE=%S" $))
          (eat-self-input 1 'return))
        (unless interactive
-         (eat-term-send-string eat-terminal "clear")
+         (eat-term-send-string eat-terminal " clear")
          (eat-self-input 1 'return)))))
   (message "Successfully exported %s" envvar))
 

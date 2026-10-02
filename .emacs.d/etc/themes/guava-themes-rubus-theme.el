@@ -183,18 +183,18 @@
    `(which-func ((,rubus-class (:foreground ,rubus-white))))
 
    ;; tab-bar
-   `(tab-bar ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :weight bold))))
    `(tab-bar-tab ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :weight bold))))
    `(tab-line-tab ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,rubus-class (:foreground ,rubus-purple :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,rubus-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,rubus-class (:foreground ,rubus-purple :weight bold))))
+   `(tab-line-tab-special ((,rubus-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,rubus-class (:foreground ,rubus-white :background ,rubus-bell))))
@@ -282,6 +282,7 @@
 
    ;; custom-button
    `(custom-button ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

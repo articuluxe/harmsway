@@ -10,7 +10,7 @@
 ;;      Serghei Iakovlev <sadhooklay@gmail.com>
 ;; Maintainer: jim
 ;; URL: https://github.com/xcwen/ac-php
-;; Version: 2.8.1
+;; Version: 2.8.2
 ;; Keywords: completion, convenience, intellisense
 ;; Package-Requires: ( (emacs "24.4") (dash "1") (php-mode "1") (s "1") (f "0.17.0") (popup "0.5.0") (xcscope "1.0"))
 ;; Compatibility: GNU Emacs: 24.4, 25.x, 26.x, 27.x
@@ -252,6 +252,20 @@ Meant for `ac-php-mode-line-project-status'")
 
 (defvar ac-php-prefix-str "")
 
+(defvar ac-php-extra-completion-functions nil
+  "Functions providing project-specific completion at point.
+
+Each function is called with TAGS-DATA, which is nil while a frontend asks
+only for a prefix.  It should return nil when inactive, or a plist containing
+`:prefix' and, when TAGS-DATA is non-nil, `:candidates'.  Candidate strings
+may carry the same text properties as regular ac-php candidates.")
+
+(defun ac-php-extra-completion-at-point (&optional tags-data)
+  "Return the first extra completion result at point using TAGS-DATA."
+  (save-excursion
+    (run-hook-with-args-until-success
+     'ac-php-extra-completion-functions tags-data)))
+
 (defvar ac-php-location-stack-index 0)
 
 (defvar ac-php-location-stack nil)
@@ -352,9 +366,14 @@ See `ac-php--beginning-of-defun'."
       (goto-char pos)
       (when (ac-php--beginning-of-defun)
         (setq bof (point))
-        (ac-php--end-of-defun)
-        (and (> pos bof)
-             (< pos (point)))))))
+        (condition-case nil
+            (progn
+              (ac-php--end-of-defun)
+              (and (> pos bof)
+                   (< pos (point))))
+          ;; Completion commonly runs while the current function is still
+          ;; unbalanced.  Its beginning is still a useful scope boundary.
+          (scan-error (> pos bof)))))))
 
 (defun ac-php-toggle-debug ()
   "Toggle debug mode.
@@ -1103,10 +1122,11 @@ within the current function."
       (push (buffer-substring-no-properties cursor end) chunks)
       (apply #'concat (nreverse chunks)))))
 
-(defun ac-php--expression-before-point (&optional pos)
-  "Return the PHP expression ending at POS, excluding comments.
+(defun ac-php--expression-bounds-before-point (&optional pos)
+  "Return the bounds of the PHP expression ending at POS.
 
-The nearest valid statement boundary is found before extracting the text."
+The result is a cons cell (START . END).  Delimiters inside strings, comments,
+and nested expressions do not terminate the expression."
   (save-excursion
     (goto-char (or pos (point)))
     (let* ((target (point))
@@ -1143,12 +1163,175 @@ The nearest valid statement boundary is found before extracting the text."
              (t
               (setq expression-start (1+ delimiter-pos))
               (throw 'boundary-found t))))))
-      (let ((expression
-             (s-trim
-              (ac-php--code-without-comments expression-start target))))
-        (when (string-match "<\\?php\\_>" expression)
-          (setq expression (substring expression (match-end 0))))
-        (s-trim expression)))))
+      (cons expression-start target))))
+
+(defun ac-php--expression-before-point (&optional pos)
+  "Return the PHP expression ending at POS, excluding comments.
+
+The nearest valid statement boundary is found before extracting the text."
+  (let* ((bounds (ac-php--expression-bounds-before-point pos))
+         (expression
+          (s-trim
+           (ac-php--code-without-comments (car bounds) (cdr bounds)))))
+    (when (string-match "<\\?php\\_>" expression)
+      (setq expression (substring expression (match-end 0))))
+    (s-trim expression)))
+
+(defun ac-php--backward-code-position (pos bound)
+  "Move backward from POS over whitespace and comments, stopping at BOUND."
+  (save-excursion
+    (goto-char pos)
+    (condition-case nil
+        (forward-comment (- (buffer-size)))
+      (scan-error nil))
+    (max bound (point))))
+
+(defun ac-php--chain-operator-before (pos bound)
+  "Return the member-access operator before POS without crossing BOUND.
+
+The result is a cons cell (OPERATOR . START), or nil."
+  (let ((end (ac-php--backward-code-position pos bound)))
+    (cond
+     ((and (>= (- end bound) 3)
+           (string= (buffer-substring-no-properties (- end 3) end) "?->"))
+      (cons "?->" (- end 3)))
+     ((and (>= (- end bound) 2)
+           (member (buffer-substring-no-properties (- end 2) end)
+                   '("->" "::")))
+      (cons (buffer-substring-no-properties (- end 2) end) (- end 2))))))
+
+(defun ac-php--chain-identifier-before (pos bound)
+  "Return the PHP identifier immediately before POS, stopping at BOUND."
+  (save-excursion
+    (goto-char (ac-php--backward-code-position pos bound))
+    (let ((end (point)))
+      (skip-syntax-backward "w_" bound)
+      ;; Include namespace separators and a possible leading backslash.
+      (while (and (> (point) bound) (eq (char-before) ?\\))
+        (backward-char)
+        (skip-syntax-backward "w_" bound))
+      (when (and (> (point) bound) (eq (char-before) ?$))
+        (backward-char))
+      (when (< (point) end)
+        (let* ((start (point))
+               (text (buffer-substring-no-properties start end))
+               (name (if (string-prefix-p "$" text)
+                         (substring text 1)
+                       text)))
+          (list :kind (if (string-prefix-p "$" text) 'variable 'identifier)
+                :name name :text text :start start :end end))))))
+
+(defun ac-php--chain-term-before (pos bound)
+  "Return the chain term immediately before POS, stopping at BOUND."
+  (let ((end (ac-php--backward-code-position pos bound)))
+    (cond
+     ((and (> end bound) (eq (char-before end) ?\)))
+      (let ((open (condition-case nil (scan-sexps end -1)
+                    (scan-error nil))))
+        (when (and open (>= open bound) (eq (char-after open) ?\())
+          (let ((identifier (ac-php--chain-identifier-before open bound)))
+            ;; `<?php\n(...)' is a grouped expression, not a call to `php'.
+            ;; Rejecting that partial parse lets the compatibility parser deal
+            ;; with parenthesized receivers such as `(new Service())'.  The
+            ;; same applies when a control keyword precedes the grouping.
+            (when (and identifier
+                       (not (member (downcase (plist-get identifier :name))
+                                    ac-php--php-key-list))
+                       (not (and (string= (plist-get identifier :name) "php")
+                                 (>= (- (plist-get identifier :start) bound) 2)
+                                 (string=
+                                  (buffer-substring-no-properties
+                                   (- (plist-get identifier :start) 2)
+                                   (plist-get identifier :start))
+                                  "<?"))))
+              (setq identifier (plist-put identifier :kind 'call))
+              (setq identifier
+                    (plist-put identifier :arguments (cons open end)))
+              (setq identifier (plist-put identifier :end end))
+              identifier)))))
+     ((and (> end bound) (eq (char-before end) ?\]))
+      (let ((open (condition-case nil (scan-sexps end -1)
+                    (scan-error nil))))
+        (when (and open (>= open bound) (eq (char-after open) ?\[))
+          (let ((term (ac-php--chain-term-before open bound)))
+            (when term
+              (plist-put term :end end)
+              term)))))
+     (t (ac-php--chain-identifier-before end bound)))))
+
+(defun ac-php--chain-at-point (&optional pos)
+  "Return a structured PHP member-access chain ending at POS.
+
+Completed calls are represented in :segments.  The identifier after the last
+member-access operator is returned separately as :prefix, so callers can
+resolve the receiver independently from the text currently being completed."
+  (save-excursion
+    (goto-char (or pos (point)))
+    (let* ((bounds (ac-php--expression-bounds-before-point (point)))
+           (bound (car bounds))
+           (target (cdr bounds))
+           (prefix-info (ac-php--chain-identifier-before target bound))
+           (prefix (and prefix-info (plist-get prefix-info :name)))
+           (prefix-start (if prefix-info
+                             (plist-get prefix-info :start)
+                           target))
+           (final-operator
+            (ac-php--chain-operator-before prefix-start bound)))
+      (when final-operator
+        (let ((cursor (cdr final-operator))
+              receiver segments failed)
+          (while (and (not receiver) (not failed))
+            (let ((term (ac-php--chain-term-before cursor bound)))
+              (if (not term)
+                  (setq failed t)
+                (let ((operator
+                       (ac-php--chain-operator-before
+                        (plist-get term :start) bound)))
+                  (if operator
+                      (progn
+                        (push (list :operator (car operator)
+                                    :kind (plist-get term :kind)
+                                    :name (plist-get term :name)
+                                    :start (plist-get term :start)
+                                    :end (plist-get term :end)
+                                    :arguments (plist-get term :arguments))
+                              segments)
+                        (setq cursor (cdr operator)))
+                    (setq receiver term))))))
+          (when (and receiver (not failed))
+            (list :receiver receiver
+                  :segments segments
+                  :operator (car final-operator)
+                  :prefix (or prefix "")
+                  :start (plist-get receiver :start)
+                  :end target)))))))
+
+(defun ac-php--chain-key-list (chain)
+  "Convert structured CHAIN to the legacy key-list representation."
+  (let* ((receiver (plist-get chain :receiver))
+         (segments (plist-get chain :segments))
+         (prefix (plist-get chain :prefix))
+         (static-first-p
+          (or (and segments
+                   (string= (plist-get (car segments) :operator) "::"))
+              (and (null segments)
+                   (string= (plist-get chain :operator) "::"))))
+         (receiver-key
+          (concat (plist-get receiver :name)
+                  (if (eq (plist-get receiver :kind) 'call) "(" "")
+                  (if static-first-p "::" "")))
+         (keys (list receiver-key)))
+    (dolist (segment segments)
+      (setq keys
+            (append keys
+                    (list "."
+                          (concat (plist-get segment :name)
+                                  (if (eq (plist-get segment :kind) 'call)
+                                      "(" ""))))))
+    (setq keys (append keys (list ".")))
+    (unless (string= prefix "")
+      (setq keys (append keys (list prefix))))
+    keys))
 
 (defun ac-php--normalize-callable (expression)
   "Convert an array callable in EXPRESSION to an object method chain."
@@ -1204,8 +1387,12 @@ The nearest valid statement boundary is found before extracting the text."
           (if (not (string= line-txt old-line-txt))
               (ac-php--debug "Updated working string: \"%s\"" line-txt))
 
-          (setq key-list (ac-php-remove-unnecessary-items-4-complete-method
-                          (ac-php-split-line-4-complete-method line-txt)))
+          (setq key-list
+                (or (and (string= line-txt old-line-txt)
+                         (let ((chain (ac-php--chain-at-point pos)))
+                           (and chain (ac-php--chain-key-list chain))))
+                    (ac-php-remove-unnecessary-items-4-complete-method
+                     (ac-php-split-line-4-complete-method line-txt))))
 
           (ac-php--debug "Keyword list is: %S" key-list)
           (if (not (and (stringp (nth 1 key-list))
@@ -2744,6 +2931,931 @@ keep the receiver class when any of these late-bound types is present."
           (if v v ""))
       "")))
 
+(defun ac-php--phpdoc-content (start end)
+  "Return normalized PHPDoc text between START and END.
+Leading comment stars are removed, while line breaks are retained so tags can
+be distinguished from their continuation lines."
+  (let ((text (buffer-substring-no-properties start end))
+        lines)
+    (setq text (replace-regexp-in-string
+                "\\`[ \t]*/\\*\\*+" "" text))
+    (setq text (replace-regexp-in-string
+                "\\*/[ \t\n\r]*\\'" "" text))
+    (dolist (line (split-string text "\n"))
+      (push (replace-regexp-in-string
+             "^[ \t]*\\*[ \t]?" "" line)
+            lines))
+    (mapconcat #'identity (nreverse lines) "\n")))
+
+(defun ac-php--phpdoc-tag-values (content tag)
+  "Return all values for TAG in normalized PHPDoc CONTENT.
+A value includes continuation lines up to the next PHPDoc tag."
+  (let ((tag-pattern
+         (concat "^[ \t]*@" (regexp-quote tag) "[ \t]+\\(.*\\)$"))
+        current values)
+    (dolist (line (split-string content "\n"))
+      (cond
+       ((string-match tag-pattern line)
+        (when current
+          (push (s-trim (mapconcat #'identity (nreverse current) " "))
+                values))
+        (setq current (list (match-string 1 line))))
+       ((string-match-p "^[ \t]*@[[:alpha:]_-]+\\b" line)
+        (when current
+          (push (s-trim (mapconcat #'identity (nreverse current) " "))
+                values)
+          (setq current nil)))
+       (current
+        (push (s-trim line) current))))
+    (when current
+      (push (s-trim (mapconcat #'identity (nreverse current) " "))
+            values))
+    (nreverse values)))
+
+(defun ac-php--phpdoc-tag-values-in-buffer (tag)
+  "Return all values for PHPDoc TAG in the current buffer."
+  (save-match-data
+    (save-excursion
+      (goto-char (point-min))
+      (let (values)
+        (while (re-search-forward "/\\*\\*" nil t)
+          (let ((start (match-beginning 0)))
+            (when (search-forward "*/" nil t)
+              (let ((end (point)))
+                (when (nth 4 (syntax-ppss (min (1- end) (+ start 3))))
+                  (setq values
+                        (append
+                         values
+                         (ac-php--phpdoc-tag-values
+                          (ac-php--phpdoc-content start end) tag))))))))
+        values))))
+
+(defun ac-php--phpstan-type-aliases ()
+  "Return PHPStan type aliases declared in PHPDoc comments in this buffer.
+Each result is a cons cell whose car is the alias and whose cdr is its complete
+possibly multiline type expression.  Later declarations replace earlier ones."
+  (let ((aliases (make-hash-table :test #'equal)) results)
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "phpstan-type"))
+      (when (string-match
+             "\\`\\([[:alpha:]_][[:alnum:]_]*\\)[ \t]+\\(.+\\)\\'"
+             value)
+        (puthash (match-string 1 value)
+                 (s-trim (match-string 2 value)) aliases)))
+    (maphash (lambda (name type) (push (cons name type) results)) aliases)
+    results))
+
+(defun ac-php--split-top-level-type (text delimiter)
+  "Split TEXT on top-level DELIMITER characters.
+Delimiters inside quotes or (), [], {}, and <> are ignored."
+  (let ((index 0) (start 0) (length (length text))
+        (round 0) (square 0) (curly 0) (angle 0)
+        quote escaped parts)
+    (while (< index length)
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?\() (setq round (1+ round)))
+         ((eq character ?\)) (setq round (max 0 (1- round))))
+         ((eq character ?\[) (setq square (1+ square)))
+         ((eq character ?\]) (setq square (max 0 (1- square))))
+         ((eq character ?\{) (setq curly (1+ curly)))
+         ((eq character ?\}) (setq curly (max 0 (1- curly))))
+         ((eq character ?<) (setq angle (1+ angle)))
+         ((eq character ?>) (setq angle (max 0 (1- angle))))
+         ((and (eq character delimiter)
+               (= round 0) (= square 0) (= curly 0) (= angle 0))
+          (push (substring text start index) parts)
+          (setq start (1+ index)))))
+      (setq index (1+ index)))
+    (nreverse (cons (substring text start) parts))))
+
+(defun ac-php--top-level-colon (text)
+  "Return the position of the first top-level colon in TEXT."
+  (let ((index 0) (length (length text))
+        (round 0) (square 0) (curly 0) (angle 0)
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?\() (setq round (1+ round)))
+         ((eq character ?\)) (setq round (max 0 (1- round))))
+         ((eq character ?\[) (setq square (1+ square)))
+         ((eq character ?\]) (setq square (max 0 (1- square))))
+         ((eq character ?\{) (setq curly (1+ curly)))
+         ((eq character ?\}) (setq curly (max 0 (1- curly))))
+         ((eq character ?<) (setq angle (1+ angle)))
+         ((eq character ?>) (setq angle (max 0 (1- angle))))
+         ((and (eq character ?:)
+               (= round 0) (= square 0) (= curly 0) (= angle 0))
+          (setq result index))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--array-shapes-from-type (type aliases &optional seen)
+  "Resolve every array-shape alternative in TYPE using ALIASES.
+SEEN prevents recursive aliases from looping."
+  (when (stringp type)
+    (let (shapes)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let ((unwrapped
+               (replace-regexp-in-string
+                "\\`[?]\\|[ \t]*[?]\\'" "" (s-trim alternative))))
+          (cond
+           ((string-match-p "\\`array[ \t\n\r]*{" unwrapped)
+            (push unwrapped shapes))
+           ((and (not (member unwrapped seen))
+                 (assoc unwrapped aliases))
+            (setq shapes
+                  (append
+                   (nreverse
+                    (ac-php--array-shapes-from-type
+                     (cdr (assoc unwrapped aliases)) aliases
+                     (cons unwrapped seen)))
+                   shapes))))))
+      (nreverse shapes))))
+
+(defun ac-php--array-shape-from-type (type aliases &optional seen)
+  "Resolve the first array-shape alternative in TYPE using ALIASES."
+  (car (ac-php--array-shapes-from-type type aliases seen)))
+
+(defun ac-php--array-element-type (type aliases &optional seen)
+  "Return the element type of array-like TYPE using ALIASES.
+SEEN prevents recursive aliases from looping."
+  (when (stringp type)
+    (let (elements)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let* ((unwrapped
+                (replace-regexp-in-string
+                 "\\`[?]\\|[ \t]*[?]\\'" "" (s-trim alternative)))
+               element)
+          (cond
+           ((and (not (member unwrapped seen))
+                 (assoc unwrapped aliases))
+            (setq element
+                  (ac-php--array-element-type
+                   (cdr (assoc unwrapped aliases)) aliases
+                   (cons unwrapped seen))))
+           ((string-match
+             "\\`\\(?:non-empty-\\)?list[ \t\n\r]*<\\(.+\\)>\\'"
+             unwrapped)
+            (setq element (s-trim (match-string 1 unwrapped))))
+           ((string-match "\\`array[ \t\n\r]*<\\(.+\\)>\\'" unwrapped)
+            (let ((arguments
+                   (ac-php--split-top-level-type
+                    (match-string 1 unwrapped) ?,)))
+              (setq element
+                    (s-trim (or (nth 1 arguments) (car arguments))))))
+           ((string-match "\\`\\(.+\\)\\[\\]\\'" unwrapped)
+            (setq element (s-trim (match-string 1 unwrapped)))))
+          (when (and element (not (string= element "")))
+            (dolist (part (ac-php--split-top-level-type element ?|))
+              (let ((part (s-trim part)))
+                (unless (or (string= part "") (member part elements))
+                  (push part elements)))))))
+      (when elements
+        (mapconcat #'identity (nreverse elements) "|")))))
+
+(defun ac-php--array-offset-component (offset)
+  "Return the path component represented by array OFFSET, or nil.
+String keys are returned as strings.  Integer indexes are tagged so callers
+can distinguish them from quoted numeric keys."
+  (cond
+   ((string-match "\\`['\"]\\(.*\\)['\"]\\'" offset)
+    (match-string 1 offset))
+   ((string-match-p "\\`-?[0-9]+\\'" offset)
+    (cons :index offset))))
+
+(defun ac-php--variable-offset-expression (text)
+  "Parse a simple variable offset expression from TEXT.
+Return a plist containing `:variable' and `:path', or nil."
+  (save-match-data
+    (when (string-match
+           "\\`[ \t\n\r]*\\$\\([[:alpha:]_][[:alnum:]_]*\\)" text)
+      (let ((variable (match-string 1 text))
+            (index (match-end 0))
+            (length (length text))
+            path)
+        (catch 'invalid
+          (while (< index length)
+            (while (and (< index length)
+                        (memq (aref text index) '(?\s ?\t ?\n ?\r)))
+              (setq index (1+ index)))
+            (when (< index length)
+              (if (and (eq (aref text index) ??)
+                       (< (1+ index) length)
+                       (eq (aref text (1+ index)) ??))
+                  (setq index length)
+                (unless (eq (aref text index) ?\[)
+                  (throw 'invalid nil))
+                (let ((cursor (1+ index)) quote escaped close)
+                  (while (and (< cursor length) (not close))
+                    (let ((character (aref text cursor)))
+                      (cond
+                       (quote
+                        (cond
+                         (escaped (setq escaped nil))
+                         ((eq character ?\\) (setq escaped t))
+                         ((eq character quote) (setq quote nil))))
+                       ((memq character '(?\' ?\")) (setq quote character))
+                       ((eq character ?\]) (setq close cursor))))
+                    (setq cursor (1+ cursor)))
+                  (unless close (throw 'invalid nil))
+                  (let* ((offset
+                          (s-trim (substring text (1+ index) close)))
+                         (component
+                          (ac-php--array-offset-component offset)))
+                    (unless component (throw 'invalid nil))
+                    (push component path))
+                  (setq index (1+ close))))))
+          (list :variable variable :path (nreverse path)))))))
+
+(defun ac-php--array-type-at-path (type path aliases)
+  "Return the nested type reached from TYPE by array offset PATH."
+  (let ((current-type type))
+    (dolist (component path)
+      (let* ((index-p (and (consp component) (eq (car component) :index)))
+             (key (if index-p (cdr component) component))
+             (shapes
+              (and current-type
+                   (ac-php--array-shapes-from-type current-type aliases)))
+             (field (assoc key (ac-php--array-shapes-fields shapes))))
+        (setq current-type
+              (if field
+                  (cdr field)
+                (and index-p
+                     (ac-php--array-element-type current-type aliases))))))
+    current-type))
+
+(defun ac-php--array-shape-fields (shape)
+  "Return the keyed fields declared by array SHAPE.
+Each field is represented by a cons cell (KEY . TYPE)."
+  (when (and shape (string-match "{" shape))
+    (let* ((open (match-beginning 0))
+           (close (1- (length shape)))
+           fields)
+      (while (and (> close open) (not (eq (aref shape close) ?})))
+        (setq close (1- close)))
+      (when (> close open)
+        (dolist (entry
+                 (ac-php--split-top-level-type
+                  (substring shape (1+ open) close) ?,))
+          (let* ((entry (s-trim entry))
+                 (colon (ac-php--top-level-colon entry)))
+            (when colon
+              (let* ((raw-key (s-trim (substring entry 0 colon)))
+                     (type (s-trim (substring entry (1+ colon))))
+                     (raw-key
+                      (replace-regexp-in-string "[?][ \t]*\\'" "" raw-key))
+                     key)
+                (cond
+                 ((string-match "\\`['\"]\\(.*\\)['\"]\\'" raw-key)
+                  (setq key (match-string 1 raw-key)))
+                 ((string-match-p
+                   "\\`\\(?:[[:alpha:]_][[:alnum:]_]*\\|[0-9]+\\)\\'" raw-key)
+                  (setq key raw-key)))
+                (when (and key (not (string= type "")))
+                  (push (cons key type) fields)))))))
+      (nreverse fields))))
+
+(defun ac-php--array-shapes-fields (shapes)
+  "Return merged fields from array SHAPES, preserving declaration order."
+  (let (fields)
+    (dolist (shape shapes)
+      (dolist (field (ac-php--array-shape-fields shape))
+        (let ((existing (assoc (car field) fields)))
+          (if existing
+              (unless (member (cdr field)
+                              (ac-php--split-top-level-type (cdr existing) ?|))
+                (setcdr existing (concat (cdr existing) "|" (cdr field))))
+            (setq fields (append fields (list field)))))))
+    fields))
+
+(defun ac-php--array-literal-key-position-p (open string-start)
+  "Return non-nil when STRING-START begins a key slot in array OPEN."
+  (save-excursion
+    (goto-char (1+ open))
+    (let ((depth (car (syntax-ppss (point))))
+          (field-start (point)))
+      (while (search-forward "," string-start t)
+        (let* ((comma (1- (point)))
+               (state (save-excursion (syntax-ppss comma))))
+          (when (and (= (car state) depth)
+                     (not (nth 3 state)) (not (nth 4 state)))
+            (setq field-start (point)))))
+      (string=
+       (s-trim (ac-php--code-without-comments field-start string-start))
+       ""))))
+
+(defun ac-php--array-literal-used-keys (open current-string-start)
+  "Return keys already declared in array OPEN.
+CURRENT-STRING-START is excluded so an existing key can still be edited."
+  (save-match-data
+    (save-excursion
+      (let* ((content-start (1+ open))
+             (depth (car (syntax-ppss content-start)))
+             (close (condition-case nil (scan-sexps open 1)
+                      (scan-error nil)))
+             (end (if close (1- close) current-string-start))
+             (pattern
+              (concat
+               "\\(?:['\"]\\([^'\"]+\\)['\"]\\|"
+               "\\([[:alpha:]_][[:alnum:]_]*\\|[0-9]+\\)\\)"
+               "[ \t\n\r]*=>"))
+             keys)
+        (goto-char content-start)
+        (while (re-search-forward pattern end t)
+          (let* ((key-start (match-beginning 0))
+                 (state (save-excursion (syntax-ppss key-start)))
+                 (key (or (match-string-no-properties 1)
+                          (match-string-no-properties 2))))
+            (when (and key
+                       (/= key-start current-string-start)
+                       (= (car state) depth)
+                       (not (nth 3 state)) (not (nth 4 state)))
+              (push key keys))))
+        (delete-dups (nreverse keys))))))
+
+(defun ac-php--array-key-context (&optional pos)
+  "Return the array-shape key completion context at POS.
+The result describes either a variable offset or an array literal used as a
+call argument, together with the prefix between the current quote and point."
+  (save-match-data
+    (save-excursion
+      (goto-char (or pos (point)))
+      (let* ((target (point))
+             (state (syntax-ppss target))
+             (string-start (and (nth 3 state) (nth 8 state))))
+        (when string-start
+          (let ((prefix (buffer-substring-no-properties
+                         (1+ string-start) target))
+                (active-open (nth 1 (syntax-ppss string-start))))
+            (when (and active-open (eq (char-after active-open) ?\[))
+              (let (path done variable-context)
+                (goto-char active-open)
+                (while (not done)
+                  (skip-chars-backward " \t\n\r")
+                  (if (eq (char-before) ?\])
+                      (let* ((end (point))
+                             (open (condition-case nil (scan-sexps end -1)
+                                     (scan-error nil))))
+                        (if (not open)
+                            (setq done t)
+                          (let ((offset
+                                 (s-trim
+                                  (buffer-substring-no-properties
+                                   (1+ open) (1- end))))
+                                component)
+                            (setq component
+                                  (ac-php--array-offset-component offset))
+                            (if component
+                                (progn
+                                  (push component path)
+                                  (goto-char open))
+                              (setq done t)))))
+                    (setq done t)))
+                (skip-chars-backward " \t\n\r")
+                (let ((end (point)))
+                  (skip-chars-backward "a-zA-Z0-9_")
+                  (when (eq (char-before) ?$)
+                    (backward-char)
+                    (setq variable-context
+                          (list :variable
+                                (substring
+                                (buffer-substring-no-properties
+                                  (point) end) 1)
+                                :path path :prefix prefix
+                                :open active-open))))
+                (or variable-context
+                    (and
+                     (ac-php--array-literal-key-position-p
+                      active-open string-start)
+                    (let* ((call-open (nth 1 (syntax-ppss active-open)))
+                           (callable
+                            (and call-open
+                                 (eq (char-after call-open) ?\()
+                                 (ac-php--callable-name-before-open call-open))))
+                      (when callable
+                        (list :callable callable
+                              :argument-index
+                              (1- (length
+                                   (ac-php--argument-ranges
+                                    (1+ call-open) active-open)))
+                              :used-keys
+                              (ac-php--array-literal-used-keys
+                               active-open string-start)
+                              :prefix prefix :open active-open
+                              :call-open call-open)))))))))))))
+
+(defun ac-php--variable-assignment (variable pos)
+  "Return VARIABLE's nearest simple assignment preceding POS.
+The result records both the right-hand-side text and its buffer start."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let ((bound (save-excursion
+                     (if (ac-php--beginning-of-defun)
+                         (point)
+                       (point-min))))
+            (pattern
+             (concat "\\$" (regexp-quote variable) "[ \t\n\r]*="))
+            result)
+        (while (and (not result) (re-search-backward pattern bound t))
+          (let ((assignment-start (match-beginning 0))
+                (value-start (match-end 0)))
+            (when (and (not (ac-php--in-string-or-comment-p assignment-start))
+                       (not (eq (char-after value-start) ?=))
+                       (not (memq (char-before assignment-start)
+                                  '(?+ ?- ?* ?/ ?% ?. ??))))
+              (goto-char value-start)
+              (let ((depth (car (syntax-ppss value-start))) end)
+                (while (and (not end) (search-forward ";" pos t))
+                  (let ((semicolon (1- (point))))
+                    (when (and (= (car (syntax-ppss semicolon)) depth)
+                               (not (ac-php--in-string-or-comment-p semicolon)))
+                      (setq end semicolon))))
+                (when end
+                  (setq result
+                        (list :text
+                              (s-trim
+                               (ac-php--code-without-comments value-start end))
+                              :start value-start :end end))))
+              (unless result
+                (goto-char assignment-start)))))
+        result))))
+
+(defun ac-php--phpdoc-before-line (pos)
+  "Return normalized PHPDoc immediately preceding the line at POS."
+  (save-excursion
+    (goto-char pos)
+    (beginning-of-line)
+    (skip-chars-backward " \t\n\r")
+    (when (and (>= (- (point) (point-min)) 2)
+               (string= (buffer-substring-no-properties (- (point) 2) (point))
+                        "*/"))
+      (let ((end (point)))
+        (when (search-backward "/**" nil t)
+          (ac-php--phpdoc-content (point) end))))))
+
+(defun ac-php--phpdoc-parameter-types (content)
+  "Return (PARAMETER . TYPE) pairs from normalized PHPDoc CONTENT."
+  (let (parameters)
+    (dolist (value (ac-php--phpdoc-tag-values content "param"))
+      (when (string-match
+             "\\$\\([[:alpha:]_][[:alnum:]_]*\\)\\b" value)
+        (let ((name (match-string 1 value))
+              (type (s-trim (substring value 0 (match-beginning 0)))))
+          (when (not (string= type ""))
+            (push (cons name type) parameters)))))
+    (nreverse parameters)))
+
+(defun ac-php--matching-parenthesis-in-string (text open)
+  "Return the closing parenthesis in TEXT matching OPEN, or nil."
+  (let ((index (1+ open)) (depth 1) (length (length text))
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?\() (setq depth (1+ depth)))
+         ((eq character ?\))
+          (setq depth (1- depth))
+          (when (= depth 0)
+            (setq result index)))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--matching-angle-bracket-in-string (text open)
+  "Return the closing angle bracket in TEXT matching OPEN, or nil."
+  (let ((index (1+ open)) (depth 1) (length (length text))
+        quote escaped result)
+    (while (and (< index length) (not result))
+      (let ((character (aref text index)))
+        (cond
+         (quote
+          (cond
+           (escaped (setq escaped nil))
+           ((eq character ?\\) (setq escaped t))
+           ((eq character quote) (setq quote nil))))
+         ((memq character '(?\' ?\")) (setq quote character))
+         ((eq character ?<) (setq depth (1+ depth)))
+         ((eq character ?>)
+          (setq depth (1- depth))
+          (when (= depth 0)
+            (setq result index)))))
+      (setq index (1+ index)))
+    result))
+
+(defun ac-php--phpdoc-template-bounds (declarations)
+  "Return (TEMPLATE . BOUND) pairs from method template DECLARATIONS."
+  (let (bounds)
+    (when declarations
+      (dolist (declaration
+               (ac-php--split-top-level-type declarations ?,))
+        (let ((declaration (s-trim declaration)))
+          (when (string-match
+                 (concat
+                  "\\`\\([[:alpha:]_][[:alnum:]_]*\\)"
+                  "[ \t\n\r]+\\(?:of\\|as\\)[ \t\n\r]+\\(.+\\)\\'")
+                 declaration)
+            (push (cons (match-string 1 declaration)
+                        (s-trim (match-string 2 declaration)))
+                  bounds)))))
+    (nreverse bounds)))
+
+(defun ac-php--phpdoc-method-info-from-value (value name index)
+  "Return parameter INDEX information for @method VALUE named NAME.
+The result contains the parameter type and any inline method template bounds."
+  (let ((pattern (concat "\\_<" (regexp-quote name) "\\_>"))
+        (scan 0))
+    (catch 'info
+      (while (string-match pattern value scan)
+        (let ((cursor (match-end 0)) templates)
+          (setq scan cursor)
+          (while (and (< cursor (length value))
+                      (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+            (setq cursor (1+ cursor)))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?<))
+            (let ((close
+                   (ac-php--matching-angle-bracket-in-string value cursor)))
+              (when close
+                (setq templates (substring value (1+ cursor) close)
+                      cursor (1+ close))
+                (while (and (< cursor (length value))
+                            (memq (aref value cursor) '(?\s ?\t ?\n ?\r)))
+                  (setq cursor (1+ cursor))))))
+          (when (and (< cursor (length value))
+                     (eq (aref value cursor) ?\())
+            (let ((close
+                   (ac-php--matching-parenthesis-in-string value cursor)))
+              (when close
+                (let* ((parameter
+                        (nth index
+                             (ac-php--split-top-level-type
+                              (substring value (1+ cursor) close) ?,)))
+                       (type
+                        (ac-php--parameter-type-from-declaration parameter)))
+                  (when parameter
+                    (throw 'info
+                           (list :type type
+                                 :templates
+                                 (ac-php--phpdoc-template-bounds templates))))))))))
+      nil)))
+
+(defun ac-php--parameter-type-from-declaration (declaration)
+  "Return the type preceding the parameter variable in DECLARATION."
+  (when (and declaration
+             (string-match
+              "\\$[[:alpha:]_][[:alnum:]_]*\\b" declaration))
+    (let ((type (s-trim (substring declaration 0 (match-beginning 0)))))
+      (setq type
+            (replace-regexp-in-string
+             "[ \t]*\\(?:&\\|[.][.][.]\\)[ \t]*\\'" "" type))
+      (unless (string= type "") type))))
+
+(defun ac-php--phpdoc-method-parameter-info (name index)
+  "Return @method NAME's parameter information at INDEX in this buffer."
+  (catch 'info
+    (dolist (value (ac-php--phpdoc-tag-values-in-buffer "method"))
+      (let ((info
+             (ac-php--phpdoc-method-info-from-value value name index)))
+        (when info (throw 'info info))))
+    nil))
+
+(defun ac-php--phpdoc-method-parameter-type (name index)
+  "Return @method NAME's parameter type at zero-based INDEX in this buffer."
+  (plist-get (ac-php--phpdoc-method-parameter-info name index) :type))
+
+(defun ac-php--local-callable-declaration (name pos)
+  "Return the declaration position of local callable NAME near POS."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let ((pattern
+             (concat "\\_<function\\_>[ \t\n\r]+&?[ \t\n\r]*"
+                     (regexp-quote name) "[ \t\n\r]*("))
+            declaration)
+        (while (and (not declaration) (re-search-backward pattern nil t))
+          (unless (ac-php--in-string-or-comment-p (match-beginning 0))
+            (setq declaration (match-beginning 0))))
+        (unless declaration
+          (goto-char pos)
+          (while (and (not declaration) (re-search-forward pattern nil t))
+            (unless (ac-php--in-string-or-comment-p (match-beginning 0))
+              (setq declaration (match-beginning 0)))))
+        declaration))))
+
+(defun ac-php--callable-name-before-open (open)
+  "Return the callable identifier immediately before parenthesis OPEN."
+  (save-excursion
+    (goto-char open)
+    (forward-comment (- (buffer-size)))
+    (let ((end (point)))
+      (skip-chars-backward "a-zA-Z0-9_\\")
+      (when (and (< (point) end)
+                 (not (eq (char-before) ?$)))
+        (buffer-substring-no-properties (point) end)))))
+
+(defun ac-php--local-declaration-parameter-names (declaration)
+  "Return parameter names in source order for DECLARATION."
+  (save-match-data
+    (save-excursion
+      (goto-char declaration)
+      (when (re-search-forward "(" nil t)
+        (let* ((open (1- (point)))
+               (close (condition-case nil (scan-sexps open 1)
+                        (scan-error nil)))
+               parameters)
+          (when close
+            (dolist (range
+                     (ac-php--argument-ranges (1+ open) (1- close)))
+              (goto-char (car range))
+              (if (re-search-forward
+                   "\\$\\([[:alpha:]_][[:alnum:]_]*\\)" (cdr range) t)
+                  (push (match-string-no-properties 1) parameters)
+                (push nil parameters)))
+            (nreverse parameters)))))))
+
+(defun ac-php--phpdoc-parameter-type-at-point (variable pos)
+  "Return the PHPDoc type of VARIABLE in the function containing POS."
+  (save-excursion
+    (goto-char pos)
+    (when (ac-php--beginning-of-defun)
+      (cdr (assoc variable
+                  (ac-php--phpdoc-parameter-types
+                   (or (ac-php--phpdoc-before-line (point)) "")))))))
+
+(defun ac-php--phpdoc-variable-type-from-value (value variable)
+  "Return VARIABLE's type from a PHPDoc @var VALUE, or nil."
+  (when (string-match
+         (concat "\\$" (regexp-quote variable) "\\b") value)
+    (let ((type (s-trim (substring value 0 (match-beginning 0)))))
+      (unless (string= type "") type))))
+
+(defun ac-php--phpdoc-variable-type-at-point (variable pos)
+  "Return VARIABLE's nearest PHPDoc @var type visible at POS."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let* ((in-function-p (ac-php--in-function-p pos))
+             (bound
+              (if in-function-p
+                  (save-excursion
+                    (goto-char pos)
+                    (ac-php--beginning-of-defun)
+                    (line-beginning-position))
+                (point-min))))
+        (catch 'type
+          (while (re-search-backward "/\\*\\*" bound t)
+            (let ((start (point)))
+              (when (or in-function-p
+                        (not (ac-php--in-function-p start)))
+                (save-excursion
+                  (when (search-forward "*/" pos t)
+                    (let ((end (point)))
+                      (when (nth 4 (syntax-ppss
+                                    (min (1- end) (+ start 3))))
+                        (dolist
+                            (value
+                             (ac-php--phpdoc-tag-values
+                              (ac-php--phpdoc-content start end) "var"))
+                          (let ((type
+                                 (ac-php--phpdoc-variable-type-from-value
+                                  value variable)))
+                            (when type (throw 'type type)))))))))))
+          nil)))))
+
+(defun ac-php--local-callable-parameter-type (name index pos)
+  "Return local callable NAME's PHPDoc parameter type at zero-based INDEX."
+  (let ((declaration (ac-php--local-callable-declaration name pos)))
+    (when declaration
+      (let* ((parameter-name
+              (nth index
+                   (ac-php--local-declaration-parameter-names declaration)))
+             (parameters
+              (ac-php--phpdoc-parameter-types
+               (or (ac-php--phpdoc-before-line declaration) ""))))
+        (cdr (assoc parameter-name parameters))))))
+
+(defun ac-php--tag-source-file (tags-data tag)
+  "Return TAG's source filename from TAGS-DATA, or nil."
+  (when (and tag (> (length tag) 3))
+    (let ((location (aref tag 3))
+          (file-list (ac-php-g--file-list tags-data)))
+      (when (and (stringp location)
+                 (string-match "\\`\\([0-9]+\\):" location))
+        (let ((index (string-to-number (match-string 1 location))))
+          (when (< index (length file-list))
+            (let ((file (aref file-list index)))
+              (if (file-name-absolute-p file)
+                  file
+                (expand-file-name file (ac-php-g--project-root-dir tags-data))))))))))
+
+(defun ac-php--phpdoc-method-parameter-type-in-file (file name index)
+  "Return @method NAME's parameter type at INDEX from FILE."
+  (plist-get
+   (ac-php--phpdoc-method-parameter-info-in-file file name index) :type))
+
+(defun ac-php--phpdoc-method-parameter-info-in-file (file name index)
+  "Return @method NAME's parameter information at INDEX from FILE."
+  (when (and file (file-readable-p file))
+    (let ((buffer (get-file-buffer file)))
+      (if buffer
+          (with-current-buffer buffer
+            (ac-php--phpdoc-method-parameter-info name index))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (php-mode)
+          (ac-php--phpdoc-method-parameter-info name index))))))
+
+(defun ac-php--tagged-callable-parameter-type (tags-data context)
+  "Return CONTEXT's parameter type from indexed TAGS-DATA or its source."
+  (when (and tags-data (plist-get context :call-open))
+    (let* ((tag (ac-php--callable-tag
+                 tags-data (plist-get context :call-open)))
+           (index (plist-get context :argument-index))
+           (typed-parameter
+            (and tag (> (length tag) 8)
+                 (nth index (ac-php--signature-parameters (aref tag 8)))))
+           (parameter
+            (and tag (> (length tag) 2)
+                 (nth index (ac-php--signature-parameters (aref tag 2)))))
+           (type
+            (ac-php--parameter-type-from-declaration
+             (cdr (or typed-parameter parameter)))))
+      (or type
+          (and tag
+               (ac-php--phpdoc-method-parameter-type-in-file
+                (ac-php--tag-source-file tags-data tag)
+                (plist-get context :callable) index))))))
+
+(defun ac-php--local-callable-return-type (name pos)
+  "Return the PHPDoc return type of local callable NAME visible at POS."
+  (let ((declaration (ac-php--local-callable-declaration name pos)))
+    (when declaration
+      (car (ac-php--phpdoc-tag-values
+            (or (ac-php--phpdoc-before-line declaration) "")
+            "return")))))
+
+(defun ac-php--assignment-return-type (assignment tags-data)
+  "Infer the callable return type represented by ASSIGNMENT using TAGS-DATA."
+  (let ((text (plist-get assignment :text))
+        (start (plist-get assignment :start))
+        (scan 0) callable callable-end)
+    (while (string-match
+            "\\([[:alpha:]_][[:alnum:]_]*\\)[ \t\n\r]*(" text scan)
+      (setq callable (match-string 1 text)
+            callable-end (match-end 1)
+            scan (match-end 0)))
+    (when callable
+      (or (ac-php--local-callable-return-type callable start)
+          (when tags-data
+            (save-excursion
+              (goto-char (+ start callable-end))
+              (nth 2 (ac-php-find-symbol-at-point-pri tags-data))))))))
+
+(defun ac-php--array-expression-type
+    (expression pos tags-data aliases seen)
+  "Infer the type of variable offset EXPRESSION visible at POS."
+  (let ((reference (ac-php--variable-offset-expression expression)))
+    (when reference
+      (let* ((variable (plist-get reference :variable))
+             (type
+              (ac-php--array-variable-type
+               variable pos tags-data seen aliases)))
+        (ac-php--array-type-at-path
+         type (plist-get reference :path) aliases)))))
+
+(defun ac-php--foreach-variable-type
+    (variable pos tags-data aliases seen)
+  "Infer VARIABLE's element type from an enclosing foreach at POS."
+  (save-match-data
+    (save-excursion
+      (goto-char pos)
+      (let ((bound
+             (save-excursion
+               (if (ac-php--beginning-of-defun)
+                   (point)
+                 (point-min))))
+            result)
+        (while (and (not result)
+                    (re-search-backward
+                     "\\_<foreach\\_>[ \t\n\r]*(" bound t))
+          (let* ((foreach-start (match-beginning 0))
+                 (open (1- (match-end 0)))
+                 (close (condition-case nil (scan-sexps open 1)
+                          (scan-error nil))))
+            (when (and close
+                       (not (ac-php--in-string-or-comment-p foreach-start)))
+              (goto-char close)
+              (forward-comment (buffer-size))
+              (let* ((body-open (point))
+                     (body-close
+                      (and (eq (char-after body-open) ?{)
+                           (condition-case nil (scan-sexps body-open 1)
+                             (scan-error nil))))
+                     (contains-pos-p
+                      (and (eq (char-after body-open) ?{)
+                           (> pos body-open)
+                           (or (not body-close) (< pos body-close)))))
+                (when contains-pos-p
+                  (let* ((header
+                          (ac-php--code-without-comments
+                           (1+ open) (1- close)))
+                         (as-pattern "[ \t\n\r]+as[ \t\n\r]+"))
+                    (when (string-match as-pattern header)
+                      (let ((iterable
+                             (s-trim
+                              (substring header 0 (match-beginning 0))))
+                            (binding (substring header (match-end 0)))
+                            (scan 0) last-variable)
+                        (while (string-match
+                                "\\$\\([[:alpha:]_][[:alnum:]_]*\\)"
+                                binding scan)
+                          (setq last-variable (match-string 1 binding)
+                                scan (match-end 0)))
+                        (when (string= variable last-variable)
+                          (setq result
+                                (ac-php--array-element-type
+                                 (ac-php--array-expression-type
+                                  iterable foreach-start tags-data
+                                  aliases seen)
+                                 aliases)))))))))
+            (goto-char foreach-start)))
+        result))))
+
+(defun ac-php--array-variable-type
+    (variable pos tags-data &optional seen aliases)
+  "Infer VARIABLE's PHPDoc type at POS using TAGS-DATA when necessary."
+  (unless (member variable seen)
+    (let ((seen (cons variable seen))
+          (aliases (or aliases (ac-php--phpstan-type-aliases))))
+      (or (ac-php--phpdoc-variable-type-at-point variable pos)
+          (ac-php--phpdoc-parameter-type-at-point variable pos)
+          (ac-php--foreach-variable-type
+           variable pos tags-data aliases seen)
+          (let ((assignment (ac-php--variable-assignment variable pos)))
+            (and assignment
+                 (or
+                  (ac-php--array-expression-type
+                   (plist-get assignment :text)
+                   (plist-get assignment :start)
+                   tags-data aliases seen)
+                  (ac-php--assignment-return-type assignment tags-data))))))))
+
+(defun ac-php-candidate-array-key (tags-data &optional context)
+  "Return array-shape key candidates at point using TAGS-DATA.
+CONTEXT may be supplied from `ac-php--array-key-context'."
+  (let* ((context (or context (ac-php--array-key-context)))
+         (aliases (and context (ac-php--phpstan-type-aliases)))
+         (type
+          (and context
+               (if (plist-get context :variable)
+                   (ac-php--array-variable-type
+                    (plist-get context :variable) (point) tags-data)
+                 (or
+                  (ac-php--local-callable-parameter-type
+                   (plist-get context :callable)
+                   (plist-get context :argument-index) (point))
+                  (ac-php--tagged-callable-parameter-type tags-data context)
+                  (ac-php--phpdoc-method-parameter-type
+                   (plist-get context :callable)
+                   (plist-get context :argument-index))))))
+         (current-type
+          (ac-php--array-type-at-path
+           type (plist-get context :path) aliases)))
+    (let* ((shapes
+            (and current-type
+                 (ac-php--array-shapes-from-type current-type aliases)))
+           (used-keys (plist-get context :used-keys))
+           candidates)
+      (dolist (field (ac-php--array-shapes-fields shapes))
+        (unless (member (car field) used-keys)
+          (push (propertize
+                 (car field)
+                 'ac-php-help (cdr field)
+                 'ac-php-return-type (cdr field)
+                 'ac-php-tag-type "a"
+                 'summary (cdr field))
+                candidates)))
+      (nreverse candidates))))
+
 (defun ac-php--argument-ranges (start end)
   "Split arguments between START and END at top-level commas.
 Return a list of (START . END) buffer positions, preserving empty arguments."
@@ -2760,6 +3872,109 @@ Return a list of (START . END) buffer positions, preserving empty arguments."
             (push (cons argument-start comma) ranges)
             (setq argument-start (1+ comma)))))
       (nreverse (cons (cons argument-start end) ranges)))))
+
+(defun ac-php--string-literal-argument-context (&optional pos)
+  "Return direct string argument completion context at POS, or nil."
+  (save-match-data
+    (save-excursion
+      (goto-char (or pos (point)))
+      (let* ((target (point))
+             (state (syntax-ppss target))
+             (string-start (and (nth 3 state) (nth 8 state))))
+        (when string-start
+          (let* ((call-open (nth 1 (syntax-ppss string-start)))
+                 (callable
+                  (and call-open
+                       (eq (char-after call-open) ?\()
+                       (ac-php--callable-name-before-open call-open)))
+                 (ranges
+                  (and callable
+                       (ac-php--argument-ranges
+                        (1+ call-open) string-start)))
+                 (current (car (last ranges))))
+            (when (and current
+                       (string=
+                        (s-trim
+                         (ac-php--code-without-comments
+                          (car current) string-start))
+                        ""))
+              (list :callable callable
+                    :argument-index (1- (length ranges))
+                    :prefix
+                    (buffer-substring-no-properties
+                     (1+ string-start) target)
+                    :call-open call-open))))))))
+
+(defun ac-php--string-literals-from-type (type)
+  "Return string literal alternatives declared by PHPDoc TYPE."
+  (let (literals)
+    (when (stringp type)
+      (dolist (alternative (ac-php--split-top-level-type type ?|))
+        (let ((alternative (s-trim alternative)) value)
+          (cond
+           ((string-match "\\`'\\([^']*\\)'\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match "\\`\"\\([^\"]*\\)\"\\'" alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*'\\([^']*\\)'[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative)))
+           ((string-match
+             "\\`string([ \t\n\r]*\"\\([^\"]*\\)\"[ \t\n\r]*)\\'"
+             alternative)
+            (setq value (match-string 1 alternative))))
+          (when (and value (not (member value literals)))
+            (push value literals)))))
+    (nreverse literals)))
+
+(defun ac-php--tagged-phpdoc-method-parameter-info (tags-data context)
+  "Return source PHPDoc method information for indexed call CONTEXT."
+  (when (and tags-data (plist-get context :call-open))
+    (let ((tag (ac-php--callable-tag
+                tags-data (plist-get context :call-open))))
+      (and tag
+           (ac-php--phpdoc-method-parameter-info-in-file
+            (ac-php--tag-source-file tags-data tag)
+            (plist-get context :callable)
+            (plist-get context :argument-index))))))
+
+(defun ac-php-candidate-string-literal (tags-data &optional context)
+  "Return string literal argument candidates using TAGS-DATA.
+CONTEXT may be supplied from `ac-php--string-literal-argument-context'."
+  (let* ((context
+          (or context (ac-php--string-literal-argument-context)))
+         (name (plist-get context :callable))
+         (index (plist-get context :argument-index))
+         (local-type
+          (and context
+               (ac-php--local-callable-parameter-type
+                name index (point))))
+         (source-info
+          (and context
+               (or (ac-php--tagged-phpdoc-method-parameter-info
+                    tags-data context)
+                   (ac-php--phpdoc-method-parameter-info name index))))
+         (type
+          (and context
+               (or local-type
+                   (plist-get source-info :type)
+                   (ac-php--tagged-callable-parameter-type
+                    tags-data context))))
+         (bound
+          (and type
+               (cdr (assoc type (plist-get source-info :templates)))))
+         (literal-type (or bound type))
+         candidates)
+    (dolist (literal (ac-php--string-literals-from-type literal-type))
+      (push (propertize
+             literal
+             'ac-php-help literal-type
+             'ac-php-return-type type
+             'ac-php-tag-type "v"
+             'summary literal-type)
+            candidates))
+    (nreverse candidates)))
 
 (defun ac-php--named-argument-context ()
   "Return the argument-name context at point, or nil.
@@ -2979,15 +4194,27 @@ is searched, excluding attributes, comments, literals and default values."
 
 (defun ac-php-candidate ()
   "Doc."
-  (let (key-str-list tags-data)
+  (let (key-str-list tags-data array-context literal-context extra-completion)
     (ac-php--debug "=== 1ac-php-candidate")
     (setq tags-data (ac-php-get-tags-data))
-    (setq key-str-list (ac-php-get-class-at-point tags-data))
-    (ac-php--debug "GET key-str-list :%s" key-str-list)
-    (append (ac-php-candidate-named-argument tags-data)
-            (if key-str-list
-                (ac-php-candidate-class tags-data key-str-list)
-              (ac-php-candidate-other tags-data)))))
+    (setq array-context (ac-php--array-key-context))
+    (setq literal-context (ac-php--string-literal-argument-context))
+    (setq extra-completion (ac-php-extra-completion-at-point tags-data))
+    (cond
+     ((and extra-completion
+           (plist-member extra-completion :candidates))
+      (plist-get extra-completion :candidates))
+     (array-context
+      (ac-php-candidate-array-key tags-data array-context))
+     (literal-context
+      (ac-php-candidate-string-literal tags-data literal-context))
+     (t
+      (setq key-str-list (ac-php-get-class-at-point tags-data))
+      (ac-php--debug "GET key-str-list :%s" key-str-list)
+      (append (ac-php-candidate-named-argument tags-data)
+              (if key-str-list
+                  (ac-php-candidate-class tags-data key-str-list)
+                (ac-php-candidate-other tags-data)))))))
 
 ;; "Return a 'word' before current point.
 

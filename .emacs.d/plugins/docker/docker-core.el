@@ -22,9 +22,7 @@
 ;;; Commentary:
 
 ;;; Code:
-(eval-when-compile
-  (setq-local byte-compile-warnings '(not docstrings)))
-
+(require 'ansi-color)
 (require 'aio)
 (require 'transient)
 
@@ -37,7 +35,7 @@
   :group 'docker
   :type 'string)
 
-(defvar docker-open-hook ()
+(defvar docker-open-hook nil
   "Called when `docker' transient is opened.")
 
 (defvar docker-status-strings '(:containers "" :images "" :networks "" :volumes "" :contexts "")
@@ -110,8 +108,10 @@
     (docker-run-docker-async-with-buffer-noninteractive (s-split " " action) args it)))
 
 (aio-defun docker-generic-action-with-buffer (action args)
-  "Run \"`docker-command' ACTION ARGS\", wait for completion, then display output.
-This collects all output before displaying, suitable for non-interactive commands."
+  "Run \"`docker-command' ACTION ARGS\", wait, then display the output.
+
+All output is collected before it is displayed, which suits the commands that
+are not interactive."
   (interactive (list (docker-get-transient-action)
                      (transient-args transient-current-command)))
   (--each (docker-utils-get-marked-items-ids)
@@ -134,9 +134,9 @@ This collects all output before displaying, suitable for non-interactive command
         (funcall docker-inspect-view-mode)
         (view-mode)))))
 
-(defun docker-read-log-level (prompt &rest _args)
-  "Read the docker log level using PROMPT."
-  (completing-read prompt '(debug info warn error fatal)))
+(defun docker-read-log-level (prompt &optional initial-input history)
+  "Read the docker log level with PROMPT, INITIAL-INPUT and HISTORY."
+  (completing-read prompt '(debug info warn error fatal) nil nil initial-input history))
 
 (defun docker-read-certificate (prompt &optional initial-input _history)
   "Wrapper around `read-file-name' forwarding PROMPT and INITIAL-INPUT."
@@ -149,24 +149,34 @@ This collects all output before displaying, suitable for non-interactive command
   "Transient for docker."
   :man-page "docker"
   ["Arguments"
-   (5 "H" "Host" "--host " read-string)
+   (5 "H" docker-option-host)
    (5 "Tt" "TLS" "--tls")
    (5 "Tv" "TLS verify remote" "--tlsverify")
-   (5 "Ta" "TLS CA" "--tlscacert" docker-read-certificate)
-   (5 "Tc" "TLS certificate" "--tlscert" docker-read-certificate)
-   (5 "Tk" "TLS key" "--tlskey" docker-read-certificate)
-   (5 "l" "Log level" "--log-level " docker-read-log-level)]
+   (5 "Ta" "TLS CA" "--tlscacert " docker-read-certificate :class docker-option)
+   (5 "Tc" "TLS certificate" "--tlscert " docker-read-certificate :class docker-option)
+   (5 "Tk" "TLS key" "--tlskey " docker-read-certificate :class docker-option)
+   (5 "l" "Log level" "--log-level " docker-read-log-level :class docker-option)]
   ["Docker"
-   ("c" (lambda ()(plist-get docker-status-strings :containers)) docker-containers)
-   ("i" (lambda ()(plist-get docker-status-strings :images))     docker-images)
-   ("n" (lambda ()(plist-get docker-status-strings :networks))   docker-networks)
-   ("v" (lambda ()(plist-get docker-status-strings :volumes))    docker-volumes)
-   ("x" (lambda ()(plist-get docker-status-strings :contexts))   docker-contexts)]
+   ("c" (lambda () (plist-get docker-status-strings :containers)) docker-containers)
+   ("i" (lambda () (plist-get docker-status-strings :images))     docker-images)
+   ("n" (lambda () (plist-get docker-status-strings :networks))   docker-networks)
+   ("v" (lambda () (plist-get docker-status-strings :volumes))    docker-volumes)
+   ("x" (lambda () (plist-get docker-status-strings :contexts))   docker-contexts)]
   ["Other"
    ("C" "Compose" docker-compose)]
   (interactive)
   (run-hooks 'docker-open-hook)
   (transient-setup 'docker))
+
+;;;###autoload (autoload 'docker-open-dired-as-root "docker" nil t)
+(defun docker-open-dired-as-root (directory)
+  "Open DIRECTORY as root in `dired', on the same host.
+Interactively, DIRECTORY is `default-directory', or is read with a prefix
+argument.  Docker commands started from there run as root."
+  (interactive (list (if current-prefix-arg
+                         (read-directory-name "Open as root: ")
+                       default-directory)))
+  (dired (docker-utils-sudo-directory directory)))
 
 (provide 'docker-core)
 

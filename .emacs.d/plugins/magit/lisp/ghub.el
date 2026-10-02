@@ -6,10 +6,10 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 5.3.2
+;; Package-Version: 5.3.3
 ;; Package-Requires: (
 ;;     (emacs   "29.1")
-;;     (compat  "31.0")
+;;     (compat  "31.1")
 ;;     (cond-let "1.1")
 ;;     (llama    "1.0")
 ;;     (treepy "0.1.3"))
@@ -65,8 +65,6 @@
 (require 'url)
 (require 'url-auth)
 (require 'url-http)
-
-(eval-when-compile (require 'subr-x))
 
 (defvar url-callback-arguments)
 (defvar url-http-end-of-headers)

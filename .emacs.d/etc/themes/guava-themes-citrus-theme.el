@@ -183,18 +183,18 @@
    `(which-func ((,citrus-class (:foreground ,citrus-white))))
 
    ;; tab-bar
-   `(tab-bar ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :weight bold))))
    `(tab-bar-tab ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :weight bold))))
    `(tab-line-tab ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,citrus-class (:foreground ,citrus-deep-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,citrus-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,citrus-class (:foreground ,citrus-deep-blue :weight bold))))
+   `(tab-line-tab-special ((,citrus-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,citrus-class (:foreground ,citrus-white :background ,citrus-bell))))
@@ -282,6 +282,7 @@
 
    ;; custom-button
    `(custom-button ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-1 :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-1 :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

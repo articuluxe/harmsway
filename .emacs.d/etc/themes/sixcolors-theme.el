@@ -3,7 +3,7 @@
 ;; Author: Davide Mastromatteo <mastro35@gmail.com>
 ;; URL: https://github.com/mastro35/sixcolors-theme
 ;; Keywords: faces, colors, apple, sixcolors, vintage, dark
-;; Version: 1.0
+;; Version: 1.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -21,7 +21,7 @@ Created by Davide Mastromatteo on 2024-07-08.")
 
 (custom-theme-set-faces
  'sixcolors
- '(default ((t (:foreground "#C4C0AA" :background "gray6" :stipple nil :inherit nil))))
+ '(default ((t (:foreground "#C4C0AA" :background "#262626" :stipple nil :inherit nil))))
  '(cursor ((t (:foreground "#000000" :background "#f78200"))))
  '(escape-glyph ((t (:foreground "#009cdf"))))
  '(homoglyph ((t (:foreground "#009cdf"))))
@@ -34,7 +34,7 @@ Created by Davide Mastromatteo on 2024-07-08.")
  '(font-lock-bracket-face ((t (:inherit (font-lock-punctuation-face)))))
  '(font-lock-builtin-face ((t (:foreground "#5EBD3E"))))
  '(font-lock-comment-delimiter-face ((t (:slant italic :inherit (font-lock-comment-face)))))
- '(font-lock-comment-face ((t (:slant italic :foreground "gray30"))))
+ '(font-lock-comment-face ((t (:slant italic :foreground "#666666"))))
  '(font-lock-constant-face ((t (:foreground "#009CDF"))))
  '(font-lock-delimiter-face ((t (:inherit (font-lock-punctuation-face)))))
  '(font-lock-doc-face ((t (:inherit (font-lock-constant-face)))))

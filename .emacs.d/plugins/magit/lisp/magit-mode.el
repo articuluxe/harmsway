@@ -33,7 +33,6 @@
 
 (require 'benchmark)
 (require 'browse-url)
-(require 'format-spec)
 (require 'help-mode)
 
 (require 'transient)
@@ -45,6 +44,9 @@
 (declare-function elp-instrument-package "elp" (prefix))
 (declare-function elp-results "elp" ())
 (declare-function elp-restore-all "elp" ())
+
+(eval-when-compile (require 'hi-lock))
+(declare-function hi-lock-revert-buffer-rehighlight "hi-lock" ())
 
 (defvar magit--wip-inhibit-autosave)
 (defvar magit-wip-mode)
@@ -569,7 +571,8 @@ Magit is documented in info node `(magit)'."
   (setq-local bookmark-make-record-function #'magit--make-bookmark)
   (setq-local imenu-create-index-function #'magit--imenu-create-index)
   (setq-local imenu-default-goto-function #'magit--imenu-goto-function)
-  (setq-local isearch-filter-predicate #'magit-section--open-temporarily))
+  (setq-local isearch-filter-predicate #'magit-section--open-temporarily)
+  (setq-local hi-lock-use-overlays t))
 
 (defun magit-hack-dir-local-variables ()
   "Like `hack-dir-local-variables-non-file-buffer' but ignore some variables."
@@ -1107,8 +1110,8 @@ The arguments are for internal use."
       (cond
         (created
          (funcall refresh)
-         (cond (initial-section (funcall initial-section))
-               (select-section (funcall select-section))))
+         (cond ((and select-section (funcall select-section)))
+               (initial-section (funcall initial-section))))
         (t
          (deactivate-mark)
          (setq magit-section-pre-command-section nil)
@@ -1118,12 +1121,14 @@ The arguments are for internal use."
          (setq magit-section-focused-sections nil)
          (let ((positions (magit--refresh-buffer-get-positions)))
            (funcall refresh)
-           (cond (select-section (funcall select-section))
+           (cond ((and select-section (funcall select-section)))
                  ((magit--refresh-buffer-set-positions positions))))))
       (let ((magit-section-cache-visibility nil))
         (magit-section-show magit-root-section))
       (run-hooks 'magit-refresh-buffer-hook)
       (magit-section-update-highlight)
+      (when (bound-and-true-p hi-lock-mode)
+        (funcall (hi-lock-revert-buffer-rehighlight)))
       (set-buffer-modified-p nil)
       (push (current-buffer) magit-section--refreshed-buffers)
       (when magit-refresh-verbose

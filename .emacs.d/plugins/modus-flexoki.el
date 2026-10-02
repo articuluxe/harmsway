@@ -168,16 +168,6 @@
     )
   "Common palette mappings for the Flexoki Modus themes.")
 
-(defcustom modus-flexoki-common-palette-overrides nil
-  "Palette overrides shared by all Modus Flexoki themes.
-Use this for semantic mappings that should apply to both light and
-dark variants.  Per-theme overrides are preferred for colour values,
-as those will differ between light and dark.
-
-See `modus-themes-common-palette-overrides' for the format."
-  :group 'modus-flexoki
-  :type '(repeat (list symbol (choice symbol string))))
-
 (defconst modus-flexoki-with-properties
   '((modus-flexoki-light modus-flexoki "Flexoki light palette on modus-operandi." light modus-operandi-palette modus-flexoki-light-palette modus-flexoki-light-palette-overrides)
     (modus-flexoki-dark modus-flexoki "Flexoki dark palette on modus-vivendi." dark modus-vivendi-palette modus-flexoki-dark-palette modus-flexoki-dark-palette-overrides))

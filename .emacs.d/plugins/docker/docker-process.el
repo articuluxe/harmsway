@@ -22,9 +22,7 @@
 ;;; Commentary:
 
 ;;; Code:
-(eval-when-compile
-  (setq-local byte-compile-warnings '(not docstrings)))
-
+(require 'ansi-color)
 (require 's)
 (require 'aio)
 (require 'dash)
@@ -35,9 +33,14 @@
 (declare-function ghostel-exec "ghostel")
 
 (defcustom docker-run-as-root nil
-  "Run docker as root."
+  "Obsolete; open docker.el from a sudo directory instead.
+See `docker-open-dired-as-root'."
   :group 'docker
   :type 'boolean)
+
+(make-obsolete-variable 'docker-run-as-root
+                        "open docker.el from a sudo directory, see `docker-open-dired-as-root'."
+                        "2.6.0")
 
 (defcustom docker-show-messages t
   "If non-nil `message' docker commands which are run."
@@ -61,22 +64,28 @@ When set to `auto', prefer eat, then ghostel, then vterm, then shell."
 
 (make-obsolete-variable 'docker-run-async-with-buffer-function 'docker-terminal-backend "2.5.0")
 
-
 (defmacro docker-with-sudo (&rest body)
-  "Ensure `default-directory' is set correctly according to `docker-run-as-root' then execute BODY."
+  "Set `default-directory' according to `docker-run-as-root', then execute BODY."
   (declare (indent defun))
-  `(let ((default-directory (if (and docker-run-as-root (not (file-remote-p default-directory)))
+  `(let ((default-directory (if (and (with-suppressed-warnings ((obsolete docker-run-as-root))
+                                       docker-run-as-root)
+                                     (not (file-remote-p default-directory)))
                                 "/sudo::"
                               default-directory)))
      ,@body))
 
+(defun docker--process-command (program args)
+  "Return the shell command line running PROGRAM with ARGS.
+
+ARGS may nest lists and hold blank strings, which are dropped."
+  (s-join " " (cons program (-remove #'s-blank? (-flatten args)))))
+
 (defun docker-run-start-file-process-shell-command (program &rest args)
   "Execute \"PROGRAM ARGS\" and return the process."
   (docker-with-sudo
-    (let* ((process-args (-remove 's-blank? (-flatten args)))
-           (command (s-join " " (-insert-at 0 program process-args))))
+    (let ((command (docker--process-command program args)))
       (when docker-show-messages (message "Running: %s" command))
-      (start-file-process-shell-command command (apply #'docker-utils-generate-new-buffer-name program process-args) command))))
+      (start-file-process-shell-command command (docker-utils-generate-new-buffer-name command) command))))
 
 (defun docker-run-async (program &rest args)
   "Execute \"PROGRAM ARGS\" and return a promise with the results."
@@ -109,7 +118,7 @@ Prefer `docker-run-async-with-buffer-interactive' or
   "Return non-nil when BACKEND is available."
   (pcase backend
     ('eat (fboundp 'eat-other-window))
-    ('ghostel (fboundp 'ghostel))
+    ('ghostel (or (fboundp 'ghostel-exec) (fboundp 'ghostel)))
     ('vterm (fboundp 'vterm-other-window))
     ('shell t)
     (_ nil)))
@@ -161,13 +170,10 @@ If INTERACTIVE is nil, fall back to shell mode since vterm is interactive."
   (if (not interactive)
       ;; vterm is interactive only, fall back to shell for non-interactive output
       (apply #'docker-run-async-with-buffer-shell program nil args)
-    (defvar vterm-kill-buffer-on-exit)
     (defvar vterm-shell)
     (if (fboundp 'vterm-other-window)
-        (let* ((process-args (-remove 's-blank? (-flatten args)))
-               (vterm-shell (s-join " " (-insert-at 0 program process-args))))
-          (vterm-other-window
-           (apply #'docker-utils-generate-new-buffer-name program process-args)))
+        (let ((vterm-shell (docker--process-command program args)))
+          (vterm-other-window (docker-utils-generate-new-buffer-name vterm-shell)))
       (error "The vterm package is not installed"))))
 
 (defun docker-run-async-with-buffer-eat (program &optional interactive &rest args)
@@ -177,10 +183,8 @@ If INTERACTIVE is nil, fall back to shell mode since eat is interactive."
       (apply #'docker-run-async-with-buffer-shell program nil args)
     (defvar eat-buffer-name)
     (if (fboundp 'eat-other-window)
-        (let* ((process-args (-remove 's-blank? (-flatten args)))
-               (command (s-join " " (-insert-at 0 program process-args)))
-               (eat-buffer-name (apply #'docker-utils-generate-new-buffer-name
-                                       program process-args)))
+        (let* ((command (docker--process-command program args))
+               (eat-buffer-name (docker-utils-generate-new-buffer-name command)))
           (eat-other-window command))
       (error "The eat package is not installed"))))
 
@@ -189,20 +193,26 @@ If INTERACTIVE is nil, fall back to shell mode since eat is interactive."
 If INTERACTIVE is nil, fall back to shell mode since ghostel is interactive."
   (if (not interactive)
       (apply #'docker-run-async-with-buffer-shell program nil args)
-    (if (fboundp 'ghostel)
-        (progn
-          (require 'ghostel)
-          (let* ((process-args (-remove 's-blank? (-flatten args)))
-                 (buffer (generate-new-buffer
-                          (apply #'docker-utils-generate-new-buffer-name program process-args))))
-            ;; Display first so `ghostel-exec' sizes the terminal to the window.
-            (switch-to-buffer-other-window buffer)
-            (ghostel-exec buffer program process-args)))
+    (unless (fboundp 'ghostel-exec)
+      (require 'ghostel nil t))
+    (if (fboundp 'ghostel-exec)
+        (let* ((command (docker--process-command program args))
+               (buffer (docker-utils-generate-new-buffer command)))
+          ;; `ghostel-exec' shell-quotes the program and each argument separately,
+          ;; so the command goes through a shell like it does in the other backends.
+          ;; Display first so the terminal is sized to the window.
+          (switch-to-buffer-other-window buffer)
+          ;; Like `start-file-process-shell-command', use the shell of the host
+          ;; `default-directory' is on.
+          (with-connection-local-variables
+           (ghostel-exec buffer shell-file-name (list shell-command-switch command))))
       (error "The ghostel package is not installed"))))
 
 (defun docker-process-filter-noninteractive (proc string)
-  "Process filter for non-interactive streaming buffers.
-Strips carriage returns and applies ANSI color codes."
+  "Insert STRING from PROC into the buffer PROC writes to.
+
+Carriage returns are stripped and ANSI color codes are applied, which is what
+a non-interactive streaming buffer needs."
   (when (buffer-live-p (process-buffer proc))
     (with-current-buffer (process-buffer proc)
       (let ((inhibit-read-only t)
@@ -213,22 +223,34 @@ Strips carriage returns and applies ANSI color codes."
           (set-marker (process-mark proc) (point)))
         (when moving (goto-char (process-mark proc)))))))
 
+(defun docker--resolve-promise (promise value-function)
+  "Resolve PROMISE with VALUE-FUNCTION, whatever `timer-list' is bound to.
+
+`aio-resolve' runs the callbacks of PROMISE from a timer.  Tramp let-binds
+`timer-list' while it talks to a connection, and a sentinel can run inside
+that binding: the timer it starts there is dropped when the binding is
+unwound, and the callbacks never run.  So the timer is started in the
+top-level `timer-list'."
+  (let ((timer-list (default-toplevel-value 'timer-list)))
+    (aio-resolve promise value-function)
+    (set-default-toplevel-value 'timer-list timer-list)))
+
 (defun docker-process-sentinel (promise process event)
   "Sentinel that resolves the PROMISE using PROCESS and EVENT."
   (when (memq (process-status process) '(exit signal))
     (setq event (substring event 0 -1))
     (if (not (string-equal event "finished"))
-        (aio-resolve promise
-                     (lambda ()
-                       (error "Error running: \"%s\" (%s)" (process-name process) event)))
-      (aio-resolve promise
-                   (lambda ()
-                     (when docker-show-messages
-                       (message "Finished: %s" (process-name process)))
-                     (run-with-timer 2 nil (lambda () (message nil)))
-                     (with-current-buffer (process-buffer process)
-                       (prog1 (buffer-substring-no-properties (point-min) (point-max))
-                         (kill-buffer))))))))
+        (docker--resolve-promise promise
+                                 (lambda ()
+                                   (error "Error running: \"%s\" (%s)" (process-name process) event)))
+      (docker--resolve-promise promise
+                               (lambda ()
+                                 (when docker-show-messages
+                                   (message "Finished: %s" (process-name process)))
+                                 (run-with-timer 2 nil (lambda () (message nil)))
+                                 (with-current-buffer (process-buffer process)
+                                   (prog1 (buffer-substring-no-properties (point-min) (point-max))
+                                     (kill-buffer))))))))
 
 (provide 'docker-process)
 

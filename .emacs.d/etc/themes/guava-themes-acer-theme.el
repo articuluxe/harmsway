@@ -181,18 +181,18 @@
    `(which-func ((,acer-class (:foreground ,acer-white))))
 
    ;; tab-bar
-   `(tab-bar ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :weight bold))))
    `(tab-bar-tab ((,acer-class (:foreground ,acer-white :background ,acer-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :weight bold))))
    `(tab-line-tab ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,acer-class (:foreground ,acer-white :background ,acer-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-green-cyan :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,acer-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-green-cyan :weight bold))))
+   `(tab-line-tab-special ((,acer-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,acer-class (:foreground ,acer-black :background ,acer-bell))))
@@ -280,6 +280,7 @@
 
    ;; custom-button
    `(custom-button ((,acer-class (:foreground ,acer-white :background ,acer-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,acer-class (:foreground ,acer-white :background ,acer-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

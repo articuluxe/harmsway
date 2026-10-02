@@ -352,6 +352,11 @@
 ;;;; Topics
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
+                                 (id string)
+                                 &optional callback)
+  (forge--pull-topic repo (forge-get-topic id) callback))
+
+(cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (number number)
                                  &optional callback)
   (forge--query repo
@@ -386,17 +391,20 @@
                   (forge-refresh-buffer)))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-discussion))
+                                 (topic forge-discussion)
+                                 &optional _)
   (forge--pull-topic-1 repo #'forge--update-discussion
     `(repository discussions (discussion . ,(oref topic number)))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-issue))
+                                 (topic forge-issue)
+                                 &optional _)
   (forge--pull-topic-1 repo #'forge--update-issue
     `(repository issues (issue . ,(oref topic number)))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-pullreq))
+                                 (topic forge-pullreq)
+                                 &optional _)
   (forge--pull-topic-1 repo #'forge--update-pullreq
     `(repository pullRequests (pullRequest . ,(oref topic number)))))
 

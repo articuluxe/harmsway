@@ -182,18 +182,18 @@
    `(which-func ((,prunus-class (:foreground ,prunus-white))))
 
    ;; tab-bar
-   `(tab-bar ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :weight bold))))
    `(tab-bar-tab ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :inherit tab-bar))))
 
    ;; tab-line
-   `(tab-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :weight bold))))
    `(tab-line-tab ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,prunus-class (:foreground ,prunus-pink :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,prunus-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,prunus-class (:foreground ,prunus-pink :weight bold))))
+   `(tab-line-tab-special ((,prunus-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,prunus-class (:foreground ,prunus-white :background ,prunus-bell))))
@@ -281,6 +281,7 @@
 
    ;; custom-button
    `(custom-button ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

@@ -180,18 +180,18 @@
    `(which-func ((,malus-class (:foreground ,malus-white))))
 
    ;; tab-bar
-   `(tab-bar ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :weight bold :height 1.0))))
+   `(tab-bar ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :weight bold))))
    `(tab-bar-tab ((,malus-class (:foreground ,malus-white :background ,malus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :weight bold :height 0.9))))
+   `(tab-line ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :weight bold))))
    `(tab-line-tab ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,malus-class (:foreground ,malus-white :background ,malus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,malus-class (:foreground ,malus-white :background ,malus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,malus-class (:foreground ,malus-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,malus-class (:slant italic :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,malus-class (:foreground ,malus-blue :weight bold))))
+   `(tab-line-tab-special ((,malus-class (:slant italic :weight bold))))
 
    ;; parentheses
    `(show-paren-match ((,malus-class (:foreground ,malus-white :background ,malus-bell))))
@@ -279,6 +279,7 @@
 
    ;; custom-button
    `(custom-button ((,malus-class (:foreground ,malus-white :background ,malus-mode-line :box (:line-width 2 :style released-button)))))
+   `(custom-button-pressed ((,malus-class (:foreground ,malus-white :background ,malus-mode-line :box (:line-width 2 :style pressed-button)))))
 
 
    ;; external packages

@@ -312,8 +312,8 @@
    ;; Diff
    `(diff-indicator-added ((t (:foreground ,organic-green)) t))
    `(diff-added ((t (:foreground ,organic-green)) t))
-   `(diff-indicator-removed ((t (:foreground ,organic-red))) t)
-   `(diff-removed ((t (:foreground ,organic-red))) T)
+   `(diff-indicator-removed ((t (:foreground ,organic-sign-delete))) t)
+   `(diff-removed ((t (:foreground ,organic-sign-delete))) T)
 
    ;; Magit
    `(magit-diff-add ((t (:foreground ,organic-green)) t))
@@ -370,8 +370,16 @@
    `(org-block-begin-line ((t (:foreground ,organic-gray))) t)
    `(org-block-end-line ((t (:foreground ,organic-gray))) t)
    `(org-checkbox ((t (:foreground ,organic-green))) t)
-   `(org-done ((t (:inherit success))) t)
    `(org-todo ((t (:inherit warning))) t)
+   `(org-done ((t (:foreground ,organic-green))) t)
+   `(org-headline-done ((t (:foreground ,organic-teal))) t)
+   `(org-drawer ((t (:foreground ,organic-black))) t)
+   `(org-special-keyword ((t (:foreground ,organic-violet))) t)
+   `(org-property-value ((t (:foreground ,organic-green))) t)
+
+   ;; Verb
+   `(verb-header ((t (:foreground ,organic-violet))) t)
+   `(verb-code-tag ((t (:foreground ,organic-green))) t)
 
    ;; asciidoc-mode
    '(asciidoc-code-face ((t (:inherit font-lock-string-face))))
@@ -380,6 +388,7 @@
    `(nxml-element-local-name ((t (:foreground ,organic-blue))) t)
    `(yas-field-highlight-face ((t (:background ,organic-highlight-blue))))
    `(idle-highlight ((t (:background ,organic-highlight-green))) t)
+   `(eglot-highlight-symbol-face ((t (:weight bold))))
    `(comint-highlight-prompt ((t (:foreground ,organic-blue))) t)
    `(flx-highlight-face  ((t (:foreground ,organic-blue :bold t :underline t))) t)
 
