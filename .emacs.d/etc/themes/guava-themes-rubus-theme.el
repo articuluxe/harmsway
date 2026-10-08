@@ -63,6 +63,7 @@
       (rubus-purple-pink               "#aa649b")
 
       (rubus-fg                        "#FFFFFF")
+      (rubus-fg-2                      "#c3c3c3")
       (rubus-bg                        "#0e1216")
       (rubus-highlight                 "#22262a")
       (rubus-shadow                    "#b3b3b3")
@@ -73,6 +74,7 @@
 
       (rubus-mode-line                 "#aa3232")
       (rubus-mode-line-inactive        "#cd7378")
+      (rubus-mode-line-modified        "#826ee6")
       (rubus-bell                      "#326EAA")
 
       (rubus-tab-1                     rubus-mode-line)
@@ -88,7 +90,7 @@
       (rubus-fl-variable-name          rubus-yellow)
       (rubus-fl-constant               rubus-purple)
       (rubus-fl-warning                rubus-warning)
-      (rubus-fl-punctuation            rubus-light-purple)
+      (rubus-fl-punctuation            rubus-fg-2)
       (rubus-fl-negation-char          rubus-green-blue)
 
       (rubus-diff-added                "#5aa05a")
@@ -169,7 +171,9 @@
 
    ;; mode-line
    `(mode-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line))))
-   `(mode-line-inactive ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,rubus-class (:background ,rubus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,rubus-class (:weight bold))))
+   `(mode-line-highlight ((,rubus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,rubus-class (:foreground ,rubus-white :background ,rubus-bell))))
 
    ;; minibuffer
@@ -193,8 +197,9 @@
    `(tab-line-tab-current ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,rubus-class (:foreground ,rubus-purple :weight bold))))
+   `(tab-line-tab-modified ((,rubus-class (:foreground ,rubus-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,rubus-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,rubus-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,rubus-class (:foreground ,rubus-white :background ,rubus-bell))))
@@ -283,6 +288,7 @@
    ;; custom-button
    `(custom-button ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -308,6 +314,7 @@
    `(doom-modeline-project-name ((,rubus-class (:foreground ,rubus-light-purple :inherit italic))))
    `(doom-modeline-project-parent-dir ((,rubus-class (:foreground ,rubus-light-purple))))
    `(doom-modeline-buffer-minor-mode ((,rubus-class (:foreground ,rubus-orange))))
+   `(doom-modeline-buffer-modified ((,rubus-class (:foreground ,rubus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,rubus-class (:foreground ,rubus-fg :background ,rubus-bg))))
@@ -331,7 +338,7 @@
    `(envrc-mode-line-on-face ((,rubus-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,rubus-class (:weight bold :background ,rubus-highlight))))
+   `(devdocs-code-block ((,rubus-class (:weight bold :background ,rubus-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

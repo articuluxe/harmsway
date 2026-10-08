@@ -39,10 +39,10 @@
       (prunus-white                     "#FFFFFF")
 
       (prunus-light-brown               "#785a4b")
-      (prunus-alt-light-brown           "#9b7d6e")
+      (prunus-alt-light-brown           "#917364")
       (prunus-brown                     "#5f4132")
       (prunus-alt-brown                 "#5a5046")
-      (prunus-deep-brown                "#553c23")
+      (prunus-coffee                    "#b49687")
 
       (prunus-light-green               "#50a05f")
       (prunus-green-forest              "#007341")
@@ -62,6 +62,7 @@
       (prunus-purple-red                "#8B2252")
 
       (prunus-fg                        "#ebafc8")
+      (prunus-fg-2                      "#af738c")
       (prunus-bg                        "#190f05")
       (prunus-highlight                 "#2d2319")
       (prunus-shadow                    "#b3b3b3")
@@ -72,22 +73,23 @@
 
       (prunus-mode-line                 "#463c32")
       (prunus-mode-line-inactive        "#5a5046")
+      (prunus-mode-line-modified        "#cd3c88")
       (prunus-bell                      "#324646")
 
       (prunus-tab-1                     prunus-mode-line)
       (prunus-tab-2                     prunus-mode-line-inactive)
-      (prunus-tab-3                     prunus-deep-brown)
+      (prunus-tab-3                     prunus-alt-light-brown)
 
       (prunus-fl-comment                prunus-green-forest)
       (prunus-fl-string                 prunus-purple-red)
       (prunus-fl-keyword                prunus-light-brown)
       (prunus-fl-builtin                prunus-pink)
-      (prunus-fl-type                   prunus-alt-light-brown)
+      (prunus-fl-type                   prunus-coffee)
       (prunus-fl-function-name          prunus-red)
       (prunus-fl-variable-name          prunus-green-subdued)
       (prunus-fl-constant               prunus-purple)
       (prunus-fl-warning                prunus-warning)
-      (prunus-fl-punctuation            prunus-oxidized-green)
+      (prunus-fl-punctuation            prunus-fg-2)
       (prunus-fl-negation-char          prunus-deep-red)
 
       (prunus-diff-added                "#5aa05a")
@@ -168,7 +170,9 @@
 
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line))))
-   `(mode-line-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,prunus-class (:background ,prunus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,prunus-class (:weight bold))))
+   `(mode-line-highlight ((,prunus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,prunus-class (:foreground ,prunus-white :background ,prunus-bell))))
 
    ;; minibuffer
@@ -192,8 +196,9 @@
    `(tab-line-tab-current ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,prunus-class (:foreground ,prunus-pink :weight bold))))
+   `(tab-line-tab-modified ((,prunus-class (:foreground ,prunus-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,prunus-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,prunus-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,prunus-class (:foreground ,prunus-white :background ,prunus-bell))))
@@ -207,7 +212,7 @@
    `(link-visited ((,prunus-class (:foreground ,prunus-cyan :underline t :weight bold))))
 
    ;; outline
-   `(outline-1 ((,prunus-class (:foreground ,prunus-alt-light-brown :weight medium))))
+   `(outline-1 ((,prunus-class (:foreground ,prunus-coffee :weight medium))))
    `(outline-2 ((,prunus-class (:foreground ,prunus-green-forest :weight medium))))
    `(outline-4 ((,prunus-class (:foreground ,prunus-deep-blue :weight medium))))
    `(outline-3 ((,prunus-class (:foreground ,prunus-red :weight medium))))
@@ -282,6 +287,7 @@
    ;; custom-button
    `(custom-button ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -296,7 +302,7 @@
    `(elfeed-search-last-update-face ((,prunus-class (:weight bold :foreground ,prunus-light-pink))))
    `(elfeed-search-unread-count-face ((,prunus-class (:weight bold :foreground ,prunus-light-pink))))
 
-   `(elfeed-show-header-face ((,prunus-class (:foreground ,prunus-alt-light-brown))))
+   `(elfeed-show-header-face ((,prunus-class (:foreground ,prunus-coffee))))
    `(elfeed-show-author-face ((,prunus-class (:weight bold :foreground ,prunus-red))))
    `(elfeed-show-title-face ((,prunus-class (:weight bold :foreground ,prunus-red))))
    `(elfeed-show-date-face ((,prunus-class (:foreground ,prunus-light-pink))))
@@ -307,6 +313,7 @@
    `(doom-modeline-project-name ((,prunus-class (:foreground ,prunus-green-forest :inherit italic))))
    `(doom-modeline-project-parent-dir ((,prunus-class (:foreground ,prunus-green-forest))))
    `(doom-modeline-buffer-minor-mode ((,prunus-class (:foreground ,prunus-shadow))))
+   `(doom-modeline-buffer-modified ((,prunus-class (:foreground ,prunus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,prunus-class (:foreground ,prunus-fg :background ,prunus-bg))))
@@ -330,7 +337,7 @@
    `(envrc-mode-line-on-face ((,prunus-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,prunus-class (:weight bold :background ,prunus-highlight))))
+   `(devdocs-code-block ((,prunus-class (:weight bold :background ,prunus-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

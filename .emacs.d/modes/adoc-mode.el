@@ -48,7 +48,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'compile)
 (require 'outline)
 (require 'subr-x)
 (require 'xref)
@@ -133,6 +132,9 @@ configuration file."
           (string :tag "level 4")
           (string :tag "level 5"))
   :group 'adoc)
+(make-obsolete-variable 'adoc-two-line-title-del
+                        "two-line (setext) titles are deprecated and support for them will be removed."
+                        "0.10.0")
 
 (defcustom adoc-delimited-block-del
   '("^/\\{4,\\}"         ; 0 comment
@@ -158,7 +160,11 @@ distinguish between a) a two line tile b) start of a delimited
 block and c) end of a delimited block. If you start a listing
 delimited block with '>----' and end it with '<----', then all
 three cases can easily be distinguished. The regexp in your
-AsciiDoc config file would the probably be '^[<>]-{4,}$'"
+AsciiDoc config file would the probably be '^[<>]-{4,}$'
+
+Only the highlighting follows this option.  Finding where a block
+begins and ends, so that a block is always fontified as a whole (see
+`adoc--ensure-block-extents'), uses the standard Asciidoctor delimiters."
   :type '(list
           (choice :tag "comment"
                   (regexp :tag "start/end regexp")
@@ -206,6 +212,9 @@ AsciiDoc config file would the probably be '^[<>]-{4,}$'"
   :type '(choice (const :tag "One-line" 1)
                  (const :tag "Two-line" 2))
   :group 'adoc)
+(make-obsolete-variable 'adoc-default-title-type
+                        "two-line (setext) titles are deprecated and support for them will be removed."
+                        "0.10.0")
 
 (defcustom adoc-default-title-sub-type 1
   "Default title sub type, see `adoc-title-descriptor'."
@@ -217,7 +226,10 @@ AsciiDoc config file would the probably be '^[<>]-{4,}$'"
   "Whether or not two line titles shall be fontified.
 
 Two-line (Setext) titles are deprecated by Asciidoctor in favor
-of the one-line (atx) style.  This option is nil by default.
+of the one-line (atx) style, and `adoc-mode' will drop support for
+them in a future release, along with this option.  Until then,
+\\<adoc-mode-map>\\[adoc-toggle-title-type] converts the two-line title
+at point to the one-line style while the option is enabled.
 
 nil means never fontify.  t means always fontify.  A number means
 only fontify if the line below has NOT the length of the given
@@ -227,6 +239,9 @@ delimited block lines have a certain length."
                  (const t)
                  number)
   :group 'adoc)
+(make-obsolete-variable 'adoc-enable-two-line-title
+                        "two-line (setext) titles are deprecated and support for them will be removed."
+                        "0.10.0")
 
 (defcustom adoc-section-id-style 'auto
   "How section auto-ids are derived from section titles.
@@ -384,6 +399,13 @@ level-1 through level-5 sections.")
 
 (defconst adoc-uolist-max-level 5
   "Max unordered (bulleted) list item nesting level, counting starts at 0.")
+
+(defconst adoc--url-schemes '("http" "https" "ftp" "file" "irc")
+  "The URL schemes Asciidoctor makes a link of, as in `https://example.org'.")
+
+(defconst adoc--link-macro-names
+  (append adoc--url-schemes '("mailto" "callto" "link"))
+  "The names of the inline macros that link somewhere, as in `mailto:me[Me]'.")
 
 ;; I think it's actually not worth the fuzz to try to sumarize regexps until
 ;; profiling profes otherwise. Nevertheless I can't stop doing it.
@@ -1282,32 +1304,18 @@ Subgroups:
     adoc-delimited-block-del "\\|")
    "\\)"))
 
-;; KLUDGE: Contrary to what the AsciiDoc manual specifies, adoc-mode does not
-;; allow that either the first or the last line within a delimited block is
-;; blank. That shall help to prevent the case that adoc-mode wrongly
-;; interprets the end of a delimited block as the beginning, and the beginning
-;; of a following delimited block as the ending, thus wrongly interpreting the
-;; text between two adjacent delimited blocks as delimited block.  It is
-;; expected that it is unlikely that one wants to begin or end a delimited
-;; block with a blank line, and it is expected that it is likely that
-;; delimited blocks are surrounded by blank lines.
 (defun adoc-re-delimited-block (del)
+  "Return a regexp matching a whole delimited block of type DEL.
+DEL indexes `adoc-delimited-block-del'.  Like Asciidoctor, the block
+ends at the first line that repeats the opening delimiter exactly.
+Group 1 is the opening delimiter, 2 the content, 3 the closing
+delimiter."
   (let* ((tmp (nth del adoc-delimited-block-del))
          (start (if (consp tmp) (car tmp) tmp))
-         (end (if (consp tmp) (cdr tmp) tmp)))
+         (end (if (consp tmp) (cdr tmp) "\\1")))
     (concat
      "\\(" start "\\)[ \t]*\n"
-     "\\("
-     ;; a single leading non-blank line
-     "[ \t]*[^ \t\n].*\n"
-     ;; optionally followed by
-     "\\(?:"
-     ;; any number of arbitrary lines followed by
-     "\\(?:.*\n\\)*?"
-     ;; a trailing non blank line
-     "[ \t]*[^ \t\n].*\n"
-     "\\)??"
-     "\\)??"
+     "\\(\\(?:.*\n\\)*?\\)"
      "\\(" end "\\)[ \t]*$")))
 
 ;; TODO: since its multiline, it doesn't yet work properly.
@@ -1395,7 +1403,10 @@ this id. If ID is nil, the regexp matches any anchor."
    ((eq type 'inline-special)
     ;; [\\]?\[\[(?P<attrlist>[\w"_:].*?)\]\]
     (concat "\\(\\[\\[\\)"
-            "\\(" (if id (concat (regexp-quote id) "[ \t]*?") "[a-zA-Z0-9\"_:].*?") "\\)"
+            "\\(" (if id
+                       (concat (regexp-quote id) "[ \t]*\\(?:,.*?\\)?")
+                     "[a-zA-Z0-9\"_:].*?")
+            "\\)"
             "\\(\\]\\]\\)"))
 
    ((eq type 'biblio)
@@ -1435,13 +1446,13 @@ further tests to find a proper xref."
    ((eq type 'inline-special-with-caption)
     ;; (?su)[\\]?&lt;&lt;(?P<attrlist>[\w"].*?)&gt;&gt;=xref2
     (if for-kw
-        "\\(<<\\)\\([a-zA-Z0-9\"].*?\\)\\(,\\)\\(.*?\\(?:\n.*?\\)??\\)\\(>>\\)"
+        "\\(<<\\)\\([[:alnum:]_#/.:{\"][^,>\n]*?\\(?:\n[^,>\n]*?\\)??\\)\\(,\\)\\(.*?\\(?:\n.*?\\)??\\)\\(>>\\)"
       (concat "\\(<<\\)\\(" (adoc-re-id) "[ \t\n]*\\)\\(,\\)\\([^>\n]*?\\(?:\n[^>\n]*?\\)??\\)\\(>>\\)")))
 
    ((eq type 'inline-special-no-caption)
     ;; asciidoc.conf uses the same regexp as for without caption
     (if for-kw
-        "\\(<<\\)\\([a-zA-Z0-9\"].*?\\(?:\n.*?\\)??\\)\\(>>\\)"
+        "\\(<<\\)\\([[:alnum:]_#/.:{\"][^,>\n]*?\\(?:\n[^,>\n]*?\\)??\\)\\(>>\\)"
       (concat "\\(<<\\)\\(" (adoc-re-id) "[ \t\n]*\\)\\(>>\\)")))
 
    ((eq type 'inline-general-macro)
@@ -1511,7 +1522,10 @@ NOT-ALLOWED-CHARS are chars not allowed before the quote."
 ;; backslash as the first char. If the first char is ineed a backslash, it is
 ;; 'removed' (-> adoc-meta-hide-face face), and the rest of the match is left
 ;; unaffected.
-(defun adoc-re-unconstrained-quote (ldel &optional rdel)
+(defun adoc-re-unconstrained-quote (ldel &optional rdel content)
+  "Return a regexp matching an unconstrained quote between LDEL and RDEL.
+RDEL defaults to LDEL.  CONTENT is the regexp for the quoted text,
+by default any text spanning up to a paragraph."
   (unless rdel (setq rdel ldel))
   (let* ((qldel (regexp-quote ldel))
          (qrdel (regexp-quote rdel)))
@@ -1519,7 +1533,7 @@ NOT-ALLOWED-CHARS are chars not allowed before the quote."
      (adoc-re-quote-precondition "")
      "\\(\\[[^][]+?\\]\\)?"
      "\\(" qldel "\\)"
-     "\\(" (adoc-re-content "+") "\\)"
+     "\\(" (or content (adoc-re-content "+")) "\\)"
      "\\(" qrdel "\\)")))
 
 ;; AsciiDoc src for constrained quotes
@@ -1559,6 +1573,10 @@ subgroups:
     (adoc-re-constrained-quote ldel rdel))
    ((eq type 'adoc-unconstrained)
     (adoc-re-unconstrained-quote ldel rdel))
+   ((eq type 'adoc-script)
+    ;; Super- and subscripts can't contain whitespace (`\S+?' in
+    ;; Asciidoctor), so `~/.emacs.d/init.el to ~/backup' isn't one.
+    (adoc-re-unconstrained-quote ldel rdel "[^ \t\n]+?"))
    (t
     (error "Invalid type"))))
 
@@ -1708,20 +1726,27 @@ adoc-syntax to code blocks."
             (null (eobp))))
     ret))
 
-(defun adoc-kwf-std (end regexp &optional must-free-groups no-block-del-groups)
+(defun adoc-kwf-std (end regexp &optional must-free-groups no-block-del-groups predicate)
   "Standard function for keywords
 Intendent to be called from font lock keyword functions. END is
 the limit of the search. REXEXP the regexp to be searched.
 MUST-FREE-GROUPS a list of regexp group numbers which may not
 match text that has an adoc-reserved text-property with a non-nil
 value. Likewise, groups in NO-BLOCK-DEL-GROUPS may not contain
-text having adoc-reserved set to symbol `block-del'."
+text having adoc-reserved set to symbol `block-del'.  PREDICATE,
+when non-nil, is called with the match data set and rejects the
+match by returning nil.
+
+A rejected match doesn't end the search: font-lock abandons a
+keyword for the rest of the region as soon as its matcher returns
+nil, so the search goes on to the next match instead."
   (let ((found t) (prevented t))
     (while (and found prevented (<= (point) end) (not (eobp)))
       (setq found (adoc-kwf-search regexp end t))
       (setq prevented
             (and found
                  (or
+                  (and predicate (not (funcall predicate)))
                   (cl-some (lambda(x)
                              (and (match-beginning x)
                                   (text-property-not-all (match-beginning x)
@@ -1791,17 +1816,19 @@ text having adoc-reserved set to symbol `block-del'."
         (goto-char attribute-list-end))))
   nil)
 
-(defun adoc-facespec-subscript ()
+(defun adoc-facespec-script (face raise)
+  "Return a quoted face spec for a super- or subscript in FACE.
+The text is displayed RAISE lines higher, unless RAISE is 0."
   (list 'quote
-        (append '(face adoc-subscript-face)
-                (when (not (= 0 (car adoc-script-raise)))
-                  `(display (raise ,(car adoc-script-raise)))))))
+        (append `(face ,face)
+                (unless (zerop raise)
+                  `(display (raise ,raise))))))
+
+(defun adoc-facespec-subscript ()
+  (adoc-facespec-script 'adoc-subscript-face (car adoc-script-raise)))
 
 (defun adoc-facespec-superscript ()
-  (list 'quote
-        (append '(face adoc-superscript-face)
-                (when (not (= 0 (car adoc-script-raise)))
-                  `(display (raise ,(cadr adoc-script-raise)))))))
+  (adoc-facespec-script 'adoc-superscript-face (cadr adoc-script-raise)))
 
 ;; TODO: use & learn some more macro magic so adoc-kw-unconstrained-quote and
 ;; adoc-kw-constrained-quote are less redundant and have common parts in one
@@ -1811,19 +1838,30 @@ text having adoc-reserved set to symbol `block-del'."
 ;; ...
 ;; could surely be replaced by a single (adoc-not-reserved-bla-bla 1 3)
 
-;; BUG: Remember that if a matcher function returns nil, font-lock does not
-;; further call it and abandons that keyword. Thus in adoc-mode in general,
-;; there should be a loop around (and (re-search-forward ...) (not
-;; (text-property-not-all...)) ...). Currently if say a constrained quote can't
-;; match because of adoc-reserved, following quotes of the same type which
-;; should be highlighed are not, because font-lock abandons that keyword.
+(defun adoc--delimited-block-match-p ()
+  "Return non-nil unless the delimited block matched can't be one.
+In a listing, literal or other verbatim block a delimiter line is just
+content, and a block nested in another one has to close before it does.
+See `adoc--ensure-block-extents' for how blocks are found."
+  (let ((block (get-text-property (match-beginning 0) 'adoc-delimited-block)))
+    (or (null block)
+        (= (nth 1 block) (match-beginning 0))
+        (and (not (nth 2 block))
+             (<= (match-end 0) (nth 3 block))))))
+
+(defun adoc--outside-delimited-block-p ()
+  "Return non-nil when the current match doesn't start inside a delimited block.
+Asciidoctor reads a section title inside a delimited block as plain
+text.  See `adoc--ensure-block-extents' for how blocks are found."
+  (not (get-text-property (match-beginning 0) 'adoc-delimited-block)))
 
 (defun adoc-kw-one-line-title (level text-face)
   "Creates a keyword for font-lock which highlights one line titles.
 TEXT-FACE is a face name symbol."
   (let ((face-form (list 'quote text-face)))
     (list
-     `(lambda (end) (adoc-kwf-std end ,(adoc-re-one-line-title level) '(0)))
+     `(lambda (end) (adoc-kwf-std end ,(adoc-re-one-line-title level) '(0) nil
+                                  #'adoc--outside-delimited-block-p))
      '(1 '(face adoc-meta-hide-face adoc-reserved block-del) t)
      `(2 ,face-form t)
      '(3  '(face nil adoc-reserved block-del) t)
@@ -1831,6 +1869,24 @@ TEXT-FACE is a face name symbol."
 
 ;; TODO: highlight bogous 'two line titles' with warning face
 ;; TODO: completely remove keyword when adoc-enable-two-line-title is nil
+(defun adoc--two-line-title-underline-p (length)
+  "Return non-nil when a line LENGTH chars long may underline a two-line title.
+That takes two-line titles to be enabled, and LENGTH to differ from
+a numeric `adoc-enable-two-line-title'."
+  (and adoc-enable-two-line-title
+       (not (eql adoc-enable-two-line-title length))))
+
+(defun adoc--two-line-title-match-p ()
+  "Return non-nil when the last `adoc-re-two-line-title' match is a title.
+The underline has to be about as long as the text, may not be excluded
+by `adoc-enable-two-line-title', and the text line may not be a block
+attribute list or block title (Asciidoctor reads those as the
+metadata of the block below)."
+  (let ((underline (- (match-end 3) (match-beginning 3))))
+    (and (< (abs (- (- (match-end 2) (match-beginning 2)) underline)) 3)
+         (adoc--two-line-title-underline-p underline)
+         (not (memq (char-after (match-beginning 2)) '(?\[ ?.))))))
+
 (defun adoc-kw-two-line-title (del text-face)
   "Creates a keyword for font-lock which highlights two line titles.
 TEXT-FACE is a face name symbol."
@@ -1839,11 +1895,11 @@ TEXT-FACE is a face name symbol."
      ;; matcher function
      `(lambda (end)
         (and adoc-enable-two-line-title
-             (adoc-kwf-search ,(adoc-re-two-line-title del) end t)
-             (< (abs (- (- (match-end 2) (match-beginning 2)) (- (match-end 3) (match-beginning 3)))) 3)
-             (or (not (numberp adoc-enable-two-line-title))
-                 (not (equal adoc-enable-two-line-title (- (match-end 2) (match-beginning 2)))))
-             (not (text-property-not-all (match-beginning 0) (match-end 0) 'adoc-reserved nil))))
+             (adoc-kwf-std
+              end ,(adoc-re-two-line-title del) '(0) nil
+              (lambda ()
+                (and (adoc--two-line-title-match-p)
+                     (adoc--outside-delimited-block-p))))))
      ;; highlighers
      `(2 ,face-form t)
      `(3 '(face adoc-meta-hide-face adoc-reserved block-del) t))))
@@ -1904,12 +1960,16 @@ A checklist item is an unordered list item whose text begins with
   "Creates a keyword for font-lock which highlights a delimited block.
 TEXT-FACE is a face name symbol or nil."
   (list
-   `(lambda (end) (adoc-kwf-std end ,(adoc-re-delimited-block del) '(1 3)))
-   '(0 '(face nil font-lock-multiline t) t)
+   `(lambda (end) (adoc-kwf-std end ,(adoc-re-delimited-block del) '(1 3) nil
+                                #'adoc--delimited-block-match-p))
+   ;; Leave the faces in the block alone: a compound block (example,
+   ;; sidebar, quote, open) holds lists, comments and other blocks whose
+   ;; highlighting has to survive.
+   '(0 '(face nil font-lock-multiline t))
    '(1 '(face adoc-meta-hide-face adoc-reserved block-del) t)
    (if (not inhibit-text-reserved)
        `(2 '(face ,text-face adoc-reserved t) t t)
-     `(2 ',text-face t t))
+     `(2 ',text-face append t))
    '(3 '(face adoc-meta-hide-face adoc-reserved block-del) t)))
 
 ;; if adoc-kw-delimited-block, adoc-kw-two-line-title don't find the whole
@@ -1927,8 +1987,7 @@ TEXT-FACE is a face name symbol or nil."
   (list
    ;; matcher function
    (lambda (end)
-     (and (adoc-kwf-search "^[ \t]*\\(\\(?:CAUTION\\|WARNING\\|IMPORTANT\\|TIP\\|NOTE\\):\\)\\([ \t]+\\)" end t)
-          (not (text-property-not-all (match-beginning 0) (match-end 0) 'adoc-reserved nil))))
+     (adoc-kwf-std end "^[ \t]*\\(\\(?:CAUTION\\|WARNING\\|IMPORTANT\\|TIP\\|NOTE\\):\\)\\([ \t]+\\)" '(0)))
    ;; highlighters
    '(1 '(face adoc-complex-replacement-face adoc-reserved t))
    '(2 '(face adoc-align-face adoc-reserved t))))
@@ -1937,9 +1996,7 @@ TEXT-FACE is a face name symbol or nil."
   "Creates a keyword which highlights a sequence of verbatim paragraphs."
   (list
    ;; matcher function
-   `(lambda (end)
-      (and (adoc-kwf-search ,(adoc-re-verbatim-paragraph-sequence) end t)
-           (not (text-property-not-all (match-beginning 0) (match-end 0) 'adoc-reserved nil))))
+   `(lambda (end) (adoc-kwf-std end ,(adoc-re-verbatim-paragraph-sequence) '(0)))
    ;; highlighers
    '(1 '(face adoc-typewriter-face adoc-reserved t font-lock-multiline t))))
 
@@ -2087,7 +2144,7 @@ TEXTPROPS is an additional plist with textproperties."
                      ',(car target-faces)
                    ',(cadr target-faces)))
                (t (list 'quote target-faces)))
-             'adoc-flyspell-ignore t)
+             'adoc-flyspell-ignore t 'adoc-reserved t)
        ,(if target-meta-p t 'append))
    `(4 '(face adoc-meta-face adoc-reserved t . ,textprops) t) ; [
    `(5 '(face adoc-meta-face adoc-attribute-list ,(or attribute-list t) . ,textprops) t)
@@ -2096,9 +2153,11 @@ TEXTPROPS is an additional plist with textproperties."
 ;; largely copied from adoc-kw-inline-macro
 ;; TODO: output text should be affected by quotes & co, e.g. bold, emph, ...
 (defun adoc-kw-inline-macro-urls-attribute-list ()
-  (let ((cmd-name (regexp-opt '("http" "https" "ftp" "file" "irc" "mailto" "callto" "link"))))
+  (let ((cmd-name (regexp-opt adoc--link-macro-names)))
     (list
-     `(lambda (end) (adoc-kwf-std end ,(adoc-re-inline-macro cmd-name) '(0) '(0)))
+     ;; The link text (group 5) may hold other, already highlighted, markup,
+     ;; e.g. `https://example.org[the *bold* text]'.
+     `(lambda (end) (adoc-kwf-std end ,(adoc-re-inline-macro cmd-name) '(1 2 3 4 6) '(0)))
      '(0 '(face nil keymap adoc-link-keymap mouse-face adoc-link-mouse-face help-echo "mouse-1: visit this link")) ; clickable
      `(1 '(face adoc-url-face adoc-reserved t adoc-flyspell-ignore t) t) ; cmd-name
      `(2 '(face adoc-url-face adoc-reserved t) t) ; :
@@ -2108,7 +2167,7 @@ TEXTPROPS is an additional plist with textproperties."
      '(6 '(face adoc-meta-face adoc-reserved t) t))))            ; ]
 
 (defun adoc-kw-inline-macro-urls-no-attribute-list ()
-  (let ((cmd-name (regexp-opt '("http" "https" "ftp" "file" "irc" "mailto" "callto" "link"))))
+  (let ((cmd-name (regexp-opt adoc--link-macro-names)))
     (list
      `(lambda (end) (adoc-kwf-std end ,(adoc-re-inline-macro cmd-name nil nil 'empty) '(0) '(0)))
      '(0 '(face nil keymap adoc-link-keymap mouse-face adoc-link-mouse-face help-echo "mouse-1: visit this link")) ; clickable
@@ -2149,7 +2208,7 @@ TEXTPROPS is an additional plist with textproperties."
 ;;   because part of the match (the __) contains text properties with
 ;;   adoc-reserved non-nil, also because quote highlighting already happened.
 (defun adoc-kw-standalone-urls ()
-  (let* ((url "\\b\\(?:https?\\|ftp\\|file\\|irc\\)://[^ \t\n<>]*[a-zA-Z0-9_/]")
+  (let* ((url (concat "\\b" (regexp-opt adoc--url-schemes) "://[^][ \t\n<>]*[a-zA-Z0-9_/]"))
          (url<> (concat "<\\(?:" url "\\)>"))
          (email "[a-zA-Z0-9_][-a-zA-Z0-9_._]*@[-a-zA-Z0-9_._]*[a-zA-Z0-9_]")
          (both (concat "\\(?:" url "\\)\\|\\(?:" url<> "\\)\\|\\(?:" email "\\)")))
@@ -2168,8 +2227,11 @@ TEXTPROPS is an additional plist with textproperties."
    ;; matcher function
    (lambda (end)
      (let (found)
+       ;; Skip reserved text, and attribute lists (link text and the like),
+       ;; whose face is applied to the list as a whole later on.
        (while (and (setq found (adoc-kwf-search regexp end t))
-                   (text-property-not-all (match-beginning 1) (match-end 1) 'adoc-reserved nil))
+                   (or (text-property-not-all (match-beginning 1) (match-end 1) 'adoc-reserved nil)
+                       (text-property-not-all (match-beginning 1) (match-end 1) 'adoc-attribute-list nil)))
          (goto-char (+ (match-beginning 0) 1)))
        (when (and found adoc-insert-replacement replacement)
          (let* ((s (cond
@@ -2199,14 +2261,15 @@ TEXTPROPS is an additional plist with textproperties."
 ;;   line beginning would also be underlined, which looks akward.
 (defun adoc-flf-first-whites-fixed-width(end)
   ;; it makes no sense to do something with a blank line, so require at least one non blank char.
-  (and (adoc-kwf-search "\\(^[ \t]+\\)[^ \t\n]" end t)
-       ;; don't replace a face with with adoc-align-face which already is a fixed with
-       ;; font (most probably), because then it also won't look aligned
-       (text-property-not-all (match-beginning 1) (match-end 1) 'face 'adoc-typewriter-face)
-       (text-property-not-all (match-beginning 1) (match-end 1) 'face 'adoc-code-face)
-       (text-property-not-all (match-beginning 1) (match-end 1) 'adoc-code-block t)
-       (text-property-not-all (match-beginning 1) (match-end 1) 'face 'adoc-passthrough-face)
-       (text-property-not-all (match-beginning 1) (match-end 1) 'face 'adoc-comment-face)))
+  (adoc-kwf-std
+   end "\\(^[ \t]+\\)[^ \t\n]" nil nil
+   (lambda ()
+     ;; don't replace a face with with adoc-align-face which already is a fixed with
+     ;; font (most probably), because then it also won't look aligned
+     (not (or (adoc--face-memq '(adoc-typewriter-face adoc-code-face
+                                 adoc-passthrough-face adoc-comment-face)
+                               (get-text-property (match-beginning 1) 'face))
+              (get-text-property (match-beginning 1) 'adoc-code-block))))))
 
 ;; See adoc-flf-first-whites-fixed-width
 (defun adoc-kw-first-whites-fixed-width ()
@@ -2310,17 +2373,20 @@ START-SRC and END-SRC delimit the actual source code."
             ;; whitespaces at the end of the block attributes are silently ignored by Asciidoctor.
             (lang () ",[\t ]*\\(?1:[^],]+\\)")
             (optional-other-args () "\\(?:,[^]]+\\)?"))
-    (outer-brackets-and-delimiter
-     (rx-or
-      (concat
-       "source"
-       (rx-optional (lang))
-       (optional-other-args))
-      (concat
-       (lang)
-       (optional-other-args)))
-     ))
-  "Regexp matching the beginning of source blocks.
+    (concat
+     (outer-brackets-and-delimiter
+      (rx-or
+       (concat
+        "source"
+        (rx-optional (lang))
+        (optional-other-args))
+       (concat
+        (lang)
+        (optional-other-args))))
+     ;; A Markdown-style fenced code block names its language after the
+     ;; fence, as in ```ruby.  Four backticks don't make a fence.
+     "\\|^\\(?2:```\\)[ \t]*\\(?1:[^`, \t\n][^,\n]*?\\)?[ \t]*\\(?:,.*\\)?\n"))
+  "Regexp matching the beginning of source blocks, fenced ones included.
 Group 1 contains the language attribute.
 Group 2 contains the block delimiter.")
 
@@ -2340,13 +2406,20 @@ The first group of the match data delimits the
 actual source code."
   (let (start-header start-src end-src end-block lang)
     (save-match-data
-      (and (setq start-src (re-search-forward adoc-code-block-begin-regexp last noerror))
-           (setq lang (or (match-string 1) t)
-                 start-header (match-beginning 0))
-           (setq end-block (re-search-forward (format "\n%s$" (regexp-quote (match-string 2)))
-                                                   (+ (point) adoc-font-lock-extend-after-change-max) t))
-           (setq end-src (match-beginning 0)))
-      )
+      (while (and (not end-block)
+                  (setq start-src (re-search-forward adoc-code-block-begin-regexp
+                                                     last noerror)))
+        (let ((block (adoc--delimited-block-at (match-beginning 2))))
+          ;; Pass over a delimiter line in the content of a verbatim block and
+          ;; an unterminated block, see `adoc--ensure-block-extents'.
+          (when (and block (= (nth 1 block) (match-beginning 2)))
+            (setq lang (or (match-string 1) t)
+                  start-header (match-beginning 0))
+            (when (re-search-forward
+                   (concat "^" (regexp-quote (match-string 2)) "[ \t]*$")
+                   (nth 3 block) t)
+              (setq end-block (match-end 0)
+                    end-src (max start-src (1- (match-beginning 0)))))))))
     (when end-block
       (set-match-data (list start-header end-block start-src end-src (current-buffer)))
       lang)))
@@ -2428,14 +2501,207 @@ Use this function as matching function MATCHER in `font-lock-keywords'."
             (put-text-property beg next 'display nil))
         (setq beg next)))))
 
+;;;; Delimited block extents
+
+;; The font-lock keywords match a delimited block with one regexp, from its
+;; opening to its closing delimiter, so they only see a block when the region
+;; being fontified covers all of it.  jit-lock fontifies the buffer in chunks,
+;; and a chunk can begin or end anywhere - including inside a block, where an
+;; opening delimiter can't be told from a closing one.  So the extent of every
+;; block is recorded by a scan that always pairs the delimiters up from the
+;; start of the buffer, and `adoc-font-lock-extend-region' widens the region
+;; so it never splits a top-level block.
+
+(defconst adoc--re-block-delimiter
+  (concat "^\\(?:\\(?1:"
+          (mapconcat #'identity
+                     '("/\\{4,\\}" "\\+\\{4,\\}" "-\\{4,\\}" "\\.\\{4,\\}"
+                       "_\\{4,\\}" "=\\{4,\\}" "\\*\\{4,\\}" "--"
+                       "[,:]=\\{3,\\}")
+                     "\\|")
+          ;; A fenced code block can name its language after the fence.
+          "\\)\\|\\(?1:```\\)\\(?:[^`\n].*\\)?\\)[ \t]*$")
+  "Regexp matching a delimited block or CSV/DSV table delimiter line.
+Group 1 is the delimiter, which a closing delimiter line repeats.  These
+are Asciidoctor's delimiters, Markdown's ``` fence included, not the
+ones `adoc-delimited-block-del' customizes for highlighting.  A `|==='
+table is highlighted line by line, so it needs no extent.")
+
+(defun adoc--verbatim-delimiter-p (delimiter)
+  "Return non-nil when DELIMITER opens a block whose content isn't AsciiDoc.
+That's every block but the example, sidebar, quote and open ones."
+  (not (or (equal delimiter "--")
+           (memq (aref delimiter 0) '(?= ?* ?_)))))
+
+(defconst adoc--re-block-metadata-line
+  "^\\(?:\\[.*\\]\\|\\.[^ \t.].*\\)[ \t]*$"
+  "Regexp matching a block attribute list, anchor or title line.")
+
+(defun adoc--title-underline-p (open delimiter)
+  "Return non-nil when DELIMITER, on the line at OPEN, underlines a title.
+That's only possible when two-line titles are enabled, and then a
+title line right above makes it the underline of a two-line title
+rather than a block delimiter, the same as for fontification."
+  (let ((del (and adoc-enable-two-line-title
+                  (cl-find (aref delimiter 0) adoc-two-line-title-del
+                           :key #'string-to-char))))
+    (and del
+         (save-excursion
+           (goto-char open)
+           (and (zerop (forward-line -1))
+                (looking-at (adoc-re-two-line-title del))
+                (= (match-beginning 3) open)
+                (adoc--two-line-title-match-p))))))
+
+(defvar-local adoc--block-extents-done 1
+  "Position up to which the delimited block extents are known.
+The `adoc-delimited-block' properties from here on are out of date.
+See `adoc--ensure-block-extents'.")
+
+(defvar-local adoc--block-extents-unterminated nil
+  "Where the first block known to be unterminated would begin, or nil.
+Text added anywhere after it might close it.")
+
+(defun adoc--invalidate-block-extents (beg &rest _)
+  "Forget the delimited block extents from where a change at BEG matters.
+That's the beginning of the top-level block BEG is in, read while the
+text before the change is still there.  Otherwise it's the beginning of
+BEG's line, which may become a delimiter line, together with any
+attribute and title lines above it, which would then belong to its
+block.  A change after an unterminated block's opening delimiter can
+close it, so then the extents are forgotten from that block on.  Meant
+for `before-change-functions'."
+  (when (<= beg adoc--block-extents-done)
+    (save-excursion
+      ;; The block just before BEG counts too when the change continues its
+      ;; last line, as text added after a closing delimiter at the very end
+      ;; of the buffer does.
+      (let ((block (or (and (< beg adoc--block-extents-done)
+                            (get-text-property beg 'adoc-delimited-block))
+                       (and (> beg (point-min))
+                            (not (eq (char-before beg) ?\n))
+                            (get-text-property (1- beg) 'adoc-delimited-block)))))
+        (goto-char (if block (car (adoc--outermost-block block)) beg))
+        (let ((pos (line-beginning-position)))
+          (while (and (zerop (forward-line -1))
+                      (looking-at-p adoc--re-block-metadata-line))
+            (setq pos (point)))
+          (setq adoc--block-extents-done (min adoc--block-extents-done pos))))))
+  (when (and adoc--block-extents-unterminated
+             (< adoc--block-extents-unterminated adoc--block-extents-done))
+    (setq adoc--block-extents-done adoc--block-extents-unterminated)))
+
+(defun adoc--ensure-block-extents (pos)
+  "Make sure the extents of the delimited blocks before POS are recorded.
+Each block, together with the attribute, anchor and title lines right
+above it, gets an `adoc-delimited-block' text property whose value is
+the list (START OPEN VERBATIM END PARENT): where the block begins, where
+its opening delimiter line is, whether its content isn't AsciiDoc (see
+`adoc--verbatim-delimiter-p'), where it ends, and the block it's nested
+in, or nil.  A block nested in an example, sidebar, quote or open block
+gets an extent of its own, so the property holds the innermost block.
+Like Asciidoctor, the first line that repeats the opening delimiter
+exactly closes a block, whatever it contains, and a nested block has to
+close before its parent does.  An unterminated block gets no extent.
+
+The scan picks up where the last one left off, and a block it starts
+is recorded whole."
+  (when (< adoc--block-extents-done pos)
+    (save-excursion
+      (save-restriction
+        (widen)
+        (with-silent-modifications
+          (let ((start (progn (goto-char (max adoc--block-extents-done (point-min)))
+                              (line-beginning-position)))
+                (end (progn (goto-char (min pos (point-max)))
+                            ;; Scan whole lines, so no delimiter line is cut in two.
+                            (unless (bolp) (forward-line 1))
+                            ;; Attribute, anchor and title lines belong to the
+                            ;; block that opens below them, so take in the line
+                            ;; after them too.
+                            (when (save-excursion
+                                    (and (zerop (forward-line -1))
+                                         (looking-at-p adoc--re-block-metadata-line)))
+                              (while (and (not (eobp))
+                                          (looking-at-p adoc--re-block-metadata-line))
+                                (forward-line 1))
+                              (forward-line 1))
+                            (point))))
+            (setq adoc--block-extents-done
+                  (adoc--record-block-extents start end))))))))
+
+(defun adoc--delimited-block-at (pos)
+  "Return the delimited block the line at POS is in, or nil.
+The value is that of the `adoc-delimited-block' property, see
+`adoc--ensure-block-extents'.  Inside a block, a line that looks like
+a section title is plain content, as for highlighting."
+  (save-match-data
+    (adoc--ensure-block-extents (1+ pos))
+    (get-text-property pos 'adoc-delimited-block)))
+
+(defun adoc--outermost-block (block)
+  "Return the top-level block that BLOCK is nested in, or BLOCK itself.
+BLOCK is a value of the `adoc-delimited-block' property."
+  (while (nth 4 block)
+    (setq block (nth 4 block)))
+  block)
+
+(defun adoc--record-block-extents (start end &optional parent)
+  "Record the extents of the delimited blocks opened between START and END.
+Without PARENT, START has to be outside any block, and the return value
+is the position the extents are known up to: END, or the end of a block
+that runs past it.  With PARENT, the blocks are nested in that compound
+block, whose content runs from START to END, so they have to close
+before END.  See `adoc--ensure-block-extents'."
+  (goto-char start)
+  (unless parent
+    (remove-text-properties start end '(adoc-delimited-block nil))
+    (when (and adoc--block-extents-unterminated
+               (>= adoc--block-extents-unterminated start))
+      (setq adoc--block-extents-unterminated nil)))
+  (while (and (< (point) end)
+              (re-search-forward adoc--re-block-delimiter end t))
+    (let* ((open (match-beginning 0))
+           (delimiter (match-string-no-properties 1))
+           (closing (concat "^" (regexp-quote delimiter) "[ \t]*$")))
+      (forward-line 1)
+      ;; Nothing in a block is a title, so nothing there underlines one.
+      (unless (and (not parent) (adoc--title-underline-p open delimiter))
+        (let ((content-start (point))
+              (block-start open))
+          (save-excursion
+            (goto-char open)
+            (while (and (zerop (forward-line -1))
+                        (looking-at-p adoc--re-block-metadata-line))
+              (setq block-start (point))))
+          (cond
+           ((re-search-forward closing (and parent end) t)
+            (let* ((content-end (match-beginning 0))
+                   (block-end (min (1+ (point)) (point-max)))
+                   (verbatim (adoc--verbatim-delimiter-p delimiter))
+                   (block (list block-start open verbatim block-end parent)))
+              (put-text-property block-start block-end 'adoc-delimited-block block)
+              (unless verbatim
+                (adoc--record-block-extents content-start content-end block))
+              (unless parent
+                (setq end (max end block-end)))
+              (goto-char block-end)))
+           ;; Asciidoctor runs an unterminated nested block to the end of its
+           ;; parent, but it gets no extent, like a top-level one.
+           ((not (or parent adoc--block-extents-unterminated))
+            (setq adoc--block-extents-unterminated block-start)))))))
+  end)
+
 (defvar font-lock-beg)
 (defvar font-lock-end)
 
 (defun adoc-font-lock-extend-region ()
-  "Extend the font-lock region to paragraph boundaries.
+  "Extend the font-lock region to paragraph and delimited block boundaries.
 Inline formatting in AsciiDoc can span multiple lines within a
 paragraph, so the fontification region must cover complete paragraphs
-for multiline constructs to be matched."
+for multiline constructs to be matched.  Likewise a delimited block is
+only recognised as a whole, so the region never ends or begins inside
+one (see `adoc--ensure-block-extents')."
   (let ((changed nil))
     (save-excursion
       (goto-char font-lock-beg)
@@ -2449,6 +2715,20 @@ for multiline constructs to be matched."
         (when (> new-end font-lock-end)
           (setq font-lock-end new-end
                 changed t))))
+    (adoc--ensure-block-extents font-lock-end)
+    (let ((block (get-text-property font-lock-beg 'adoc-delimited-block)))
+      (when block
+        (let ((block-start (car (adoc--outermost-block block))))
+          (when (< block-start font-lock-beg)
+            (setq font-lock-beg block-start
+                  changed t)))))
+    (let ((block (and (> font-lock-end (point-min))
+                      (get-text-property (1- font-lock-end) 'adoc-delimited-block))))
+      (when block
+        (let ((block-end (nth 3 (adoc--outermost-block block))))
+          (when (> block-end font-lock-end)
+            (setq font-lock-end block-end
+                  changed t)))))
     changed))
 
 (defun adoc-font-lock-mark-block-function ()
@@ -2477,7 +2757,7 @@ between matching delimiters, never in the surrounding prose."
        ,(concat "^\\(\\([,:]\\)=\\{3,\\}[ \t]*\\)\n"  ; 1=open line, 2=sep char
                 "\\(\\(?:[ \t]*[^ \t\n].*\n\\)*?\\)"   ; 3=cell data (no blank lines)
                 "\\(\\2=\\{3,\\}[ \t]*\\)$")           ; 4=close line
-       '(1 4)))
+       '(1 4) nil #'adoc--delimited-block-match-p))
    '(0 '(face nil font-lock-multiline t) t)
    '(1 '(face adoc-table-face adoc-reserved block-del) t)  ; opening delimiter
    '(4 '(face adoc-table-face adoc-reserved block-del) t)  ; closing delimiter
@@ -2491,6 +2771,62 @@ between matching delimiters, never in the surrounding prose."
             (match-end 3))
          '(setq adoc--table-cell-separator nil)
          '(0 '(face adoc-table-face adoc-reserved block-del) t))))
+
+(defconst adoc--re-markdown-thematic-break
+  "^ \\{0,3\\}\\(\\([-*_]\\)\\( *\\)\\2\\3\\2\\)[ \t]*$"
+  "Regexp matching a Markdown-style thematic break, such as `* * *'.
+Group 1 is the break without its indentation, group 2 its character and
+group 3 the spaces between them.")
+
+(defconst adoc--re-table-delimiter "\\([|!]=\\{3,\\}\\)[ \t]*$"
+  "Regexp matching a table delimiter line, from its beginning.
+Group 1 is the delimiter.")
+
+(defconst adoc--re-verbatim-style-line
+  "^\\[\\(?:literal\\|listing\\|source\\|verse\\)\\(?:[,#.%].*\\)?\\][ \t]*$"
+  "Regexp matching a block attribute line that makes a paragraph verbatim.")
+
+(defun adoc--block-begins-p ()
+  "Return non-nil when a block can begin on the line at point.
+That's below a blank line, a section title, a block or table delimiter
+or a list continuation, or below a block attribute or anchor line, which also
+ends a paragraph above it.  Block titles,
+comments and attribute entries leave it to the line above them.  A block
+attribute line with a verbatim style, such as `[source]', makes the
+line part of a paragraph, though."
+  (save-excursion
+    (let (attributes)
+      (catch 'done
+        (while t
+          (cond
+           ((or (/= (forward-line -1) 0) (looking-at-p "[ \t]*$"))
+            (throw 'done t))
+           ((looking-at-p adoc--re-verbatim-style-line) (throw 'done nil))
+           ((looking-at-p "\\[.*\\][ \t]*$") (setq attributes t))
+           ((or (looking-at-p (adoc-re-one-line-title nil))
+                (looking-at-p adoc--re-block-delimiter)
+                (looking-at-p adoc--re-table-delimiter)
+                (looking-at-p "\\+[ \t]*$"))
+            (throw 'done t))
+           ((looking-at-p "\\.[^ \t.]\\|//\\(?:[^/]\\|$\\)\\|:!?[[:alnum:]_][^:\n]*:\\(?:[ \t]\\|$\\)"))
+           (t (throw 'done attributes))))))))
+
+(defun adoc--markdown-thematic-break-p ()
+  "Return non-nil when the line at point is a Markdown-style thematic break.
+Asciidoctor takes `---', `* * *' and the like for one where a block
+begins, see `adoc--block-begins-p'.  Where `* * *' or `- - -' continues
+a list, it can be an item instead, see `adoc--list-scan'."
+  (save-excursion
+    (save-match-data
+      (beginning-of-line)
+      (and (looking-at adoc--re-markdown-thematic-break)
+           (not (nth 2 (adoc--delimited-block-at (point))))
+           (if (adoc--item-shaped-break-p)
+               (let ((breaks (cdr (adoc--thematic-breaks-table))))
+                 (pcase (gethash (point) breaks 'unknown)
+                   ('unknown (nth 3 (adoc--list-scan (point) t)))
+                   (known known)))
+             (adoc--block-begins-p))))))
 
 (defun adoc-get-font-lock-keywords ()
   "Return list of keywords for `adoc-mode'."
@@ -2559,6 +2895,12 @@ between matching delimiters, never in the surrounding prose."
    ;; Is a block marcro in asciidoc.conf, although manual has it in the "text formatting" section
    ;; ^'{3,}$=#ruler
    (list "^\\('\\{3,\\}+\\)[ \t]*$"
+         '(1 '(face adoc-complex-replacement-face adoc-reserved block-del)))
+   ;; Markdown-style ruler line, which comes before the list items, as `* * *'
+   ;; would make one
+   (list (lambda (end)
+           (adoc-kwf-std end adoc--re-markdown-thematic-break '(1) nil
+                         #'adoc--markdown-thematic-break-p))
          '(1 '(face adoc-complex-replacement-face adoc-reserved block-del)))
    ;; forced pagebreak
    ;; Is a block marcro in asciidoc.conf, although manual has it in the "text formatting" section
@@ -2780,38 +3122,14 @@ between matching delimiters, never in the surrounding prose."
    (adoc-kw-quote 'adoc-constrained "_" 'adoc-emphasis-face)
    (adoc-kw-quote 'adoc-unconstrained "##" 'adoc-highlight-face) ; highlighted text
    (adoc-kw-quote 'adoc-constrained "#" 'adoc-highlight-face)    ; highlighted text
-   (adoc-kw-quote 'adoc-unconstrained "~" (adoc-facespec-subscript)) ; subscript
-   (adoc-kw-quote 'adoc-unconstrained "^" (adoc-facespec-superscript)) ; superscript
+   (adoc-kw-quote 'adoc-script "~" (adoc-facespec-subscript)) ; subscript
+   (adoc-kw-quote 'adoc-script "^" (adoc-facespec-superscript)) ; superscript
 
 
    ;; special words
    ;; --------------------
    ;; there are no default special words to highlight
 
-
-   ;; replacements
-   ;; --------------------------------
-   ;; Asciidoc.conf surrounds em dash with thin spaces. I think that does not
-   ;; make sense here, all that spaces you would see in the buffer would at best
-   ;; be confusing.
-   (adoc-kw-replacement "\\((C)\\)" "\u00A9")  ;; ©
-   (adoc-kw-replacement "\\((R)\\)" "\u00AE")  ;; ®
-   (adoc-kw-replacement "\\((TM)\\)" "\u2122") ;; ™
-   ;; (^-- )=&#8212;&#8201;
-   ;; (\n-- )|( -- )|( --\n)=&#8201;&#8212;&#8201;
-   ;; (\w)--(\w)=\1&#8212;\2
-   (adoc-kw-replacement "^\\(--\\)[ \t]" "\u2014") ; em dash. See also above
-   (adoc-kw-replacement "[ \t]\\(--\\)\\(?:[ \t]\\|$\\)" "\u2014") ; dito
-   (adoc-kw-replacement "[a-zA-Z0-9_]\\(--\\)[a-zA-Z0-9_]" "\u2014") ; dito
-   (adoc-kw-replacement "[a-zA-Z0-9_]\\('\\)[a-zA-Z0-9_]" "\u2019") ; punctuation apostrophe
-   (adoc-kw-replacement "\\(\\.\\.\\.\\)" "\u2026") ; ellipsis
-   (adoc-kw-replacement "\\(->\\)" "\u2192")
-   (adoc-kw-replacement "\\(=>\\)" "\u21D2")
-   (adoc-kw-replacement "\\(<-\\)" "\u2190")
-   (adoc-kw-replacement "\\(<=\\)" "\u21D0")
-   ;; general character entity reference
-   ;; (?<!\\)&amp;([:_#a-zA-Z][:_.\-\w]*?;)=&\1
-   (adoc-kw-replacement "\\(&[:_#a-zA-Z]\\(?:[-:_.]\\|[a-zA-Z0-9_]\\)*?;\\)" 'adoc-entity-to-string)
 
    ;; attributes
    ;; ---------------------------------
@@ -2898,6 +3216,33 @@ between matching delimiters, never in the surrounding prose."
          '(1 'adoc-meta-hide-face)       ; <<
          '(2 'adoc-reference-face)       ; link text = anchor id
          '(3 'adoc-meta-hide-face))      ; >>
+
+   ;; replacements
+   ;; --------------------------------
+   ;; They come after the inline macros and cross references, which may
+   ;; contain them (`https://example.org[Bob's page]'): a replacement reserves
+   ;; its text, and a macro running later would refuse to match across it.
+   ;; Asciidoc.conf surrounds em dash with thin spaces. I think that does not
+   ;; make sense here, all that spaces you would see in the buffer would at best
+   ;; be confusing.
+   (adoc-kw-replacement "\\((C)\\)" "\u00A9")  ;; ©
+   (adoc-kw-replacement "\\((R)\\)" "\u00AE")  ;; ®
+   (adoc-kw-replacement "\\((TM)\\)" "\u2122") ;; ™
+   ;; (^-- )=&#8212;&#8201;
+   ;; (\n-- )|( -- )|( --\n)=&#8201;&#8212;&#8201;
+   ;; (\w)--(\w)=\1&#8212;\2
+   (adoc-kw-replacement "^\\(--\\)[ \t]" "\u2014") ; em dash. See also above
+   (adoc-kw-replacement "[ \t]\\(--\\)\\(?:[ \t]\\|$\\)" "\u2014") ; dito
+   (adoc-kw-replacement "[a-zA-Z0-9_]\\(--\\)[a-zA-Z0-9_]" "\u2014") ; dito
+   (adoc-kw-replacement "[a-zA-Z0-9_]\\('\\)[a-zA-Z0-9_]" "\u2019") ; punctuation apostrophe
+   (adoc-kw-replacement "\\(\\.\\.\\.\\)" "\u2026") ; ellipsis
+   (adoc-kw-replacement "\\(->\\)" "\u2192")
+   (adoc-kw-replacement "\\(=>\\)" "\u21D2")
+   (adoc-kw-replacement "\\(<-\\)" "\u2190")
+   (adoc-kw-replacement "\\(<=\\)" "\u21D0")
+   ;; general character entity reference
+   ;; (?<!\\)&amp;([:_#a-zA-Z][:_.\-\w]*?;)=&\1
+   (adoc-kw-replacement "\\(&[:_#a-zA-Z]\\(?:[-:_.]\\|[a-zA-Z0-9_]\\)*?;\\)" 'adoc-entity-to-string)
 
    ;; index terms
    ;; TODO:
@@ -2998,16 +3343,14 @@ between matching delimiters, never in the surrounding prose."
 
 (defun adoc--inline-link-at-point ()
   "Return the target of an inline link or URL macro covering point, or nil.
-Handles `link:target[...]' and `scheme:target[...]' (for the http,
-https, ftp, file, irc, mailto and callto schemes).  The result is the
-string to open: the bare target for `link:', or `scheme:target' for the
-URL schemes (the attribute list / label is dropped)."
+Handles `link:target[...]' and `scheme:target[...]' (for the schemes
+in `adoc--link-macro-names').  The result is the string to open: the
+bare target for `link:', or `scheme:target' for the URL schemes (the
+attribute list / label is dropped)."
   (save-excursion
     (let ((pos (point))
           (eol (line-end-position))
-          (re (adoc-re-inline-macro
-               (regexp-opt '("http" "https" "ftp" "file" "irc" "mailto"
-                             "callto" "link")))))
+          (re (adoc-re-inline-macro (regexp-opt adoc--link-macro-names))))
       (beginning-of-line)
       (catch 'found
         (while (re-search-forward re eol t)
@@ -3062,8 +3405,9 @@ When point is on an xref or cross-reference, jump to its anchor."
    ((adoc--inline-link-at-point)
     (let ((target (adoc--inline-link-at-point)))
       (cond
-       ((string-match-p
-         "\\`\\(?:https?\\|ftp\\|file\\|irc\\|mailto\\|callto\\):" target)
+       ;; Every macro but `link:' is named after its URI scheme.
+       ((string-match-p (concat "\\`" (regexp-opt (remove "link" adoc--link-macro-names)) ":")
+                        target)
         (browse-url target))
        ((file-exists-p target) (find-file target))
        (t (user-error "File not found: %s" target)))))
@@ -3085,47 +3429,53 @@ A quick `mouse-1' or a `mouse-2' click follows the reference via
 ;; Make the symbol usable as the value of a `keymap' text property.
 (fset 'adoc-link-keymap adoc-link-keymap)
 
-(defun adoc-promote (&optional arg)
-  "Promote the structure at point ARG levels.
+(defun adoc-promote (&optional arg interactive)
+  "Promote the title or list item at point ARG levels.
 
-When ARG is nil (i.e. when no prefix arg is given), it defaults
-to 1.  When ARG is negative, the structure is demoted that many
-levels instead.
+As in Org mode, promoting moves the structure up the outline: a
+section title loses a level marker (e.g. `===' -> `==', see
+`adoc-promote-title') and a list item is nested one level
+shallower (e.g. `**' -> `*').  ARG defaults to 1; a negative ARG
+demotes instead.
 
-On a section title this adds title levels (e.g. `=' -> `==', see
-`adoc-promote-title').  On a list item it nests the item one
-level deeper (e.g. `*' -> `**', see `adoc-demote' for the
-opposite direction)."
-  (interactive "p")
+Anywhere else, move backward ARG words when called interactively
+\(INTERACTIVE is non-nil), like `org-metaleft'."
+  (interactive (list (prefix-numeric-value current-prefix-arg) t))
   (let ((item (adoc--list-item-at-point)))
-    (if item
-        (adoc--change-list-item-level item (or arg 1))
-      (adoc-promote-title arg))))
+    (cond
+     (item (adoc--change-list-item-level item (- (or arg 1))))
+     ((and interactive (not (adoc-title-descriptor))) (backward-word arg))
+     (t (adoc-promote-title arg)))))
 
-(defun adoc-demote (&optional arg)
-  "Demote the structure at point ARG levels.
+(defun adoc-demote (&optional arg interactive)
+  "Demote the title or list item at point ARG levels.
 
-Analogous to `adoc-promote', see there.  On a list item this
-nests the item one level shallower (e.g. `**' -> `*')."
-  (interactive "p")
+The opposite of `adoc-promote': a section title gains a level
+marker (e.g. `==' -> `===') and a list item is nested one level
+deeper (e.g. `*' -> `**').
+
+Anywhere else, move forward ARG words when called interactively
+\(INTERACTIVE is non-nil), like `org-metaright'."
+  (interactive (list (prefix-numeric-value current-prefix-arg) t))
   (let ((item (adoc--list-item-at-point)))
-    (if item
-        (adoc--change-list-item-level item (- (or arg 1)))
-      (adoc-demote-title arg))))
+    (cond
+     (item (adoc--change-list-item-level item (or arg 1)))
+     ((and interactive (not (adoc-title-descriptor))) (forward-word arg))
+     (t (adoc-demote-title arg)))))
 
 (defun adoc-promote-title (&optional arg)
-  "Promotes the title at point ARG levels.
+  "Promote the title at point ARG levels, e.g. `===' -> `=='.
 
-When ARG is nil (i.e. when no prefix arg is given), it defaults
-to 1. When ARG is negative, level is demoted that many levels. If
-ARG is 0, see `adoc-adjust-title-del'."
+ARG defaults to 1; a negative ARG demotes instead.  If ARG is 0,
+the title is only reformatted, see `adoc-adjust-title-del'."
   (interactive "p")
-  (adoc-modify-title arg))
+  (adoc-modify-title (- (or arg 1))))
 
 (defun adoc-demote-title (&optional arg)
-  "Completely analogous to `adoc-promote-title'."
+  "Demote the title at point ARG levels, e.g. `==' -> `==='.
+The opposite of `adoc-promote-title'."
   (interactive "p")
-  (adoc-promote-title (- arg)))
+  (adoc-modify-title (or arg 1)))
 
 (defun adoc-adjust-title-del ()
   "Adjusts underline length to match the length of the title's text.
@@ -3147,7 +3497,17 @@ non-nil, the sub type is toggled."
 
 ;;;; List editing
 
-(defun adoc--list-item-at-point ()
+(defconst adoc--re-unordered-item (adoc-re-oulisti 'adoc-unordered 'adoc-all-levels)
+  "Regexp matching an unordered list item, see `adoc-re-oulisti'.")
+
+(defconst adoc--re-implicit-item
+  (adoc-re-oulisti 'adoc-implicitly-numbered 'adoc-all-levels)
+  "Regexp matching an implicitly numbered list item, see `adoc-re-oulisti'.")
+
+(defconst adoc--re-explicit-item (adoc-re-oulisti 'adoc-explicitly-numbered)
+  "Regexp matching an explicitly numbered list item, see `adoc-re-oulisti'.")
+
+(defun adoc--list-item-at-point (&optional with-breaks)
   "Return a description of the list item on the current line, or nil.
 The description is a plist with these keys:
 
@@ -3156,42 +3516,53 @@ The description is a plist with these keys:
 :marker      the marker string, e.g. \"*\", \"..\" or \"1.\"
 :indent      the leading whitespace string
 :marker-beg  buffer position of the marker's first character
-:level       0-based nesting level
 
 Labeled lists and callouts are intentionally not recognised, as
-their markers are too easily confused with ordinary prose."
+their markers are too easily confused with ordinary prose, and
+neither are lines in verbatim blocks, such as listings, or thematic
+breaks, such as `* * *'.  With WITH-BREAKS non-nil, a line like that
+is an item whatever it is, with :break set."
   (save-excursion
     (beginning-of-line)
     (cond
-     ((looking-at (adoc-re-oulisti 'adoc-unordered 'adoc-all-levels))
-      (let ((marker (match-string-no-properties 2)))
-        (list :type 'unordered
-              :marker marker
-              :indent (match-string-no-properties 1)
-              :marker-beg (match-beginning 2)
-              :level (if (string-prefix-p "-" marker) 0 (length marker)))))
-     ((looking-at (adoc-re-oulisti 'adoc-implicitly-numbered 'adoc-all-levels))
-      (let ((marker (match-string-no-properties 2)))
-        (list :type 'implicit-numbered
-              :marker marker
-              :indent (match-string-no-properties 1)
-              :marker-beg (match-beginning 2)
-              :level (1- (length marker)))))
-     ((looking-at (adoc-re-oulisti 'adoc-explicitly-numbered))
+     ((nth 2 (adoc--delimited-block-at (point))) nil)
+     ((looking-at adoc--re-unordered-item)
+      (let ((item (list :type 'unordered
+                        :marker (match-string-no-properties 2)
+                        :indent (match-string-no-properties 1)
+                        :marker-beg (match-beginning 2))))
+        (cond
+         ((not (looking-at-p adoc--re-markdown-thematic-break)) item)
+         (with-breaks (plist-put item :break t))
+         ((not (adoc--markdown-thematic-break-p)) item))))
+     ((looking-at adoc--re-implicit-item)
+      (list :type 'implicit-numbered
+            :marker (match-string-no-properties 2)
+            :indent (match-string-no-properties 1)
+            :marker-beg (match-beginning 2)))
+     ((looking-at adoc--re-explicit-item)
       (list :type 'explicit-numbered
             :marker (match-string-no-properties 2)
             :indent (match-string-no-properties 1)
-            :marker-beg (match-beginning 2)
-            :level 0)))))
+            :marker-beg (match-beginning 2))))))
 
-(defun adoc--unordered-marker (level)
-  "Return the unordered list marker for nesting LEVEL (0-based).
-Level 0 is the dash bullet; deeper levels use that many asterisks."
-  (if (<= level 0) "-" (make-string (min level 5) ?*)))
+(defun adoc--list-item-key (item)
+  "Return what sets ITEM's nesting level in its list.
+That's its marker, or for an explicitly numbered item, the kind of
+numbering.  As in Asciidoctor, an item nests under the one above it when
+their keys differ, unless an item it's nested in has the same key, in
+which case it goes back out to that item's level."
+  (if (eq (plist-get item :type) 'explicit-numbered)
+      (adoc--explicit-marker-kind (plist-get item :marker))
+    (plist-get item :marker)))
 
-(defun adoc--implicit-numbered-marker (level)
-  "Return the implicit-numbered list marker (dots) for LEVEL (0-based)."
-  (make-string (1+ (min (max level 0) 4)) ?.))
+(defun adoc--check-level (level max-level)
+  "Return LEVEL, or signal a `user-error' if it's outside 0 to MAX-LEVEL.
+For promoting and demoting titles."
+  (cond
+   ((< level 0) (user-error "Cannot promote any further"))
+   ((> level max-level) (user-error "Cannot demote any further"))
+   (t level)))
 
 (defun adoc--increment-marker (marker)
   "Return list MARKER incremented for the next sibling item.
@@ -3209,27 +3580,430 @@ them up."
             (match-string 2 marker)))
    (t marker)))
 
-(defun adoc--change-list-item-level (item delta)
-  "Change list ITEM's nesting level by DELTA, rewriting its marker.
-A positive DELTA nests the item deeper, a negative one shallower.
-The level is clamped to the range the marker style supports."
-  (let* ((type (plist-get item :type))
-         (level (plist-get item :level))
-         (old-marker (plist-get item :marker))
-         (beg (plist-get item :marker-beg))
-         new-marker)
-    (pcase type
-      ('unordered
-       (setq new-marker (adoc--unordered-marker (max 0 (min 5 (+ level delta))))))
-      ('implicit-numbered
-       (setq new-marker (adoc--implicit-numbered-marker (max 0 (min 4 (+ level delta))))))
-      (_ (user-error "Cannot change the nesting level of a %s list item"
-                     (symbol-name type))))
+(defconst adoc--re-description-list-item
+  "^[ \t]*[^ \t\n].*?\\(:::\\{0,2\\}\\|;;\\)\\(?:[ \t]+\\(.*\\)\\)?$"
+  "Regexp matching the first line of a description list item.
+Group 1 is its delimiter, such as `::', and group 2 its text, if any.")
+
+(defun adoc--list-entry-at-point (&optional with-breaks)
+  "Return the list item on the current line, description list items included.
+That's `adoc--list-item-at-point', which see for WITH-BREAKS, or for the
+first line of a description list item, an item of the `labeled' :type
+with its delimiter for a :marker.  It's no use editing, but it counts
+for the nesting, as Asciidoctor nests the other lists in it."
+  (or (adoc--list-item-at-point with-breaks)
+      (save-excursion
+        (beginning-of-line)
+        (and (looking-at adoc--re-description-list-item)
+             (not (adoc--comment-line-p))
+             (list :type 'labeled
+                   :marker (match-string-no-properties 1)
+                   :indent ""
+                   :marker-beg (point)
+                   :text (string-trim (or (match-string-no-properties 2) "")))))))
+
+(defun adoc--list-item-line (item)
+  "Return the beginning of ITEM's line."
+  (- (plist-get item :marker-beg) (length (plist-get item :indent))))
+
+(defconst adoc--re-list-continuation "\\+[ \t]*$"
+  "Regexp matching a list continuation line, from its beginning.")
+
+(defconst adoc--re-table-cell-start
+  (concat "[ \t]*\\(?:" (adoc-re-cell-specifier) "\\)[|!]")
+  "Regexp matching the beginning of a line that starts a table cell.")
+
+(defconst adoc--re-block-metadata-or-entry
+  (concat adoc--re-block-metadata-line
+          "\\|^:!?[[:alnum:]_][^:\n]*:\\(?:[ \t]\\|$\\)")
+  "Regexp matching a block attribute, anchor or title line, or an attribute entry.
+Asciidoctor reads these until it gets to the block they're above.")
+
+(defun adoc--textless-term-p (entry)
+  "Return non-nil when list ENTRY is a description list term without text.
+Asciidoctor takes the paragraph after it for its definition, even after
+a blank line, and nests an item right below it."
+  (and (eq (plist-get entry :type) 'labeled)
+       (string-empty-p (plist-get entry :text))))
+
+(defun adoc--list-continuation-p (item)
+  "Return non-nil when list ITEM is a detached list continuation.
+That's the `continuation' :type `adoc--list-scan' gives a list
+continuation after a blank line that attaches the block below it to the
+outermost item of the list, ending the lists nested in that."
+  (eq (plist-get item :type) 'continuation))
+
+(defun adoc--list-scope (pos tables)
+  "Return where to read the lists for the line at POS, as (START LIMIT TABLE).
+That's the content of the innermost delimited block or table the line is
+in, TABLE being non-nil for a table, whose cells end the lists in them.
+TABLES are the tables' ranges, see `adoc--table-ranges'.  Outside both,
+it's from after the nearest section title above that begins a block, as
+no list goes on past one, or the beginning of the buffer, to its end."
+  (save-excursion
+    (let ((own (adoc--delimited-block-at pos))
+          (table (seq-find (lambda (range) (< (car range) pos (cdr range))) tables)))
+      (cond
+       ((and table (or (not own) (> (car table) (nth 1 own))))
+        (list (progn (goto-char (car table)) (line-beginning-position 2))
+              (progn (goto-char (cdr table)) (line-beginning-position))
+              t))
+       (own
+        (list (progn (goto-char (nth 1 own)) (line-beginning-position 2))
+              (progn (goto-char (1- (nth 3 own))) (line-beginning-position))
+              nil))
+       (t
+        (goto-char pos)
+        (let ((title (adoc-re-one-line-title nil))
+              start)
+          (while (and (not start) (re-search-backward title nil t))
+            (when (and (not (adoc--delimited-block-at (point)))
+                       (save-excursion
+                         (or (/= (forward-line -1) 0) (looking-at-p "[ \t]*$"))))
+              (setq start (line-beginning-position 2))))
+          (list (or start (point-min)) (point-max) nil)))))))
+
+(defvar-local adoc--thematic-breaks nil
+  "The lines like `* * *' known to be thematic breaks, and when.
+The value is (TICK . TABLE), TABLE mapping the beginning of each such
+line read by `adoc--list-scan' since the buffer was at
+`buffer-chars-modified-tick' TICK to whether it's a thematic break.")
+
+(defun adoc--list-scan (pos &optional section)
+  "Read the lists around the line at POS the way Asciidoctor does.
+Return (ITEMS END ENTRY BREAK): the items of the list the line is in,
+in document order, where the list's last line ends, the item on the
+line, and, for a line like `* * *', whether it's a thematic break
+rather than an item.  ITEMS, END and ENTRY are nil when the line isn't
+an item.
+
+Each item gets its nesting :level, from 0, and the :keys open at it,
+innermost first.  As in Asciidoctor, an item whose key, see
+`adoc--list-item-key', is new nests in the item above it, and one with
+the key of an item it's in goes back out to that item's level.
+Description list terms count as items here, so the lists nested in
+them don't run into each other.
+
+The lists are read from the start of the section, or of the delimited
+block or table the line is in, see `adoc--list-scope'.  A list takes in
+blank lines, literal paragraphs, description lists, a term's definition
+and thematic breaks after a blank line, and blocks and tables attached
+with a list continuation, which lasts over one blank line and the
+block's metadata.  It ends at a paragraph after a blank line, a block or
+table that isn't attached, a table cell, and the end of the scope.  A
+continuation after a blank line attaches what follows it to the
+outermost item, unless it's an item, which closes the lists nested in
+that; it's among the items, see `adoc--list-continuation-p'.  A line
+like `* * *' is an item when its key is open or it's right below an item
+or a term waiting for its definition, and a thematic break, nested in
+the item above it, otherwise.
+
+With SECTION non-nil, read on to the end of the section or scope, and
+record which lines like `* * *' are thematic breaks in
+`adoc--thematic-breaks'."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char pos)
+      (pcase-let*
+          ((target (line-beginning-position))
+           (own (adoc--delimited-block-at target))
+           (tables (adoc--table-ranges))
+           (`(,start ,limit ,in-table) (adoc--list-scope target tables))
+           (breaks (and section (cdr (adoc--thematic-breaks-table))))
+           (title (adoc-re-one-line-title nil))
+           ;; The list being read: its items, nearest first, the keys open,
+           ;; where its last line ends, and what the last line that wasn't
+           ;; blank was, `blank' for one followed by a blank line.
+           (items nil) (keys nil) (end nil) (prev nil)
+           ;; Whether a continuation has had its blank line, where a
+           ;; detached one is while it's pending, the item on the line
+           ;; above, a term waiting for its definition, whether a literal
+           ;; paragraph is going on, and whether the line above starts a
+           ;; table cell.
+           (blanked nil) (detached nil) (above nil) (term nil) (literal nil)
+           (cell nil)
+           (result nil))
+        (cl-labels
+            ((finish ()
+               ;; The list ends before the current line.
+               (when (and (nth 2 result) (null (car result)))
+                 (setcar result (nreverse items))
+                 (setcar (cdr result) end)
+                 (unless section (throw 'done nil)))
+               (setq items nil keys nil end nil prev nil blanked nil
+                     detached nil above nil term nil literal nil))
+             (attach ()
+               ;; Something is attached with a continuation, to the
+               ;; outermost item when it's a detached one.
+               (when detached
+                 (setq keys (last keys))
+                 (push (list :type 'continuation :indent "" :marker-beg detached
+                             :level 0 :keys keys)
+                       items)
+                 (setq detached nil))
+               (setq prev 'text blanked nil term nil))
+             (add (item)
+               (let* ((key (adoc--list-item-key item))
+                      (open (member key keys)))
+                 (setq keys (or open (cons key keys)))
+                 (plist-put item :level (1- (length keys)))
+                 (plist-put item :keys keys)
+                 (push item items))))
+          (goto-char start)
+          (catch 'done
+            (while (and (< (point) limit) (not (eobp)))
+              (let ((block (adoc--delimited-block-at (point)))
+                    (here (point))
+                    (line-above above)
+                    (cell-above cell))
+                (setq above nil cell nil)
+                (cond
+                 ;; A block nested in the scope, at its start.
+                 ((and block (not (eql (car block) (car own))))
+                  (if (and items (eq prev 'continuation))
+                      (attach)
+                    (finish))
+                  (goto-char (1- (nth 3 block)))
+                  (when items (setq end (line-beginning-position 2))))
+                 ((looking-at-p "[ \t]*$")
+                  (setq literal nil)
+                  (when items
+                    (if (and (eq prev 'continuation) (not blanked))
+                        (setq blanked t)
+                      ;; A second one drops a continuation, detached or not.
+                      (setq prev 'blank detached nil))))
+                 ((and literal (not (looking-at-p adoc--re-list-continuation)))
+                  (setq end (line-beginning-position 2)))
+                 ((and section (> here target) (looking-at-p title)
+                       (save-excursion (forward-line -1) (looking-at-p "[ \t]*$")))
+                  (finish)
+                  (throw 'done nil))
+                 ;; A table is skipped as a whole, see `adoc--list-scope'.
+                 ((looking-at adoc--re-table-delimiter)
+                  (let ((close
+                         (or (cdr (assq here tables))
+                             (save-excursion
+                               (forward-line 1)
+                               (re-search-forward
+                                (concat "^" (regexp-quote (match-string-no-properties 1))
+                                        "[ \t]*$")
+                                limit t))
+                             limit)))
+                    (if (and items (eq prev 'continuation))
+                        (attach)
+                      (finish))
+                    (goto-char close)
+                    (beginning-of-line)
+                    (when items (setq end (line-beginning-position 2)))))
+                 ((and in-table (looking-at-p adoc--re-table-cell-start))
+                  (finish)
+                  (setq cell t))
+                 (t
+                  (let* ((other (adoc--list-entry-at-point t))
+                         (shaped (and other (plist-get other :break)))
+                         (break
+                          (and shaped
+                               (not (and items
+                                         (or (member (adoc--list-item-key other) keys)
+                                             term
+                                             (and line-above
+                                                  (or (not (eq (plist-get line-above :type)
+                                                               'labeled))
+                                                      (adoc--textless-term-p line-above))))))
+                               (or items cell-above (adoc--block-begins-p)))))
+                    (when shaped
+                      (when breaks (puthash here (and break t) breaks))
+                      (setq other (and (not break)
+                                       (let ((item (cl-copy-list other)))
+                                         (cl-remf item :break)
+                                         item))))
+                    (when (= here target)
+                      (setq result (list nil nil other break))
+                      (unless (or other section) (throw 'done nil)))
+                    (cond
+                     (other
+                      (setq detached nil)
+                      (add other)
+                      (setq above other
+                            term (adoc--textless-term-p other)
+                            prev 'text blanked nil
+                            end (line-beginning-position 2)))
+                     ((looking-at-p adoc--re-list-continuation)
+                      (when items
+                        (when (eq prev 'blank) (setq detached here))
+                        (setq prev 'continuation blanked nil term nil
+                              end (line-beginning-position 2))))
+                     ((not items))
+                     ((and (eq prev 'blank) (not term) (not break)
+                           (not (looking-at-p "[ \t]+[^ \t\n]")))
+                      (finish))
+                     ((and (eq prev 'continuation)
+                           (looking-at-p adoc--re-block-metadata-or-entry))
+                      ;; What's read before the block the continuation attaches.
+                      (setq blanked nil end (line-beginning-position 2)))
+                     (t
+                      (when (and (memq prev '(blank continuation))
+                                 (looking-at-p "[ \t]+[^ \t\n]"))
+                        (setq literal t))
+                      (attach)
+                      (setq end (line-beginning-position 2)))))))
+                (forward-line 1)))
+            (finish))
+          result)))))
+
+(defun adoc--item-shaped-break-p ()
+  "Return non-nil when the line at point is like `* * *' or `- - -'.
+That's a thematic break that looks like an unordered list item."
+  (and (looking-at-p adoc--re-unordered-item)
+       (looking-at-p adoc--re-markdown-thematic-break)))
+
+(defun adoc--thematic-breaks-table ()
+  "Return `adoc--thematic-breaks', made afresh if the buffer has changed."
+  (let ((tick (buffer-chars-modified-tick)))
+    (unless (eql (car adoc--thematic-breaks) tick)
+      (setq adoc--thematic-breaks (cons tick (make-hash-table))))
+    adoc--thematic-breaks))
+
+(defun adoc--list-items (item)
+  "Return ITEM's list, see `adoc--list-scan', as (ITEMS END ITEM).
+The last is the list's own copy of ITEM, with its :level and :keys."
+  (let ((list (adoc--list-scan (adoc--list-item-line item))))
+    (unless (nth 2 list)
+      (user-error "Not on a list item"))
+    (seq-take list 3)))
+
+(defun adoc--list-next-outside (items item)
+  "Return the first item after ITEM in ITEMS that isn't nested in ITEM.
+A detached list continuation counts, as it ends the lists nested in the
+outermost item, but not for an outermost item, which it belongs to."
+  (let ((level (plist-get item :level)))
+    (seq-find (lambda (other)
+                (and (<= (plist-get other :level) level)
+                     (not (and (zerop level) (adoc--list-continuation-p other)))))
+              (cdr (memq item items)))))
+
+(defun adoc--list-sibling (items item next)
+  "Return ITEM's next sibling in ITEMS when NEXT is non-nil, else its previous one.
+ITEMS are ITEM's list from `adoc--list-items'.  Return nil when an item
+ITEM is nested in comes first, or there's no item at its level."
+  (let ((other (adoc--list-next-outside (if next items (reverse items)) item)))
+    (and other (= (plist-get other :level) (plist-get item :level)) other)))
+
+(defun adoc--list-item-end (items item end)
+  "Return where ITEM ends, with the items nested in it.
+That's at the next item in ITEMS that isn't nested in ITEM, or at END,
+less the blank lines before it.  ITEMS and END are ITEM's list as from
+`adoc--list-items'."
+  (let* ((next (adoc--list-next-outside items item))
+         (pos (if next (adoc--list-item-line next) end)))
+    (save-excursion
+      (goto-char pos)
+      (when (bolp)
+        (while (and (zerop (forward-line -1)) (looking-at-p "[ \t]*$"))
+          (setq pos (point))))
+      pos)))
+
+(defun adoc--free-list-marker (parent taken)
+  "Return a marker for the first item nested in list item PARENT.
+It's of PARENT's kind, and the first of these whose key, see
+`adoc--list-item-key', isn't open at PARENT, see `adoc--list-scan', or
+among TAKEN, so the item nests rather than going back out to an item
+with that key, and the items in it don't go out to it: a marker one
+longer than PARENT's, `**' for `-' or `*', then the shortest one, or
+the next numbering style, `a.' after `1.'."
+  (let* ((type (plist-get parent :type))
+         (marker (plist-get parent :marker))
+         (taken (append (plist-get parent :keys) taken))
+         (char (if (eq type 'unordered) ?* ?.))
+         (length (1+ (if (equal marker "-") 1 (length marker)))))
+    (seq-find (lambda (marker)
+                (not (member (adoc--list-item-key (list :type type :marker marker))
+                             taken)))
+              (if (eq type 'explicit-numbered)
+                  '("1." "a." "A." "i)" "I)")
+                (append (and (<= length 5) (list (make-string length char)))
+                        (mapcar (lambda (n) (make-string n char)) '(1 2 3 4 5))
+                        (and (eq char ?*) (list "-")))))))
+
+(defun adoc--sibling-marker (other)
+  "Return the marker for a new item right after OTHER, at its level."
+  (pcase (plist-get other :type)
+    ('labeled (user-error "Cannot move an item into a description list"))
+    ('explicit-numbered (adoc--increment-marker (plist-get other :marker)))
+    (_ (plist-get other :marker))))
+
+(defun adoc--list-subtree-keys (items item)
+  "Return the keys of the items nested in ITEM, among ITEMS."
+  (let ((level (plist-get item :level)))
+    (mapcar #'adoc--list-item-key
+            (seq-take-while (lambda (other) (> (plist-get other :level) level))
+                            (cdr (memq item items))))))
+
+(defun adoc--shift-list-item (item demote)
+  "Nest list ITEM one level deeper when DEMOTE is non-nil, else shallower.
+See `adoc--change-list-item-level'."
+  (pcase-let* ((`(,items ,_ ,item) (adoc--list-items item))
+               (level (plist-get item :level))
+               (above (cdr (memq item (reverse items))))
+               (new-marker
+                (if demote
+                    (let* ((parent (or (adoc--list-sibling items item nil)
+                                       (user-error "Cannot demote the first item of a list")))
+                           (child (seq-find (lambda (other)
+                                              (= (plist-get other :level) (1+ level)))
+                                            (seq-take-while (lambda (other)
+                                                              (not (eq other parent)))
+                                                            above)))
+                           (taken (adoc--list-subtree-keys items item)))
+                      (if child
+                          (let ((marker (adoc--sibling-marker child)))
+                            ;; Or the items nested in it with that marker would
+                            ;; go back out to its level.
+                            (when (member (adoc--list-item-key child) taken)
+                              (user-error "Cannot demote an item with an item nested in it that has the marker it would get"))
+                            marker)
+                        (or (adoc--free-list-marker parent taken)
+                            (user-error "Cannot demote any further"))))
+                  (when (zerop level)
+                    (user-error "Cannot promote any further"))
+                  ;; As in Org mode, as the items after its own would end up
+                  ;; nested in them.
+                  (let ((next (cadr (memq item items))))
+                    (when (and next (> (plist-get next :level) level))
+                      (user-error "Cannot promote an item without the items nested in it")))
+                  (adoc--sibling-marker
+                   (seq-find (lambda (other)
+                               (and (< (plist-get other :level) level)
+                                    (not (adoc--list-continuation-p other))))
+                             above))))
+               (beg (plist-get item :marker-beg))
+               (old-marker (plist-get item :marker)))
     (unless (string= new-marker old-marker)
       (save-excursion
         (goto-char beg)
         (delete-region beg (+ beg (length old-marker)))
         (insert new-marker)))))
+
+(defun adoc--change-list-item-level (item delta)
+  "Change list ITEM's nesting level by DELTA, rewriting its marker.
+A positive DELTA nests the item deeper, a negative one shallower, a
+level at a time, as in Org mode.
+
+The nesting goes by the markers, as in Asciidoctor, see
+`adoc--list-scan'.  Promoting an item makes it a sibling of the item
+it's in, so it takes that item's marker.  Demoting an item makes it a
+child of its previous sibling, so it takes the marker of that item's
+children, or a new one if it has none.  Signal a `user-error' for an
+item at the outermost level, for the first item of a list, which would
+have no item to nest under, and for promoting an item with items nested
+in it, and leave the buffer as it was."
+  (let ((line (adoc--list-item-line item)))
+    (atomic-change-group
+      (dotimes (_ (abs delta))
+        (save-excursion
+          (goto-char line)
+          (adoc--shift-list-item (adoc--list-item-at-point) (> delta 0)))))))
 
 (defun adoc-insert-list-item (&optional _arg)
   "Insert a new list item below the item at point.
@@ -3247,114 +4021,29 @@ incremented number or letter."
       (end-of-line)
       (insert "\n" indent new-marker " "))))
 
-(defun adoc--line-list-level ()
-  "Return the nesting level of the list item on the current line, or nil."
-  (let ((item (adoc--list-item-at-point)))
-    (and item (plist-get item :level))))
-
-(defun adoc--list-item-block-end (level)
-  "Return the position at the end of the list item block on the current line.
-Point must be at the beginning of the marker line of an item at
-nesting LEVEL.  The block runs through any immediately following
-continuation lines and more deeply nested items, stopping before
-the first blank line, sibling, or shallower item.  The returned
-position is at the beginning of a line (or `point-max')."
-  (save-excursion
-    (forward-line 1)
-    (let ((end (point)))
-      (while (and (not (eobp))
-                  (not (looking-at-p "[ \t]*$"))
-                  (let ((il (adoc--line-list-level)))
-                    (or (null il) (> il level))))
-        (forward-line 1)
-        (setq end (point)))
-      end)))
-
-(defun adoc--same-list-p (item)
-  "Return non-nil if the item on the current line is a sibling of ITEM.
-Siblings share the same list type, nesting level and indentation
-\(and, for explicitly-numbered lists, the same marker kind), so
-two distinct adjacent lists are not treated as one."
-  (let ((other (adoc--list-item-at-point)))
-    (and other
-         (eq (plist-get other :type) (plist-get item :type))
-         (= (plist-get other :level) (plist-get item :level))
-         (string= (plist-get other :indent) (plist-get item :indent))
-         (or (not (eq (plist-get item :type) 'explicit-numbered))
-             (eq (adoc--explicit-marker-kind (plist-get other :marker))
-                 (adoc--explicit-marker-kind (plist-get item :marker)))))))
-
-(defun adoc--next-sibling-start (from item)
-  "Return the start of the next sibling of ITEM at or after FROM, or nil.
-Blank lines, continuation lines and more deeply nested items are
-skipped.  A shallower item, or a same-level item belonging to a
-different list, stops the search and yields nil."
-  (let ((level (plist-get item :level)))
-    (save-excursion
-      (goto-char from)
-      (catch 'found
-        (while (not (eobp))
-          (unless (looking-at-p "[ \t]*$")
-            (let ((il (adoc--line-list-level)))
-              (cond
-               ((null il))
-               ((and (= il level) (adoc--same-list-p item)) (throw 'found (point)))
-               ((<= il level) (throw 'found nil)))))
-          (forward-line 1))
-        nil))))
-
-(defun adoc--prev-sibling-start (before item)
-  "Return the start of the previous sibling of ITEM before BEFORE, or nil.
-Blank lines, continuation lines and more deeply nested items are
-skipped.  A shallower item, or a same-level item belonging to a
-different list, stops the search and yields nil."
-  (let ((level (plist-get item :level)))
-    (save-excursion
-      (goto-char before)
-      (catch 'found
-        (while (not (bobp))
-          (forward-line -1)
-          (unless (looking-at-p "[ \t]*$")
-            (let ((il (adoc--line-list-level)))
-              (cond
-               ((null il))
-               ((and (= il level) (adoc--same-list-p item)) (throw 'found (point)))
-               ((<= il level) (throw 'found nil))))))
-        nil))))
-
 (defun adoc--move-list-item (down)
   "Move the list item at point past its sibling, DOWN when non-nil else up.
 The item's nested sub-items and continuation lines move with it."
   (let ((item (adoc--list-item-at-point)))
     (unless item
       (user-error "Not on a list item"))
-    (let ((level (plist-get item :level))
-          (col (current-column)))
-      (beginning-of-line)
-      (let* ((s1 (point))
-             (e1 (adoc--list-item-block-end level)))
-        (if down
-            (let ((s2 (adoc--next-sibling-start e1 item)))
-              (unless s2 (user-error "No next item at this level"))
-              (let ((e2 (save-excursion
-                          (goto-char s2)
-                          (adoc--list-item-block-end level))))
-                ;; Avoid merging lines when the buffer lacks a final newline.
-                (when (and (= e2 (point-max)) (/= (char-before e2) ?\n))
-                  (save-excursion (goto-char (point-max)) (insert "\n"))
-                  (setq e2 (point-max)))
-                (transpose-regions s1 e1 s2 e2)
-                (goto-char (+ s1 (- e2 e1)))
-                (move-to-column col)))
-          (let ((ps (adoc--prev-sibling-start s1 item)))
-            (unless ps (user-error "No previous item at this level"))
-            ;; Avoid merging lines when the buffer lacks a final newline.
-            (when (and (= e1 (point-max)) (/= (char-before e1) ?\n))
-              (save-excursion (goto-char (point-max)) (insert "\n"))
-              (setq e1 (point-max)))
-            (transpose-regions ps s1 s1 e1)
-            (goto-char ps)
-            (move-to-column col)))))))
+    (pcase-let* ((`(,items ,end ,item) (adoc--list-items item))
+                 (sibling (or (adoc--list-sibling items item down)
+                              (user-error (if down "No next item at this level"
+                                            "No previous item at this level"))))
+                 (`(,first ,second) (if down (list item sibling) (list sibling item)))
+                 (s1 (adoc--list-item-line first))
+                 (e1 (adoc--list-item-end items first end))
+                 (s2 (adoc--list-item-line second))
+                 (e2 (adoc--list-item-end items second end))
+                 (col (current-column)))
+      ;; Avoid merging lines when the buffer lacks a final newline.
+      (when (and (= e2 (point-max)) (/= (char-before e2) ?\n))
+        (save-excursion (goto-char (point-max)) (insert "\n"))
+        (setq e2 (point-max)))
+      (transpose-regions s1 e1 s2 e2)
+      (goto-char (if down (+ s1 (- e2 e1)) s1))
+      (move-to-column col))))
 
 (defun adoc-move-list-item-down (&optional arg)
   "Move the list item at point down past the next sibling ARG times.
@@ -3455,11 +4144,33 @@ new customization demands."
     (adoc-make-unichar-alist))
 
   (setq adoc-font-lock-keywords (adoc-get-font-lock-keywords))
+  (when (eq major-mode 'adoc-mode)
+    ;; the extents depend on `adoc-enable-two-line-title'
+    (setq adoc--block-extents-done 1
+          adoc--block-extents-unterminated nil))
   (when (and font-lock-mode (eq major-mode 'adoc-mode))
     (font-lock-flush)
     (font-lock-ensure)))
 
 ;;;; misc
+(defun adoc-insert-comment (&optional beg end)
+  "Comment out the lines between BEG and END, or start a comment line.
+Interactively BEG and END delimit the active region.  An AsciiDoc
+comment line starts with `//' in the first column, so every line gets
+one there."
+  (interactive (when (use-region-p)
+                 (list (region-beginning) (region-end))))
+  (if (not beg)
+      (tempo-template-adoc-comment)
+    (save-excursion
+      (let ((end (copy-marker end)))
+        (goto-char beg)
+        (beginning-of-line)
+        (while (< (point) end)
+          (insert "// ")
+          (forward-line 1))
+        (set-marker end nil)))))
+
 (defun adoc-insert-indented (str indent-level)
   "Indents and inserts STR such that point is at INDENT-LEVEL."
   (indent-to (- (* tab-width indent-level) (length str)))
@@ -3512,14 +4223,18 @@ Returns nil if there was no xref found."
                   (or (< saved-point (match-beginning 0))
                       (> saved-point (match-end 0)))))
       ;; `adoc-re-xref' captures trailing whitespace inside the id group
-      ;; (e.g. `<<foo >>'); the actual anchor id has none.
-      (and id (string-trim id)))))
+      ;; (e.g. `<<foo >>'); the actual anchor id has none.  And the `#' in
+      ;; a same-page `xref:#id[]' isn't part of the id.
+      (and id (string-remove-prefix "#" (string-trim id))))))
 
 (defun adoc-title-descriptor (&optional strict-match )
   "Returns title descriptor of title point is in.
 
 When STRICT-MATCH is t, and 2 line title is used, the lengths of the underline
 text and title must not differ by more than 2 characters.
+
+Two line titles are only recognised when `adoc-enable-two-line-title'
+is non-nil.
 
 Title descriptor looks like this: (TYPE SUB-TYPE LEVEL TEXT START END)
 
@@ -3545,7 +4260,7 @@ trailing delimiter ('== my title ==').
          ((looking-at (adoc-re-one-line-title level))
           (setq type 1)
           (setq text (match-string 2))
-          (setq sub-type (if (< 0 (length (match-string 3))) 2 1))
+          (setq sub-type (if (match-beginning 4) 2 1))
           (setq found t))
          ;; WARNING: if you decide to replace adoc-re-two-line-title with a
          ;; method ensuring the correct length of the underline, be aware that
@@ -3553,7 +4268,11 @@ trailing delimiter ('== my title ==').
          ;; the wrong underline length.
          ;; Two-line titles only cover the first N levels (one per entry in
          ;; adoc-two-line-title-del); skip the check for higher levels.
-         ((and (< level (length adoc-two-line-title-del))
+         ;; They're also only recognised when enabled, like fontification,
+         ;; navigation and imenu do - otherwise a line of text above a
+         ;; block delimiter (`----', `====') would pass for one.
+         ((and adoc-enable-two-line-title
+               (< level (length adoc-two-line-title-del))
                (or (looking-at (adoc-re-two-line-title (nth level adoc-two-line-title-del)))
                    (save-excursion
                      (forward-line -1)
@@ -3564,13 +4283,15 @@ trailing delimiter ('== my title ==').
                    (<= (abs (- (length (match-string 3))
                                (length (match-string 2))))
                        2))
-               (not (string-prefix-p "[" (match-string 2))))
+               (not (string-prefix-p "[" (match-string 2)))
+               (adoc--two-line-title-underline-p (- (match-end 3) (match-beginning 3))))
           (setq type 2)
           (setq text (match-string 2))
           (setq found t))
          (t
           (setq level (+ level 1)))))
-      (when found
+      ;; a title-like line inside a delimited block is just content
+      (when (and found (not (adoc--delimited-block-at (match-beginning 0))))
         (list type sub-type level text (match-beginning 0) (match-end 0))))))
 
 (defun adoc-make-title (descriptor)
@@ -3582,11 +4303,40 @@ trailing delimiter ('== my title ==').
         (adoc-make-one-line-title sub-type level text)
       (adoc-make-two-line-title level text))))
 
+(defun adoc--book-p ()
+  "Return non-nil when the document header sets the doctype to book.
+The header runs from the first line that isn't blank to the next blank
+line."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (skip-chars-forward " \t\n")
+      (let ((case-fold-search nil)
+            (end (save-excursion
+                   (if (re-search-forward "^[ \t]*$" nil t) (point) (point-max)))))
+        (re-search-forward "^:doctype:[ \t]+book[ \t]*$" end t)))))
+
+(defun adoc--level-0-title-allowed-p ()
+  "Return non-nil when the title at point may be at level 0.
+In a book, level 0 sections are parts.  Otherwise level 0 is for the
+document title only, which must come before any other title."
+  (or (adoc--book-p)
+      (save-excursion
+        (beginning-of-line)
+        (let (found)
+          (while (and (not found)
+                      (re-search-backward "^=\\{1,6\\}[ \t]+[^ \t\n]" nil t))
+            (setq found (not (adoc--delimited-block-at (point)))))
+          (not found)))))
+
 (defun adoc-modify-title (&optional new-level-rel new-level-abs new-type new-sub-type create)
   "Modify properties of title point is on.
 
 NEW-LEVEL-REL defines the new title level relative to the current
-one. Negative values are allowed. 0 or nil means don't change.
+one. Negative values are allowed. 0 or nil means don't change. A
+resulting level outside the range the title type supports signals a
+`user-error'.
 NEW-LEVEL-ABS defines the new level absolutely. When both
 NEW-LEVEL-REL and NEW-LEVEL-ABS are non-nil, NEW-LEVEL-REL takes
 precedence. When both are nil, level is not affected.
@@ -3608,7 +4358,7 @@ BUG: In one line title case: number of spaces between delimiters
 and title's text are not preserved, afterwards its always one space."
   (let ((descriptor (adoc-title-descriptor)))
     (if (or create (not descriptor))
-        (error "Point is not on a title"))
+        (user-error "Point is not on a title"))
 
     (let* ((type (nth 0 descriptor))
            (new-type-val (cond
@@ -3639,11 +4389,13 @@ and title's text are not preserved, afterwards its always one space."
            (new-level (cond
                        ((or (null new-level-rel) (eq new-level-rel 0))
                         level)
-                       ((not (null new-level-rel))
-                        (let ((x (% (+ level new-level-rel) level-count)))
-                          (if (< x 0)
-                              (+ x level-count)
-                            x)))
+                       (new-level-rel
+                        (let ((new (adoc--check-level (+ level new-level-rel)
+                                                      (1- level-count))))
+                          (when (and (= new 0) (> level 0)
+                                     (not (adoc--level-0-title-allowed-p)))
+                            (user-error "Only the document title, or a part in a book, can be at level 0"))
+                          new))
                        ((not (null new-level-abs))
                         new-level-abs)
                        (t
@@ -3651,6 +4403,12 @@ and title's text are not preserved, afterwards its always one space."
            (start (nth 4 descriptor))
            (end (nth 5 descriptor))
            (saved-col (current-column)))
+
+      (when (eq new-type-val 2)
+        (unless adoc-enable-two-line-title
+          (user-error "Two-line titles are disabled, see `adoc-enable-two-line-title'"))
+        (when (>= new-level level-count)
+          (user-error "Two-line titles only support levels 0-%d" (1- level-count))))
 
       ;; set new title descriptor
       (setcar (nthcdr 0 descriptor) new-type-val)
@@ -3682,17 +4440,289 @@ and title's text are not preserved, afterwards its always one space."
 ;; them and feed them to completion, the `xref' backend and
 ;; `adoc-goto-ref-label'.
 
-(defun adoc--doc-attribute (name)
-  "Return the value of document attribute NAME, or nil when it is not set.
-An attribute set to an empty value (e.g. `:idprefix:') returns the empty
-string, which is distinct from nil."
-  (when buffer-file-name
-    (save-excursion
-      (save-match-data
-        (goto-char (point-min))
-        (when (re-search-forward
-               (concat "^:" (regexp-quote name) ":[ \t]*\\(.*\\)$") nil t)
-          (string-trim-right (match-string-no-properties 1)))))))
+;; Document attributes apply from the line that sets them on, so the scan
+;; that works out the section ids keeps track of them in document order, as
+;; Asciidoctor does.
+
+(defconst adoc--re-attribute-entry-line
+  "^:\\(!\\)?\\([[:alnum:]_][[:alnum:]_-]*\\)\\(!\\)?:\\(?:[ \t]+\\(.*?\\)\\)?[ \t]*$"
+  "Regexp matching an attribute entry line.
+Group 2 is the name and group 4 the value.  Group 1 or 3 matches the
+`!' of an entry that unsets the attribute.")
+
+(defconst adoc--builtin-attribute-values
+  '(("amp" . "&") ("apos" . "&#39;") ("asterisk" . "*") ("backslash" . "\\")
+    ("backtick" . "`") ("blank" . "") ("brvbar" . "&#166;") ("caret" . "^")
+    ("cpp" . "C&#43;&#43;") ("deg" . "&#176;") ("empty" . "") ("endsb" . "]")
+    ("gt" . ">") ("ldquo" . "&#8220;") ("lsquo" . "&#8216;") ("lt" . "<")
+    ("nbsp" . "&#160;") ("plus" . "&#43;") ("pp" . "&#43;&#43;")
+    ("quot" . "&#34;") ("rdquo" . "&#8221;") ("rsquo" . "&#8217;")
+    ("sp" . " ") ("startsb" . "[") ("tilde" . "~") ("two-colons" . "::")
+    ("two-semicolons" . ";;") ("vbar" . "|") ("wj" . "&#8288;")
+    ("zwsp" . "&#8203;"))
+  "Asciidoctor's built-in attributes that stand for a character.")
+
+(defun adoc--in-verbatim-block-p (pos)
+  "Return non-nil when POS is in the content of a verbatim delimited block.
+That's a listing, literal, passthrough or comment block, whose content
+isn't AsciiDoc."
+  (let ((block (adoc--delimited-block-at pos)))
+    (and block (nth 2 block) (> pos (nth 1 block)))))
+
+(defconst adoc--default-attributes
+  '(("appendix-caption" . "Appendix") ("appendix-refsig" . "Appendix")
+    ("asciidoctor" . "") ("attribute-missing" . "skip")
+    ("attribute-undefined" . "drop-line") ("backend" . "html5")
+    ("backend-html5" . "") ("backend-html5-doctype-article" . "")
+    ("basebackend" . "html") ("basebackend-html" . "")
+    ("basebackend-html-doctype-article" . "") ("caution-caption" . "Caution")
+    ("chapter-refsig" . "Chapter") ("doctype" . "article")
+    ("doctype-article" . "") ("example-caption" . "Example")
+    ("figure-caption" . "Figure") ("filetype" . "html") ("filetype-html" . "")
+    ("htmlsyntax" . "html") ("important-caption" . "Important")
+    ("note-caption" . "Note") ("outfilesuffix" . ".html")
+    ("part-refsig" . "Part") ("sectids" . "") ("section-refsig" . "Section")
+    ("table-caption" . "Table") ("tip-caption" . "Tip")
+    ("toc-placement" . "auto") ("toc-title" . "Table of Contents")
+    ("untitled-label" . "Untitled") ("version-label" . "Version")
+    ("warning-caption" . "Warning"))
+  "The attributes Asciidoctor sets by default when converting to HTML.
+Those that depend on the date, the file or the safe mode are left out.")
+
+(defconst adoc--antora-attributes
+  '(("env" . "site") ("env-site" . "") ("site-gen" . "antora")
+    ("site-gen-antora" . ""))
+  "The attributes Antora sets on top of Asciidoctor's.")
+
+(defun adoc--initial-attributes (antora)
+  "Return the attributes a document starts out with, as an alist.
+ANTORA is non-nil when the document is a page in an Antora component."
+  (append (and antora adoc--antora-attributes) adoc--default-attributes))
+
+(defconst adoc--re-conditional-directive
+  "^\\(ifn?def\\|ifeval\\|endif\\)::\\([^][ \t\n]*\\)\\[\\(.*\\)\\][ \t]*$"
+  "Regexp matching a preprocessor conditional directive.
+Group 1 is the directive, group 2 its attribute names and group 3 the
+text in its brackets.")
+
+(defun adoc--conditional-holds-p (directive names attributes)
+  "Return non-nil when an ifdef or ifndef DIRECTIVE on NAMES holds.
+NAMES is the directive's target: attribute names separated by `,' when
+any of them will do, or by `+' when it takes all of them.  ATTRIBUTES
+is an alist of the attributes set, with downcased names.  An ifeval
+directive is assumed to hold, as its expression usually compares
+attributes Asciidoctor only knows when it converts the document."
+  (let* ((all (string-search "+" names))
+         (set (mapcar (lambda (name) (and (assoc (downcase name) attributes) t))
+                      (split-string names "[,+]"))))
+    (pcase directive
+      ("ifdef" (if all (not (memq nil set)) (memq t set)))
+      ("ifndef" (if all (memq nil set) (not (memq t set))))
+      (_ t))))
+
+(defun adoc--in-comment-block-p (pos)
+  "Return non-nil when POS is in the content of a comment block."
+  (let ((block (adoc--delimited-block-at pos)))
+    (and block (> pos (nth 1 block)) (eq (char-after (nth 1 block)) ?/))))
+
+(defun adoc--attribute-entries (attributes)
+  "Return the attribute entries Asciidoctor applies, in document order.
+Each one is a list (POSITION NAME VALUE ATTRIBUTES).  NAME is
+downcased, as attribute names are case-insensitive, and VALUE is nil
+for an entry that unsets the attribute.  A value continued on the next
+line with a trailing ` \\' is joined up.  ATTRIBUTES is the alist of
+the attributes in effect after the entry.
+
+An entry only counts where Asciidoctor reads it as one: at the start of
+a block, not in the text of a paragraph or a list item, a table, or a
+verbatim block.  Nor does it count in an ifdef or ifndef branch whose
+condition doesn't hold for ATTRIBUTES, the alist of the attributes a
+document starts out with, updated by the entries above the directive.
+See `adoc--conditional-holds-p'."
+  (let ((cache (list nil nil nil))
+        (tables 'unknown)
+        skipping stack entries)
+    (cl-flet ((add (pos name value)
+                (setq attributes (adoc--apply-attribute-entry name value attributes))
+                (push (list pos name value attributes) entries)))
+      (save-excursion
+        (save-match-data
+          (goto-char (point-min))
+          (while (re-search-forward "^\\(?::\\|\\(?:ifn?def\\|ifeval\\|endif\\)::\\)" nil t)
+            (beginning-of-line)
+            (let ((pos (point)))
+              (cond
+               ((looking-at adoc--re-conditional-directive)
+                (let ((directive (match-string-no-properties 1))
+                      (names (match-string-no-properties 2))
+                      (text (match-string-no-properties 3)))
+                  (cond
+                   ((adoc--in-comment-block-p pos))
+                   ((equal directive "endif")
+                    (when stack (setq skipping (pop stack))))
+                   ((or (equal directive "ifeval") (string-empty-p text))
+                    (push skipping stack)
+                    (unless (adoc--conditional-holds-p directive names attributes)
+                      (setq skipping t)))
+                   ;; The single-line form stands for its text, which can be
+                   ;; an attribute entry.
+                   ((and (not skipping)
+                         (adoc--conditional-holds-p directive names attributes)
+                         (string-match adoc--re-attribute-entry-line text))
+                    (add pos (downcase (match-string 2 text))
+                         (unless (or (match-beginning 1) (match-beginning 3))
+                           (or (match-string 4 text) "")))))))
+               ((looking-at adoc--re-attribute-entry-line)
+                (let ((name (downcase (match-string-no-properties 2)))
+                      (value (unless (or (match-beginning 1) (match-beginning 3))
+                               (or (match-string-no-properties 4) ""))))
+                  (when (and (not skipping)
+                             (not (adoc--in-verbatim-block-p pos))
+                             (not (seq-find (lambda (range) (< (car range) pos (cdr range)))
+                                            (if (eq tables 'unknown)
+                                                (setq tables (adoc--table-ranges))
+                                              tables)))
+                             (save-excursion
+                               (adoc--block-content-start cache)
+                               (= (point) pos)))
+                    (while (and value (string-suffix-p " \\" value)
+                                (zerop (forward-line 1)) (not (eobp)))
+                      (setq value (concat (substring value 0 -1)
+                                          (string-trim (buffer-substring-no-properties
+                                                        (point) (line-end-position))))))
+                    (add pos name value)))))
+              (forward-line 1))))))
+    (nreverse entries)))
+
+(defun adoc--substitute-attributes (text attributes &optional count)
+  "Replace the attribute references in TEXT with their values.
+ATTRIBUTES is an alist of (NAME . VALUE) with downcased names, which
+take precedence over Asciidoctor's built-in character attributes.  A
+reference to an attribute that isn't set stays as it is, as Asciidoctor
+leaves it by default, and an escaped one (`\\{name}') loses its
+backslash.
+
+With COUNT non-nil, the counters count, `{counter:name}' and
+`{counter2:name:seed}' (see `adoc--count'): a `counter' is replaced by
+its next value and a `counter2' by nothing, and COUNT is called with
+the attributes that hold their new values.  Without COUNT, they stay
+as they are."
+  (if (not (string-search "{" text))
+      text
+    (replace-regexp-in-string
+     (concat "\\(\\\\\\)?{\\(?:\\(counter2?\\):\\([^:}]+\\)\\(?::\\([^}]*\\)\\)?"
+             "\\|\\([[:alnum:]_][[:alnum:]_-]*\\)\\)}")
+     (lambda (ref)
+       (cond
+        ((match-beginning 1) (substring ref 1))
+        ((match-beginning 2)
+         (if (not count)
+             ref
+           (let ((kind (match-string 2 ref))
+                 (counted (adoc--count (match-string 3 ref) (match-string 4 ref)
+                                       attributes)))
+             (setq attributes (cdr counted))
+             (funcall count attributes)
+             (if (equal kind "counter") (car counted) ""))))
+        ((cdr (let ((name (downcase (match-string 5 ref))))
+                (or (assoc name attributes)
+                    (assoc name adoc--builtin-attribute-values)))))
+        (t ref)))
+     text t t)))
+
+(defun adoc--string-succ (string)
+  "Return the successor of STRING, the way Ruby's `String#succ' makes it.
+Its last letter or digit goes up, and on to the one before it when it
+wraps around, so `az' is followed by `ba', `zz' by `aaa' and `a9' by
+`b0'.  A digit doesn't carry over to a letter, or a letter to a digit,
+across other characters: `a-9' is followed by `a-10'.  Letters outside
+ASCII count too, and go on to the next character without wrapping
+around, so `α' is followed by `β'."
+  (cl-flet ((alnum-p (c) (if (< c 128)
+                             (or (<= ?0 c ?9) (<= ?a c ?z) (<= ?A c ?Z))
+                           (string-match-p "\\`[[:alnum:]]\\'" (string c))))
+            (digit-p (c) (<= ?0 c ?9)))
+    (let ((s (vconcat string))
+          (i (1- (length string)))
+          last)
+      (while (and (>= i 0) (not (alnum-p (aref s i))))
+        (setq i (1- i)))
+      (if (< i 0)
+          ;; With no letters or digits, the last character goes up.
+          (progn
+            (unless (zerop (length s))
+              (aset s (1- (length s)) (1+ (aref s (1- (length s))))))
+            (concat s))
+        (catch 'done
+          (while t
+            (let ((c (aref s i)))
+              (unless (memq c '(?9 ?z ?Z))
+                (aset s i (1+ c))
+                (throw 'done (concat s)))
+              (aset s i (pcase c (?9 ?0) (?z ?a) (_ ?A)))
+              (setq last i))
+            (let ((j (1- i)))
+              (while (and (>= j 0) (not (alnum-p (aref s j))))
+                (setq j (1- j)))
+              (when (or (< j 0)
+                        (and (< j (1- i))
+                             (not (eq (digit-p (aref s j)) (digit-p (aref s last))))))
+                (throw 'done (concat (substring s 0 last)
+                                     (if (digit-p (aref s last)) "1" (string (aref s last)))
+                                     (substring s last))))
+              (setq i j))))))))
+
+(defun adoc--count (name seed attributes)
+  "Return (VALUE . ATTRIBUTES) for the next VALUE of the counter NAME.
+That's the counter's value in ATTRIBUTES, an alist of the document
+attributes in effect, counted up as Asciidoctor does, or SEED, or 1
+for a counter that isn't set yet.  The counter holds VALUE in the
+ATTRIBUTES returned."
+  (let* ((current (cdr (assoc name attributes)))
+         (value (cond
+                 ((or (null current) (string-empty-p current)) (or seed "1"))
+                 ((string-match-p "\\`\\(?:0\\|-?[1-9][0-9]*\\)\\'" current)
+                  (number-to-string (1+ (string-to-number current))))
+                 (t (adoc--string-succ current)))))
+    (cons value (cons (cons name value)
+                      (cl-remove name attributes :key #'car :test #'equal)))))
+
+(defun adoc--attribute-value (value attributes)
+  "Return (VALUE . ATTRIBUTES) for an attribute entry with VALUE.
+That's VALUE as Asciidoctor stores it, with its special characters
+escaped and the attribute references in it substituted from ATTRIBUTES,
+or for a `pass:' macro, its text with the substitutions the macro names
+applied.  The ATTRIBUTES returned have the counters in VALUE counted."
+  (let ((case-fold-search nil))
+    (if (string-match "\\`pass:\\([a-z]+\\(?:,[a-z-]+\\)*\\)?\\[\\(.*\\)]\\'" value)
+        (let ((subs (match-string 1 value)))
+          (adoc--apply-subs (match-string 2 value) (adoc--pass-subs (or subs ""))
+                            attributes))
+      (adoc--apply-subs value '(specialcharacters attributes) attributes))))
+
+(defun adoc--apply-attribute-entry (name value attributes)
+  "Return ATTRIBUTES, an alist of (NAME . VALUE), with NAME set to VALUE.
+A nil VALUE unsets it.  VALUE can refer to the attributes set before,
+NAME included, and it's stored the way Asciidoctor stores it, see
+`adoc--attribute-value', with the counters in it counted.  ATTRIBUTES
+itself is left alone."
+  (if value
+      (pcase-let ((`(,value . ,attributes) (adoc--attribute-value value attributes)))
+        (cons (cons name value) (cl-remove name attributes :key #'car :test #'equal)))
+    (cl-remove name attributes :key #'car :test #'equal)))
+
+(defun adoc--attributes-at (pos)
+  "Return the document attributes in effect at POS, as an alist.
+That's the ones a document starts out with, updated by the attribute
+entries above POS, see `adoc--attribute-entries'."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (let* ((attributes (adoc--initial-attributes (adoc--antora-p)))
+             (entries (adoc--attribute-entries attributes)))
+        (while (and entries (< (car (car entries)) pos))
+          (setq attributes (nth 3 (pop entries))))
+        attributes))))
 
 (defun adoc--antora-p ()
   "Return non-nil when the buffer's file lives in an Antora component."
@@ -3700,82 +4730,733 @@ string, which is distinct from nil."
        (locate-dominating-file buffer-file-name "antora.yml")
        t))
 
-(defun adoc--section-id-params ()
-  "Return (PREFIX . SEPARATOR) for section id generation in this buffer.
-See `adoc-section-id-style'."
+(defun adoc--section-id-params (attributes antora)
+  "Return the (PREFIX . SEPARATOR) for section ids under ATTRIBUTES.
+ATTRIBUTES is an alist of the document attributes in effect, and ANTORA
+is non-nil when the buffer's file is in an Antora component.  The
+document's `idprefix' and `idseparator' only count in the `auto' style
+\(see `adoc-section-id-style'), and they default to Antora's in a
+component.  Like Asciidoctor, only the first character of a longer
+separator is used."
   (pcase adoc-section-id-style
     ('asciidoctor (cons "_" "_"))
     ('antora (cons "" "-"))
-    (_
-     (let ((prefix (adoc--doc-attribute "idprefix"))
-           (separator (adoc--doc-attribute "idseparator")))
-       (cond
-        ;; The document sets the attributes explicitly; an unset one keeps
-        ;; Asciidoctor's `_' default.
-        ((or prefix separator)
-         (cons (or prefix "_") (or separator "_")))
-        ((adoc--antora-p) (cons "" "-"))
-        (t (cons "_" "_")))))))
+    (_ (let ((prefix (cdr (assoc "idprefix" attributes)))
+             (separator (or (cdr (assoc "idseparator" attributes))
+                            (if antora "-" "_"))))
+         (cons (or prefix (if antora "" "_"))
+               (substring separator 0 (min 1 (length separator))))))))
 
-(defun adoc--section-id (title &optional prefix separator)
+;; An auto-id is derived from the title as Asciidoctor renders it, in HTML,
+;; so the title goes through Asciidoctor's substitutions, as far as they
+;; matter for the id.  Asciidoctor first takes the passthroughs out of the
+;; way, then escapes the special characters, formats the quoted text,
+;; substitutes the attribute references, makes the replacements and converts
+;; the macros, in that order, and finally puts the passthroughs back with
+;; their own substitutions applied.  So the regexps below are Asciidoctor's,
+;; and they match the escaped text: `&lt;&lt;id&gt;&gt;' for `<<id>>'.
+
+(defun adoc--gsub (regexp text replace)
+  "Return TEXT with the matches for REGEXP replaced by what REPLACE returns.
+REPLACE is called with the match and TEXT, with the match data set.
+When it returns nil, the match is left alone and the search goes on
+from its second character.  Group 9 of REGEXP stands for a lookahead
+in one of Asciidoctor's regexps: what it matches isn't part of the
+match, and the search goes on from there."
+  (let ((case-fold-search nil)
+        (start 0)
+        (parts '()))
+    (while (and (<= start (length text)) (string-match regexp text start))
+      (let* ((beg (match-beginning 0))
+             (end (or (match-beginning 9) (match-end 0)))
+             (replacement (and (< beg end)
+                               (funcall replace (substring text beg end) text))))
+        (if replacement
+            (setq parts (cons replacement (cons (substring text start beg) parts))
+                  start end)
+          (push (substring text start (min (1+ beg) (length text))) parts)
+          (setq start (1+ beg)))))
+    (when (< start (length text))
+      (push (substring text start) parts))
+    (apply #'concat (nreverse parts))))
+
+(defun adoc--unescape (match)
+  "Return MATCH without its first backslash, the way an escaped one shows."
+  (let ((i (string-search "\\" match)))
+    (concat (substring match 0 i) (substring match (1+ i)))))
+
+(defun adoc--escape-special-characters (text)
+  "Return TEXT with `&', `<' and `>' escaped, as in HTML."
+  (if (string-match-p "[&<>]" text)
+      (adoc--gsub "[&<>]" text
+                  (lambda (char _)
+                    (pcase char ("&" "&amp;") ("<" "&lt;") (_ "&gt;"))))
+    text))
+
+(defun adoc--unescape-special-characters (text)
+  "Return TEXT with `&amp;', `&lt;' and `&gt;' turned back into characters.
+That's what a browser makes of a path Asciidoctor puts in HTML."
+  (if (string-search "&" text)
+      (adoc--gsub "&\\(amp\\|lt\\|gt\\);" text
+                  (lambda (_ s)
+                    (pcase (match-string 1 s) ("amp" "&") ("lt" "<") (_ ">"))))
+    text))
+
+(defconst adoc--normal-subs
+  '(specialcharacters quotes attributes replacements macros)
+  "The substitutions Asciidoctor applies to a section title, in order.")
+
+(defun adoc--pass-subs (spec)
+  "Return the substitutions SPEC names, as in `pass:q,a[text]'."
+  (let (subs)
+    (dolist (name (split-string spec "," t))
+      (dolist (sub (pcase name
+                     ((or "n" "normal") adoc--normal-subs)
+                     ((or "c" "v" "verbatim" "specialchars") '(specialcharacters))
+                     ("q" '(quotes))
+                     ("a" '(attributes))
+                     ("r" '(replacements))
+                     ("m" '(macros))
+                     (_ (let ((sub (intern-soft name)))
+                          (and (memq sub adoc--normal-subs) (list sub))))))
+        (unless (memq sub subs)
+          (setq subs (append subs (list sub))))))
+    subs))
+
+(defconst adoc--re-pass-macro
+  (concat "\\(?:\\(\\\\\\)?\\[\\([^]]+\\)]\\)?\\(\\\\\\{0,2\\}\\)\\(\\+\\+\\+?\\|\\$\\$\\)"
+          "\\(.*?\\)\\4"
+          "\\|\\(\\\\\\)?pass:\\([a-z]+\\(?:,[a-z-]+\\)*\\)?\\[\\(\\|.*?[^\\]\\)]")
+  "Regexp matching `+++text+++', `++text++', `$$text$$' and `pass:[text]'.
+Group 2 is an attribute list in front, 3 the backslashes before the
+`+' or `$' signs in 4, and 5 the text.  For the `pass:' macro, group 6
+is a backslash in front, 7 the substitutions and 8 the text.")
+
+(defconst adoc--re-pass
+  (concat "\\(?:\\(\\\\\\)?\\[\\([^]]+\\)]\\)?\\(\\\\\\)?"
+          "\\+\\([^ \t\n]\\|[^ \t\n].*?[^ \t\n]\\)\\+\\(?9:[^[:alnum:]_]\\|\\'\\)")
+  "Regexp matching `+text+', the constrained passthrough.
+Group 2 is an attribute list in front, 4 the text, and 1 or 3 a
+backslash before the attribute list or the text.")
+
+(defconst adoc--re-stem-macro
+  "\\\\?\\(?:stem\\|\\(?:latex\\|ascii\\)math\\):\\([a-z]+\\(?:,[a-z-]+\\)*\\)?\\[\\(.*?[^\\]\\)]"
+  "Regexp matching a `stem:', `latexmath:' or `asciimath:' macro.
+Group 1 is its substitutions and group 2 its text.")
+
+(defun adoc--extract-passthroughs (text extract)
+  "Return TEXT with its passthroughs taken out, as Asciidoctor does first.
+EXTRACT is called with the text of each passthrough and the
+substitutions it gets, and returns the placeholder to put in its
+place.  An escaped passthrough is left as text."
+  (when (string-match-p "\\+\\+\\|\\$\\$\\|pass:" text)
+    (setq text
+          (adoc--gsub
+           adoc--re-pass-macro text
+           (lambda (match s)
+             (let ((attrs (match-string 2 s))
+                   (escapes (length (match-string 3 s)))
+                   (boundary (match-string 4 s)))
+               (cond
+                ((and boundary (> escapes 0))
+                 (concat (and attrs (concat (match-string 1 s) "[" attrs "]"))
+                         (make-string (1- escapes) ?\\)
+                         boundary (match-string 5 s) boundary))
+                (boundary
+                 ;; An attribute list makes the passthrough a span, which
+                 ;; leaves no trace in the id, unless it's escaped.
+                 (concat (and (match-beginning 1) (concat "[" attrs "]"))
+                         (funcall extract (match-string 5 s)
+                                  (unless (equal boundary "+++")
+                                    '(specialcharacters)))))
+                ((match-beginning 6) (substring match 1))
+                (t (let ((subs (match-string 7 s)))
+                     (funcall extract (string-replace "\\]" "]" (match-string 8 s))
+                              (adoc--pass-subs (or subs "")))))))))))
+  (when (string-search "+" text)
+    (setq text
+          (adoc--gsub
+           adoc--re-pass text
+           (lambda (_ s)
+             (let ((beg (match-beginning 0))
+                   (attrs (match-string 2 s))
+                   (content (match-string 4 s)))
+               (cond
+                ;; Like constrained quoted text, it needs a character in
+                ;; front that can't be part of a word, unless that's the
+                ;; backslash of an escape.
+                ((and (not (match-beginning 1))
+                      (or attrs (not (match-beginning 3)))
+                      (> beg 0)
+                      (string-match-p "[[:alnum:]_;:\\]" (substring s (1- beg) beg)))
+                 nil)
+                ((match-beginning 3)
+                 (concat (match-string 1 s) (and attrs (concat "[" attrs "]"))
+                         "+" content "+"))
+                (t (concat (and (match-beginning 1) (concat "[" attrs "]"))
+                           (funcall extract content '(specialcharacters))))))))))
+  (when (string-match-p "stem:\\|math:" text)
+    (setq text
+          (adoc--gsub
+           adoc--re-stem-macro text
+           (lambda (match s)
+             (if (string-prefix-p "\\" match)
+                 (substring match 1)
+               (let ((subs (match-string 1 s)))
+                 (funcall extract (string-replace "\\]" "]" (match-string 2 s))
+                          (if subs (adoc--pass-subs subs) '(specialcharacters)))))))))
+  text)
+
+(defconst adoc--quote-subs
+  (cl-flet ((unconstrained (mark &optional text)
+              (concat "\\\\?\\(?:\\[\\([^]]+\\)]\\)?" mark
+                      "\\(" (or text ".+?") "\\)" mark))
+            (constrained (open close &optional before after)
+              (concat "\\(^\\|[^[:alnum:]_;:" (or before "}") "]\\)"
+                      "\\(?:\\[\\([^]]+\\)]\\)?" open
+                      "\\([^ \t\n]\\|[^ \t\n].*?[^ \t\n]\\)" close
+                      "\\(?9:[^[:alnum:]_" after "]\\|\\'\\)")))
+    `((,(unconstrained "\\*\\*") "<strong>" "</strong>")
+      (,(constrained "\\*" "\\*") "<strong>" "</strong>" t)
+      (,(constrained "\"`" "`\"") "&#8220;" "&#8221;" t)
+      (,(constrained "'`" "`'" "`}") "&#8216;" "&#8217;" t)
+      (,(unconstrained "``") "<code>" "</code>")
+      (,(constrained "`" "`" "\"'`}" "\"'`") "<code>" "</code>" t)
+      (,(unconstrained "__") "<em>" "</em>")
+      (,(constrained "_" "_") "<em>" "</em>" t)
+      (,(unconstrained "##") "<mark>" "</mark>")
+      (,(constrained "#" "#" "&}") "<mark>" "</mark>" t)
+      (,(unconstrained "\\^" "[^ \t\n]+?") "<sup>" "</sup>")
+      (,(unconstrained "~" "[^ \t\n]+?") "<sub>" "</sub>")))
+  "Asciidoctor's quoted text, as (REGEXP OPEN CLOSE CONSTRAINED).
+They're formatted in this order, as text between OPEN and CLOSE.
+Group 1 of the REGEXP of unconstrained quoted text is an attribute
+list in front and group 2 the text.  Constrained quoted text needs a
+character that can't be part of a word on either side, which is group
+1, and then group 2 is the attribute list and 3 the text.")
+
+(defun adoc--sub-quotes (text)
+  "Return TEXT with its quoted text formatted, as Asciidoctor does it."
+  (if (not (string-match-p "[*_`#^~]" text))
+      text
+    (pcase-dolist (`(,regexp ,open ,close ,constrained) adoc--quote-subs)
+      (setq text
+            (adoc--gsub
+             regexp text
+             (lambda (match s)
+               (let ((attrs (match-string (if constrained 2 1) s))
+                     (quoted (concat open (match-string (if constrained 3 2) s) close)))
+                 (cond
+                  ((not (string-prefix-p "\\" match))
+                   (concat (and constrained (match-string 1 s)) quoted))
+                  ;; An escaped attribute list is just text.
+                  ((and constrained attrs) (concat "[" attrs "]" quoted))
+                  (t (substring match 1))))))))
+    text))
+
+(defconst adoc--title-replacements
+  '(("\\\\?(C)" "&#169;")
+    ("\\\\?(R)" "&#174;")
+    ("\\\\?(TM)" "&#8482;")
+    ("\\(?: \\|^\\|\\\\\\)--\\(?: \\|$\\)" "&#8201;&#8212;&#8201;")
+    ("\\([[:alnum:]_]\\)\\\\?--\\(?9:[[:alnum:]_]\\)" "&#8212;&#8203;" leading)
+    ("\\\\?\\.\\.\\." "&#8230;&#8203;")
+    ("\\\\?`'" "&#8217;")
+    ("\\([[:alnum:]]\\)\\\\?'\\(?9:[[:alpha:]]\\)" "&#8217;" leading)
+    ("\\\\?-&gt;" "&#8594;")
+    ("\\\\?=&gt;" "&#8658;")
+    ("\\\\?&lt;-" "&#8592;")
+    ("\\\\?&lt;=" "&#8656;")
+    ("\\\\?\\(&\\)amp;\\(\\(?:[a-zA-Z][a-zA-Z]+[0-9]\\{0,2\\}\\|#[0-9]\\{2,6\\}\\|#x[0-9a-fA-F]\\{2,5\\}\\);\\)"
+     "" bounding))
+  "Asciidoctor's replacements, as (REGEXP REPLACEMENT RESTORE), in order.
+With a RESTORE of `leading', group 1 of REGEXP is put back in front
+of the REPLACEMENT, and with `bounding', group 2 after it too.  The
+last one turns an escaped entity, `&amp;copy;', back into one.")
+
+(defun adoc--sub-replacements (text)
+  "Return TEXT with Asciidoctor's replacements made."
+  (if (not (string-match-p "[-(.`'&]" text))
+      text
+    (pcase-dolist (`(,regexp ,replacement ,restore) adoc--title-replacements)
+      (setq text
+            (adoc--gsub
+             regexp text
+             (lambda (match s)
+               (cond
+                ((string-search "\\" match) (adoc--unescape match))
+                ((eq restore 'leading) (concat (match-string 1 s) replacement))
+                ((eq restore 'bounding)
+                 (concat (match-string 1 s) replacement (match-string 2 s)))
+                (t replacement))))))
+    text))
+
+(defun adoc--first-positional-attribute (attrlist)
+  "Return the first positional attribute in ATTRLIST, or nil if there's none."
+  (cond
+   ((string-match "\\`[ \t]*\"\\(\\(?:[^\"\\]\\|\\\\.\\)*\\)\"" attrlist)
+    (string-replace "\\\"" "\"" (match-string 1 attrlist)))
+   ((string-match "\\`[ \t]*\\([^,]*?\\)[ \t]*\\(?:,\\|\\'\\)" attrlist)
+    (let ((first (match-string 1 attrlist)))
+      (unless (or (string-empty-p first)
+                  (string-match-p "\\`[[:alnum:]_][[:alnum:]_-]*[ \t]*=" first))
+        first)))))
+
+(defun adoc--link-text (text trigger)
+  "Return the text of a link macro with the attribute list TEXT.
+An attribute list with TRIGGER in it is parsed, and its first
+positional attribute is the text, otherwise TEXT itself is.  Return
+nil when there's no text, as the macro shows its target then."
+  (let ((text (string-replace "\\]" "]" text)))
+    (when (string-search trigger text)
+      (setq text (or (adoc--first-positional-attribute text) "")))
+    (setq text (string-remove-suffix "^" text))
+    (unless (string-empty-p text) text)))
+
+(defun adoc--uri-without-scheme (uri)
+  "Return URI without its scheme, the way `hide-uri-scheme' shows it."
+  (let ((rest (replace-regexp-in-string
+               "\\`[[:alpha:]][[:alnum:].+-]+:/\\{0,2\\}" "" uri t t)))
+    (if (string-empty-p rest) uri rest)))
+
+(defun adoc--xref-text (refid macro attributes)
+  "Return the text of a cross-reference to REFID that has none of its own.
+MACRO is non-nil for an `xref:' macro, as opposed to `<<refid>>', and
+ATTRIBUTES are the document attributes in effect.  That's the path of
+the HTML file of another document, or REFID in brackets, which is what
+Asciidoctor shows for an id it doesn't know yet."
+  (let ((hash (string-search "#" refid))
+        (ext-re "\\.\\(?:adoc\\|asciidoc\\|asc\\|ad\\|txt\\)\\'")
+        path src2src fragment)
+    (cl-flet ((extname-p (file) (string-match-p "\\.[^/]*\\'" file)))
+      (cond
+       ((and hash (> hash 0))
+        (setq path (substring refid 0 hash)
+              fragment (substring refid (1+ hash)))
+        (cond
+         ((and macro (string-suffix-p ".adoc" path))
+          (setq path (substring path 0 -5) src2src t))
+         (macro (setq src2src (not (extname-p path))))
+         ((string-match ext-re path)
+          (setq path (substring path 0 (match-beginning 0)) src2src t))
+         (t (setq src2src t))))
+       (hash (setq fragment (substring refid 1)))
+       ((and macro (string-suffix-p ".adoc" refid))
+        (setq path (substring refid 0 -5) src2src t))
+       ((and macro (extname-p refid)) (setq path refid))
+       (t (setq fragment refid))))
+    (if (not path)
+        (concat "[" fragment "]")
+      (concat (cdr (assoc "relfileprefix" attributes))
+              path
+              (and src2src
+                   (or (cdr (assoc "relfilesuffix" attributes))
+                       (cdr (assoc "outfilesuffix" attributes))
+                       ".html"))))))
+
+(defun adoc--kbd-keys (keys)
+  "Return the list of keys in KEYS, the text of a `kbd:' macro."
+  (let* ((keys (string-trim (string-replace "\\]" "]" keys)))
+         (comma (and (> (length keys) 1) (string-search "," keys 1)))
+         (plus (and (> (length keys) 1) (string-search "+" keys 1)))
+         (delim (cond ((and comma plus) (if (< comma plus) "," "+"))
+                      (comma ",")
+                      (plus "+"))))
+    (cond
+     ((not delim) (list keys))
+     ;; A delimiter at the end is a key itself, as in `Ctrl++'.
+     ((string-suffix-p delim keys)
+      (let ((split (mapcar #'string-trim
+                           (split-string (substring keys 0 -1) (regexp-quote delim)))))
+        (append (butlast split) (list (concat (car (last split)) delim)))))
+     (t (mapcar #'string-trim (split-string keys (regexp-quote delim)))))))
+
+(defun adoc--index-term (term)
+  "Return what Asciidoctor shows of the visible index term TERM."
+  (car (split-string (string-trim term) " &gt;&gt; \\| &amp;&gt; ")))
+
+(defun adoc--link (target text attributes)
+  "Return a link to TARGET that shows TEXT, or TARGET when that's nil.
+ATTRIBUTES are the document attributes in effect, where
+`hide-uri-scheme' leaves the scheme out of a TARGET that's shown."
+  (concat "<a>"
+          (or text
+              (if (assoc "hide-uri-scheme" attributes)
+                  (adoc--uri-without-scheme target)
+                target))
+          "</a>"))
+
+(defconst adoc--re-kbd-btn-macro
+  "\\(\\\\\\)?\\(kbd\\|btn\\):\\[\\(.*?[^\\]\\)]"
+  "Asciidoctor's regexp for the `kbd:' and `btn:' macros.")
+
+(defconst adoc--re-image-macro
+  "\\\\?i\\(mage\\|con\\):\\([^ \t\n:[]\\(?:[^\n[]*[^ \t\n[]\\)?\\)\\[\\(\\|.*?[^\\]\\)]"
+  "Asciidoctor's regexp for the `image:' and `icon:' macros.")
+
+(defconst adoc--re-index-term
+  "\\\\?\\(?:\\(indexterm2?\\):\\[\\(.*?[^\\]\\)]\\|((\\(.+?\\)))\\(?9:[^)]\\|\\'\\)\\)"
+  "Asciidoctor's regexp for index terms, `((term))' and `(((term)))'.")
+
+(defconst adoc--re-link
+  (concat "\\(^\\|link:\\|[ \t]\\|\\\\?&lt;\\(\\)\\|[]>()[;\"']\\)"
+          "\\(\\\\?" (regexp-opt adoc--url-schemes) "://\\)"
+          "\\(?:\\([^][ \t\n]+\\)\\[\\(\\|.*?[^\\]\\)]"
+          "\\|\\2\\([^ \t\n]+?\\)&gt;"
+          "\\|\\([^][ \t\n<]*\\([^][ \t\n,.?!<)]\\)\\)\\)")
+  "Asciidoctor's regexp for a URL, bare or as in `https://example.org[text]'.
+Group 1 is what comes in front, and group 2 matches when that's `<'.
+Group 3 is the scheme, then group 4 the rest of the target and 5 the
+text, or group 6 the rest of a target between `<' and `>', or 7 the
+rest of a bare one and 8 its last character.")
+
+(defconst adoc--re-link-macro
+  "\\\\?\\(?:link\\|\\(mailto\\)\\):\\(\\|[^ \t\n:[][^ \t\n[]*\\)\\[\\(\\|.*?[^\\]\\)]"
+  "Asciidoctor's regexp for the `link:' and `mailto:' macros.")
+
+(defconst adoc--re-xref-macro
+  (concat "\\\\?\\(?:&lt;&lt;\\([[:alnum:]_#/.:{].*?\\)&gt;&gt;"
+          "\\|xref:\\([[:alnum:]_#/.:{].*?\\)\\[\\(?:]\\|\\(.*?[^\\]\\)]\\)\\)")
+  "Asciidoctor's regexp for a cross-reference, `<<id>>' or `xref:id[]'.")
+
+(defvar adoc--re-inline-anchor)        ; with the other anchor regexps below
+
+(defun adoc--sub-macros (text attributes)
+  "Return TEXT with its inline macros converted, as Asciidoctor does it.
+ATTRIBUTES are the document attributes in effect.  Only the macros
+that make a difference to a section id are converted, and footnotes
+and menus aren't, though they do."
+  (cl-flet ((convert (regexp replace)
+              (setq text (adoc--gsub regexp text replace))))
+    (when (and (assoc "experimental" attributes)
+               (string-match-p "kbd:\\|btn:" text))
+      (convert adoc--re-kbd-btn-macro
+               (lambda (match s)
+                 (cond
+                  ((match-beginning 1) (substring match 1))
+                  ((equal (match-string 2 s) "btn")
+                   (concat "<b>" (match-string 3 s) "</b>"))
+                  (t (mapconcat (lambda (key) (concat "<kbd>" key "</kbd>"))
+                                (adoc--kbd-keys (match-string 3 s))
+                                "+"))))))
+    (when (string-match-p "image:\\|icon:" text)
+      (convert adoc--re-image-macro
+               (lambda (match s)
+                 (cond
+                  ((string-prefix-p "\\" match) (substring match 1))
+                  ((or (equal (match-string 1 s) "mage") (assoc "icons" attributes))
+                   "<img>")
+                  ;; Without icons, an icon shows its name.
+                  (t (concat "<span>["
+                             (replace-regexp-in-string
+                              "[_-]" " " (file-name-base (match-string 2 s)) t t)
+                             "&#93;</span>"))))))
+    (when (string-match-p "((\\|indexterm" text)
+      (convert adoc--re-index-term
+               (lambda (match s)
+                 (let ((escaped (string-prefix-p "\\" match))
+                       (term (match-string 3 s)))
+                   (cond
+                    ((equal (match-string 1 s) "indexterm")
+                     (if escaped (substring match 1) ""))
+                    ((match-beginning 1)
+                     (if escaped
+                         (substring match 1)
+                       (let ((term (string-trim (string-replace "\\]" "]" (match-string 2 s)))))
+                         (or (and (string-search "=" term)
+                                  (adoc--first-positional-attribute term))
+                             term))))
+                    ;; `\(((term)))' escapes the concealed term and leaves a
+                    ;; visible one in parentheses.
+                    (escaped
+                     (if (and (string-prefix-p "(" term) (string-suffix-p ")" term))
+                         (concat "(" (adoc--index-term (substring term 1 -1)) ")")
+                       (substring match 1)))
+                    ((string-prefix-p "(" term)
+                     (if (string-suffix-p ")" term)
+                         ""
+                       (concat "(" (adoc--index-term (substring term 1)))))
+                    ((string-suffix-p ")" term)
+                     (concat (adoc--index-term (substring term 0 -1)) ")"))
+                    (t (adoc--index-term term)))))))
+    (when (string-search "://" text)
+      (convert adoc--re-link
+               (lambda (match s)
+                 (let ((prefix (match-string 1 s))
+                       (scheme (match-string 3 s))
+                       (text (match-string 5 s)))
+                   (cond
+                    ((and (match-beginning 2) (not text)
+                          (string-prefix-p "\\" prefix))
+                     (substring match 1))
+                    ((string-prefix-p "\\" scheme)
+                     (concat prefix (substring match (1+ (length prefix)))))
+                    ;; `<https://example.org>'
+                    ((and (match-beginning 2) (not text))
+                     (if (match-beginning 6)
+                         (adoc--link (concat scheme (match-string 6 s)) nil attributes)
+                       match))
+                    (text
+                     (concat (unless (equal prefix "link:") prefix)
+                             (adoc--link (concat scheme (match-string 4 s))
+                                         (adoc--link-text text "=")
+                                         attributes)))
+                    ((member prefix '("link:" "\"" "'")) match)
+                    (t
+                     ;; A bare URL leaves a trailing `;' or `:', and a `)'
+                     ;; before it, out.
+                     (let ((target (concat scheme (match-string 7 s)))
+                           (suffix ""))
+                       (when (member (match-string 8 s) '(";" ":"))
+                         (setq suffix (match-string 8 s)
+                               target (substring target 0 -1))
+                         (when (string-suffix-p ")" target)
+                           (setq suffix (concat ")" suffix)
+                                 target (substring target 0 -1))))
+                       (if (equal target scheme)
+                           match
+                         (concat prefix (adoc--link target nil attributes) suffix)))))))))
+    (when (string-match-p "link:\\|mailto:" text)
+      (convert adoc--re-link-macro
+               (lambda (match s)
+                 (if (string-prefix-p "\\" match)
+                     (substring match 1)
+                   (let ((mailto (match-beginning 1))
+                         (target (match-string 2 s)))
+                     (adoc--link target
+                                 (or (adoc--link-text (match-string 3 s)
+                                                      (if mailto "," "="))
+                                     (and mailto target))
+                                 attributes))))))
+    (when (string-match-p "\\[\\[\\|anchor:" text)
+      (convert adoc--re-inline-anchor
+               (lambda (match _)
+                 (if (string-prefix-p "\\" match) (substring match 1) "<a></a>"))))
+    (when (string-match-p "&lt;&lt;\\|xref:" text)
+      (convert adoc--re-xref-macro
+               (lambda (match s)
+                 (if (string-prefix-p "\\" match)
+                     (substring match 1)
+                   (let ((refid (or (match-string 1 s) (match-string 2 s)))
+                         (macro (match-beginning 2))
+                         (text (match-string 3 s)))
+                     (cond
+                      (macro
+                       (when text
+                         (setq text (string-replace "\\]" "]" text))
+                         (when (string-search "=" text)
+                           (setq text (adoc--first-positional-attribute text)))))
+                      ((string-search "," refid)
+                       (let ((comma (string-search "," refid)))
+                         (setq text (string-trim-left (substring refid (1+ comma)))
+                               refid (substring refid 0 comma)))
+                       (when (string-empty-p text) (setq text nil))))
+                     (concat "<a>" (or text (adoc--xref-text refid macro attributes))
+                             "</a>")))))))
+  text)
+
+(defun adoc--apply-subs (text subs attributes)
+  "Apply the substitutions SUBS to TEXT the way Asciidoctor does.
+SUBS is a list of the symbols in `adoc--normal-subs', and ATTRIBUTES
+an alist of the document attributes in effect, see
+`adoc--substitute-attributes'.  With `macros' among them, the
+passthroughs are taken out first, and put back with their own
+substitutions applied at the end.  Return (TEXT . ATTRIBUTES), with
+the counters in TEXT counted in ATTRIBUTES."
+  (let ((passthroughs '()))
+    (when (memq 'macros subs)
+      (setq text (adoc--extract-passthroughs
+                  text
+                  (lambda (content pass-subs)
+                    (push (cons content pass-subs) passthroughs)
+                    (format "\u0096%d\u0097" (1- (length passthroughs)))))))
+    (dolist (sub subs)
+      (setq text (pcase-exhaustive sub
+                   ('specialcharacters (adoc--escape-special-characters text))
+                   ('quotes (adoc--sub-quotes text))
+                   ('attributes
+                    (adoc--substitute-attributes
+                     text attributes (lambda (counted) (setq attributes counted))))
+                   ('replacements (adoc--sub-replacements text))
+                   ('macros (adoc--sub-macros text attributes)))))
+    (when passthroughs
+      (setq passthroughs (nreverse passthroughs))
+      (setq text (adoc--gsub "\u0096\\([0-9]+\\)\u0097" text
+                             (lambda (_ s)
+                               (let ((pass (nth (string-to-number (match-string 1 s))
+                                                passthroughs)))
+                                 (pcase-let ((`(,passed . ,counted)
+                                              (adoc--apply-subs (car pass) (cdr pass)
+                                                                attributes)))
+                                   (setq attributes counted)
+                                   passed))))))
+    (cons text attributes)))
+
+(defun adoc--render-section-title (title &optional attributes)
+  "Return (HTML . ATTRIBUTES) for section TITLE rendered as Asciidoctor does.
+Only as far as it matters for its id, see `adoc--sub-macros'.
+ATTRIBUTES is an alist of the document attributes in effect, see
+`adoc--substitute-attributes', and the ATTRIBUTES returned have the
+counters in TITLE counted."
+  (if (string-match-p "[][\\&<>*_`#^~\"'{(.=+$:-]" title)
+      (let ((case-fold-search nil))
+        (adoc--apply-subs title adoc--normal-subs attributes))
+    (cons title attributes)))           ; nothing to render
+
+(defun adoc--section-id (title prefix separator &optional attributes)
   "Return the Asciidoctor auto-id for the section titled TITLE.
-PREFIX and SEPARATOR default to those of `adoc--section-id-params'.
-Mirrors Asciidoctor's id generation: downcase, drop characters outside
-letters/digits/`_'/space/`.'/`-', translate runs of space, `.' and `-'
-to the separator, strip a leading/trailing separator, then prepend the
-prefix."
-  (let* ((params (unless (and prefix separator) (adoc--section-id-params)))
-         (prefix (or prefix (car params)))
-         (separator (or separator (cdr params)))
-         (id (downcase title)))
-    (setq id (replace-regexp-in-string "<[^>]*>" "" id)) ; inline tags
-    (setq id (replace-regexp-in-string "[^[:alnum:]_ .-]" "" id)) ; invalid chars
+PREFIX and SEPARATOR are the `idprefix' and `idseparator' to use, see
+`adoc--section-id-params', and ATTRIBUTES the document attributes in
+effect, see `adoc--substitute-attributes'."
+  (adoc--rendered-title-id (car (adoc--render-section-title title attributes))
+                           prefix separator))
+
+(defun adoc--rendered-title-id (html prefix separator)
+  "Return the auto-id for a section whose title renders as HTML.
+PREFIX and SEPARATOR are the `idprefix' and `idseparator' to use, see
+`adoc--section-id-params'.  Mirrors Asciidoctor's id generation: take
+the rendered title (see `adoc--render-section-title'), downcase it,
+drop its tags, entities and characters outside
+letters/digits/`_'/space/`.'/`-', prepend the prefix, translate each
+run of space, `.', `-' and separator characters to one separator, then
+drop a trailing separator, and a leading one when there's no prefix."
+  (let ((id (downcase html)))
+    (setq id (replace-regexp-in-string
+              (concat "<[^>]+>"
+                      "\\|&\\(?:[a-z][a-z]+[0-9]\\{0,2\\}\\|#[0-9]\\{2,6\\}\\|#x[0-9a-f]\\{2,5\\}\\);"
+                      "\\|[^[:alnum:]_ .-]")
+              "" id t t))
+    (setq id (concat prefix id))
     (if (string-empty-p separator)
         ;; An empty separator only deletes spaces; `.' and `-' are kept.
-        (setq id (replace-regexp-in-string " +" "" id t t))
-      ;; Collapse runs of space, `.', `-' AND the separator itself to a single
-      ;; separator (so e.g. `foo_ bar' -> `foo_bar', not `foo__bar'), then
-      ;; strip a leading/trailing separator.  `-' is kept last in the class so
-      ;; it stays a literal rather than forming a range.
-      (let* ((extra (if (member separator '("." "-")) "" separator))
-             (class (concat "[ ." extra "-]+")))
-        (setq id (replace-regexp-in-string class separator id t t)))
-      (let ((q (regexp-quote separator)))
-        (setq id (replace-regexp-in-string
-                  (concat "\\`\\(?:" q "\\)+\\|\\(?:" q "\\)+\\'") "" id))))
-    (concat prefix id)))
+        (string-replace " " "" id)
+      (setq id (replace-regexp-in-string
+                (concat (regexp-opt-charset (string-to-list (concat " .-" separator)))
+                        "+")
+                separator id t t))
+      (when (string-suffix-p separator id)
+        (setq id (substring id 0 -1)))
+      (if (and (string-empty-p prefix) (string-prefix-p separator id))
+          (substring id 1)
+        id))))
 
-(defun adoc--collect-sections ()
-  "Return a list of (ID TITLE POSITION) for the buffer's section titles.
-Only headings that font-lock actually fontifies as titles are included,
-so `==' lines inside code or other delimited blocks are skipped."
+(defun adoc--unique-section-id (id separator taken next)
+  "Return ID, numbered with SEPARATOR if it's TAKEN.
+TAKEN is a hash table of the ids in use, and the first of `ID',
+`ID<separator>2', `ID<separator>3', ... that isn't is returned, as
+Asciidoctor does.  NEXT is a hash table of the number to try first
+for each ID, as the ones before it are taken."
+  (if (not (gethash id taken))
+      id
+    (let ((n (gethash id next 2))
+          candidate)
+      (while (gethash (setq candidate (concat id separator (number-to-string n)))
+                      taken)
+        (setq n (1+ n)))
+      (puthash id (1+ n) next)
+      candidate)))
+
+(defvar-local adoc--section-table-cache nil
+  "The last `adoc--section-table' as (KEY . TABLE), see there.")
+
+(defun adoc--section-table ()
+  "Return a list of (ID TITLE POSITION EXPLICIT) for the buffer's sections.
+See `adoc--scan-sections'.  The ids depend on the document header and
+the titles before them, so narrowing doesn't change them.  The table is
+kept until the text of the buffer or a setting it depends on changes."
+  (let ((key (list (buffer-chars-modified-tick) adoc-section-id-style
+                   adoc-enable-two-line-title buffer-file-name)))
+    (if (equal key (car adoc--section-table-cache))
+        (cdr adoc--section-table-cache)
+      (let ((table (save-restriction
+                     (widen)
+                     (adoc--scan-sections))))
+        (setq adoc--section-table-cache (cons key table))
+        table))))
+
+(defun adoc--scan-sections ()
+  "Return the sections of the buffer for `adoc--section-table'.
+The list is in document order, with one element for each section title
+font-lock actually fontifies as one, so `==' lines inside code or other
+delimited blocks are skipped, and so is the document title.  ID is the
+section's explicit id when EXPLICIT is non-nil, otherwise its auto-id,
+or nil where `sectids' is unset.  The document attributes set above a
+title apply to its auto-id: `idprefix', `idseparator' and `sectids', as
+well as the ones it refers to, counters included, which count in the
+titles and attribute entries above it.  An auto-id already taken by an
+earlier section or explicit id gets a number appended, `_foo_2',
+`_foo_3' and so on, as in Asciidoctor."
   (save-excursion
     (save-match-data
       (font-lock-ensure)
-      (let ((re (adoc--re-all-titles))
-            (params (adoc--section-id-params))
-            (result '()))
+      (let* ((re (adoc--re-all-titles))
+             (antora (adoc--antora-p))
+             (attributes (adoc--initial-attributes antora))
+             (entries (adoc--attribute-entries attributes))
+             (anchors (cl-loop for (pos _end id registered) in (adoc--anchors)
+                               when registered collect (cons pos id)))
+             (taken (make-hash-table :test #'equal))
+             (next (make-hash-table :test #'equal))
+             (result '()))
         (goto-char (point-min))
         (while (re-search-forward re nil t)
           (goto-char (match-beginning 0))
           (let ((descriptor (adoc--heading-descriptor-at-point)))
-            (cond
-             ;; A level-0 title is the document title, not a referenceable
-             ;; section, so skip it (but advance past it).
-             ((and descriptor (= (nth 2 descriptor) 0))
-              (goto-char (nth 5 descriptor)))
-             (descriptor
-              (let ((title (string-trim (nth 3 descriptor))))
-                (push (list (adoc--section-id title (car params) (cdr params))
-                            title (nth 4 descriptor))
-                      result)
-                (goto-char (nth 5 descriptor))))
-             (t (forward-line 1)))))
+            (if (not descriptor)
+                (forward-line 1)
+              (let ((start (nth 4 descriptor)))
+                ;; The entries are applied again rather than taking the
+                ;; attributes they leave, as the titles in between count
+                ;; their counters too.
+                (while (and entries (< (car (car entries)) start))
+                  (pcase-let ((`(,_ ,name ,value) (pop entries)))
+                    (setq attributes (adoc--apply-attribute-entry name value attributes))))
+                (while (and anchors (< (car (car anchors)) start))
+                  (puthash (cdr (pop anchors)) t taken))
+                (if (= (nth 2 descriptor) 0)
+                    ;; A level-0 title is the document title, not a
+                    ;; section, but its counters count all the same.
+                    (setq attributes
+                          (cdr (adoc--apply-subs (nth 3 descriptor)
+                                                 '(specialcharacters attributes)
+                                                 attributes)))
+                  (let* ((explicit (adoc--section-explicit-id descriptor))
+                         (title (string-trim (nth 3 descriptor)))
+                         (params (adoc--section-id-params attributes antora))
+                         ;; Asciidoctor renders the title of a section that
+                         ;; gets an auto-id, and that of a section with an
+                         ;; explicit id when it refers to attributes, so
+                         ;; that's when its counters count.
+                         (rendered (when (if explicit
+                                             (string-search "{" title)
+                                           (assoc "sectids" attributes))
+                                     (adoc--render-section-title title attributes)))
+                         (id (or explicit
+                                 (and rendered
+                                      (adoc--unique-section-id
+                                       (adoc--rendered-title-id (car rendered)
+                                                                (car params) (cdr params))
+                                       (cdr params) taken next)))))
+                    (when rendered
+                      (setq attributes (cdr rendered)))
+                    (when id (puthash id t taken))
+                    (push (list id title start (and explicit t)) result)))
+                (goto-char (nth 5 descriptor))))))
         (nreverse result)))))
+
+(defun adoc--collect-sections ()
+  "Return a list of (ID TITLE POSITION) for the buffer's section auto-ids.
+See `adoc--section-table'.  Sections with an explicit id have no
+auto-id, as their anchors already define them."
+  (let (sections)
+    (pcase-dolist (`(,id ,title ,pos ,explicit) (adoc--section-table))
+      (when (and id (not explicit))
+        (push (list id title pos) sections)))
+    (nreverse sections)))
 
 (defun adoc--collect-section-ids ()
   "Return the auto-ids of the buffer's section titles."
-  (delete-dups (mapcar #'car (adoc--collect-sections))))
+  (mapcar #'car (adoc--collect-sections)))
 
 (defun adoc--section-position (id)
   "Return the start position of the section matching ID, or nil.
@@ -3802,14 +5483,356 @@ cross-reference, when its title does."
   "Move point to the anchor or section identified by ID in this buffer.
 Search explicit anchors first (`[[id]]', `[#id]', ...), then fall back
 to a section whose auto-id or title matches.  Return non-nil on success,
-leaving point on the target; return nil and do not move otherwise."
-  (let ((pos (or (save-excursion
-                   (goto-char (point-min))
-                   (re-search-forward (adoc-re-anchor nil id) nil t))
+leaving point on the target; return nil and do not move otherwise.
+Ids are case-sensitive, as in Asciidoctor."
+  (let ((pos (or (car (cl-find id (adoc--anchors) :key #'caddr :test #'equal))
                  (adoc--section-position id))))
     (when pos
       (goto-char pos)
       t)))
+
+;;;; Anchors
+
+;; The anchors that count are the ones Asciidoctor turns into ids, so not the
+;; ones in comments, verbatim blocks or literal paragraphs, whose text is
+;; shown as it is.  Completion, the `xref' backend and `adoc-goto-ref-label'
+;; all go by `adoc--anchors'.  Asciidoctor registers some anchors as soon as
+;; it parses them, and that decides which ids the section titles below them
+;; find taken (see `adoc--scan-sections').
+
+(defconst adoc--re-anchor-id "[[:alpha:]_:][[:alnum:]_:.-]*"
+  "Regexp matching an id the way Asciidoctor accepts it in an anchor.")
+
+(defconst adoc--re-inline-anchor
+  (concat "\\(\\\\\\)?\\(?:"
+          "\\[\\[\\[\\(" adoc--re-anchor-id "\\)\\(?:,[^\n]+?\\)?\\]\\]\\]"
+          "\\|\\[\\[\\(" adoc--re-anchor-id "\\)\\(?:,[^\n]+?\\)?\\]\\]"
+          "\\|anchor:\\(" adoc--re-anchor-id "\\)\\[\\(?:[^]\\\n]\\|\\\\.\\)*\\]\\)")
+  "Regexp matching an inline anchor: `[[id]]', `[[[id]]]' or `anchor:id[]'.
+Group 1 matches the backslash that escapes it, and group 2, 3 or 4 the
+id of a bibliography anchor, a `[[id]]' anchor or an anchor macro.")
+
+(defconst adoc--re-block-anchor-line
+  (concat "^\\[\\[\\(" adoc--re-anchor-id "\\)\\(?:,[^\n]+\\)?\\]\\][ \t]*$")
+  "Regexp matching a block anchor line, `[[id]]' or `[[id,reftext]]'.
+Group 1 is the id.")
+
+(defconst adoc--re-block-attribute-line
+  (concat "^\\[\\(?:[[:alnum:]_.#%{,\"'][^\n]*\\|\\[" adoc--re-anchor-id
+          "\\(?:,[^\n]+\\)?\\]\\)?\\][ \t]*$")
+  "Regexp matching a block attribute line or a block anchor line.
+As in Asciidoctor, a line like `[[[ref]]]' or `[ x ]' is text.")
+
+(defconst adoc--re-block-title-or-comment-line
+  "^\\(?:\\.\\.?[^ \t.]\\|//\\(?:[^/]\\|$\\)\\)"
+  "Regexp matching a block title or a line comment.")
+
+(defconst adoc--re-section-title-line
+  "^\\(?:=\\{1,6\\}\\|#\\{1,6\\}\\)[ \t]+[^ \t\n]"
+  "Regexp matching the line of a one-line section title, as Asciidoctor sees it.")
+
+(defconst adoc--re-list-item-start
+  (concat "^\\(?:[ \t]*\\(?:-\\|\\*\\{1,5\\}\\|\\.\\{1,5\\}\\|[0-9]+\\.\\|[a-zA-Z]\\.\\|[IVXivx]+)\\)"
+          "\\|<\\(?:[0-9]+\\|\\.\\)>\\)[ \t]+")
+  "Regexp matching the marker of an ordered, unordered or callout list item.
+The match ends where the item's text begins.")
+
+(defconst adoc--re-dlist-item-start
+  "^[ \t]*\\([^ \t\n]\\).*?\\(?::::\\{0,2\\}\\|;;\\)\\(?:[ \t]\\|$\\)"
+  "Regexp matching a description list term and its delimiter.
+Group 1 is the first character of the term.")
+
+(defun adoc--comment-line-p ()
+  "Return non-nil when the line at point is a line comment."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at-p "//\\(?:[^/]\\|$\\)")))
+
+(defun adoc--list-item-line-p ()
+  "Return non-nil when the line at point starts a list item."
+  (or (looking-at-p adoc--re-list-item-start)
+      (and (not (adoc--comment-line-p))
+           (looking-at-p adoc--re-dlist-item-start))))
+
+(defun adoc--block-preamble-line-p ()
+  "Return non-nil when Asciidoctor reads the line at point before a block.
+That's a block title, a comment, a section title, an attribute entry or
+a preprocessor directive."
+  (or (looking-at-p adoc--re-block-title-or-comment-line)
+      (looking-at-p adoc--re-section-title-line)
+      (looking-at-p adoc--re-attribute-entry-line)
+      (looking-at-p "\\(?:ifn?def\\|ifeval\\|endif\\|include\\)::")))
+
+(defun adoc--paragraph-break-p ()
+  "Return non-nil when the line at point ends a paragraph above it.
+That's a blank line, a list continuation, a block delimiter or a block
+attribute line, as in Asciidoctor."
+  (or (looking-at-p "[ \t]*$\\|\\+[ \t]*$\\|[|!]=\\{3,\\}[ \t]*$")
+      (looking-at-p adoc--re-block-delimiter)
+      (looking-at-p adoc--re-block-attribute-line)))
+
+(defun adoc--table-ranges ()
+  "Return the (BEG . END) of each `|===' table outside verbatim blocks."
+  (let (ranges)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^\\([|!]=\\{3,\\}\\)[ \t]*$" nil t)
+        (let ((open (match-beginning 0))
+              (closing (concat "^" (regexp-quote (match-string 1)) "[ \t]*$")))
+          (when (and (not (adoc--in-verbatim-block-p open))
+                     (re-search-forward closing nil t))
+            (push (cons open (point)) ranges)))))
+    (nreverse ranges)))
+
+(defun adoc--table-anchor-registered-p (beg table)
+  "Return non-nil when Asciidoctor registers the anchor at BEG in TABLE.
+TABLE is a (BEG . END) of `adoc--table-ranges'.  It registers an anchor
+that begins the text of a cell, and every anchor in an AsciiDoc (`a')
+cell, as their content is parsed as a document of its own."
+  (save-excursion
+    (goto-char beg)
+    (let ((bound (save-excursion (goto-char (car table)) (line-end-position)))
+          sep)
+      (while (and (setq sep (search-backward "|" bound t))
+                  (eq (char-before) ?\\)))
+      (and sep
+           (or (string-blank-p (buffer-substring-no-properties (1+ sep) beg))
+               (looking-back "\\(?:^\\|[ \t]\\)[0-9.+*<>^]*a"
+                             (line-beginning-position)))))))
+
+(defun adoc--leading-anchor-p (beg)
+  "Return non-nil when the `[[' anchor at BEG begins a list item's text.
+For a description list, that's the text of the term."
+  (and (eq (char-after beg) ?\[)
+       (save-excursion
+         (goto-char beg)
+         (beginning-of-line)
+         (if (looking-at adoc--re-list-item-start)
+             (= beg (match-end 0))
+           (and (looking-at adoc--re-dlist-item-start)
+                (= beg (match-beginning 1)))))))
+
+(defun adoc--paragraph-start (cache)
+  "Move to the first line of the paragraph or list the line at point is in.
+That's the line after the closest one above that ends a paragraph, see
+`adoc--paragraph-break-p'.  CACHE is a list of the line this last went
+back from, where it got to, and where `adoc--block-content-start' got
+to from there, and it's updated in place.  It's reused when no line in
+between ends a paragraph, so going through a long list or a long run of
+attribute entries is quick."
+  (let ((line (point))
+        (from (nth 0 cache)))
+    (if (and from (<= from line)
+             (save-excursion
+               (goto-char from)
+               (while (and (zerop (forward-line 1))
+                           (< (point) line)
+                           (not (adoc--paragraph-break-p))))
+               (>= (point) line)))
+        (goto-char (nth 1 cache))
+      (while (and (not (bobp))
+                  (save-excursion
+                    (forward-line -1)
+                    (not (adoc--paragraph-break-p))))
+        (forward-line -1))
+      (unless (eql (point) (nth 1 cache))
+        (setf (nth 2 cache) nil)))
+    (setf (nth 0 cache) line
+          (nth 1 cache) (point))))
+
+(defun adoc--block-content-start (cache)
+  "Move from the line at point to the first line of its block's content.
+That's past the lines Asciidoctor reads before a block, its title,
+comments, attribute entries and the like (see
+`adoc--block-preamble-line-p'), but not past the line at point.  CACHE
+is for `adoc--paragraph-start'."
+  (let ((line (line-beginning-position)))
+    (beginning-of-line)
+    (adoc--paragraph-start cache)
+    (let ((content (nth 2 cache)))
+      (when (and content (<= content line))
+        (goto-char content)))
+    (while (and (< (point) line)
+                (adoc--block-preamble-line-p))
+      (forward-line 1))
+    (setf (nth 2 cache) (point))))
+
+(defun adoc--anchor-registration (beg tables &optional cache)
+  "Return how Asciidoctor treats the inline anchor at BEG.
+That's `registered' when it registers its id as soon as it parses it,
+`rendered' when it only renders it, or nil when it isn't an anchor at
+all, as in a literal paragraph.  TABLES is what `adoc--table-ranges'
+returns, and CACHE is for `adoc--paragraph-start'.
+
+Asciidoctor registers a block anchor, any anchor in a paragraph, one
+that begins the text of a list item, a description list term or a
+table cell, and any in an AsciiDoc table cell.  The text of a list item
+after its first line counts as a paragraph, unless it's indented."
+  (save-excursion
+    (goto-char beg)
+    (beginning-of-line)
+    (let ((line (point))
+          (table (seq-find (lambda (range) (< (car range) beg (cdr range)))
+                           tables)))
+      (cond
+       ((looking-at-p adoc--re-block-anchor-line) 'registered)
+       (table (if (adoc--table-anchor-registered-p beg table) 'registered 'rendered))
+       ((looking-at-p adoc--re-block-attribute-line) nil)
+       (t
+        (adoc--block-content-start (or cache (list nil nil nil)))
+        (cond
+         ((and (= (point) line) (adoc--block-preamble-line-p))
+          ;; a title, or the value of an attribute entry
+          (unless (looking-at-p adoc--re-attribute-entry-line) 'rendered))
+         ((adoc--list-item-line-p)
+          (goto-char line)
+          (while (not (adoc--list-item-line-p))
+            (forward-line -1))
+          (cond
+           ((= (point) line)
+            (if (adoc--leading-anchor-p beg) 'registered 'rendered))
+           ((progn (forward-line 1) (looking-at-p "[ \t]")) 'rendered)
+           (t 'registered)))
+         (t
+          ;; A paragraph with a block style is that block, which Asciidoctor
+          ;; doesn't take anchors from, or a verbatim one with none at all.
+          (let ((style (adoc--block-attribute-above #'adoc--block-attribute-style)))
+            (cond
+             ((member style '("comment" "listing" "literal" "pass" "source")) nil)
+             ((member style '("abstract" "example" "open" "partintro" "quote"
+                              "sidebar" "verse"
+                              "CAUTION" "IMPORTANT" "NOTE" "TIP" "WARNING"))
+              'rendered)
+             ;; a literal paragraph, unless it's styled normal
+             ((and (looking-at-p "[ \t]") (not (equal style "normal"))) nil)
+             (t 'registered))))))))))
+
+(defun adoc--block-attribute-id ()
+  "Return the id the block attribute line at point sets, or nil.
+That's `[[id]]', `[#id]', `[style#id.role]' or `[id=id]'."
+  (let ((case-fold-search nil))
+    (cond
+     ((looking-at adoc--re-block-anchor-line) (match-string-no-properties 1))
+     ((looking-at "\\[\\([^\n]*\\)\\][ \t]*$")
+      (let ((attrs (match-string-no-properties 1)))
+        (cond
+         ;; the first positional attribute's id shorthand, which ends at
+         ;; a role or an option, and unlike an anchor's id can be anything
+         ((string-match "\\`[^,#=\"']*#\\([^].#%,\"' \t]+\\)" attrs)
+          (match-string 1 attrs))
+         ((string-match (concat "\\(?:\\`\\|,\\)[ \t]*id[ \t]*=[ \t]*"
+                                "\\(?:\"\\([^\"]+\\)\"\\|'\\([^']+\\)'\\|\\([^,\"' \t]+\\)\\)"
+                                "[ \t]*\\(?:,\\|\\'\\)")
+                        attrs)
+          (or (match-string 1 attrs) (match-string 2 attrs) (match-string 3 attrs)))))))))
+
+(defun adoc--block-attribute-style ()
+  "Return the block style the block attribute line at point sets, or nil.
+That's its first positional attribute, unless that's only an id, a
+role or an option."
+  (and (not (looking-at-p adoc--re-block-anchor-line))
+       (looking-at "\\[[ \t]*\\([^]\n,#.%=\"' \t]+\\)[ \t]*[],#.%]")
+       (match-string-no-properties 1)))
+
+(defun adoc--anchors (&optional beg end)
+  "Return the anchors between BEG and END as a list of (START END ID REGISTERED).
+BEG and END default to the whole buffer.  The list is in document
+order, and holds the block ids (`[[id]]', `[#id]', `[id=id]') and inline
+anchors (`[[id]]', `[[[id]]]', `anchor:id[]') that aren't escaped and
+aren't in a comment, a verbatim block or a literal paragraph.
+REGISTERED is non-nil for an anchor Asciidoctor registers as soon as it
+parses it, see `adoc--anchor-registration'."
+  (let ((end (or end (point-max)))
+        (tables 'unknown)
+        (cache (list nil nil nil))
+        anchors)
+    (save-excursion
+      (save-match-data
+        (goto-char (or beg (point-min)))
+        (while (re-search-forward adoc--re-inline-anchor end t)
+          (let ((start (match-beginning 0))
+                (stop (match-end 0))
+                (id (or (match-string-no-properties 2)
+                        (match-string-no-properties 3)
+                        (match-string-no-properties 4))))
+            (unless (or (match-beginning 1)
+                        (adoc--in-verbatim-block-p start)
+                        (adoc--comment-line-p))
+              (when (eq tables 'unknown)
+                (setq tables (adoc--table-ranges)))
+              (let ((registration (adoc--anchor-registration start tables cache)))
+                (when registration
+                  (push (list start stop id
+                              (and (eq registration 'registered)
+                                   ;; not when it's inside `[[[id]]', say
+                                   (not (and (eq (char-after start) ?\[)
+                                             (eq (char-before start) ?\[)))))
+                        anchors))))))
+        ;; The ids attribute lines like `[#id]' set; `[[id]]' is done.
+        (goto-char (or beg (point-min)))
+        (while (and (< (point) end)
+                    (re-search-forward "^\\[[^[]" end t))
+          (beginning-of-line)
+          (let ((id (and (looking-at-p adoc--re-block-attribute-line)
+                         (not (adoc--in-verbatim-block-p (point)))
+                         (adoc--block-attribute-id))))
+            (when id
+              (push (list (point) (line-end-position) id t) anchors)))
+          (forward-line 1))))
+    (sort anchors (lambda (a b) (< (car a) (car b))))))
+
+(defun adoc--block-attribute-above (getter)
+  "Return what GETTER finds on the block attribute lines above point's line.
+GETTER is called at the start of each of them, closest first, until it
+returns non-nil.  Like Asciidoctor, look past blank lines, comments,
+attribute entries and block titles between them and the line."
+  (save-excursion
+    (let ((own (adoc--delimited-block-at (point)))
+          value)
+      (while (and (not value)
+                  (zerop (forward-line -1))
+                  (let ((block (adoc--delimited-block-at (point))))
+                    (cond
+                     ((and block (not (eq block own)) (>= (point) (nth 1 block)))
+                      ;; skip a comment block, but not any other block
+                      (when (eq (char-after (nth 1 block)) ?/)
+                        (goto-char (nth 1 block))))
+                     ((looking-at-p adoc--re-block-attribute-line)
+                      (setq value (funcall getter))
+                      t)
+                     (t (or (looking-at-p "[ \t]*$")
+                            (looking-at-p adoc--re-block-title-or-comment-line)
+                            (looking-at-p adoc--re-attribute-entry-line)))))))
+      value)))
+
+(defun adoc--section-explicit-id (descriptor)
+  "Return the explicit id of the section title DESCRIPTOR describes, or nil.
+That's the closest id the block attribute lines above the title set
+\(see `adoc--block-attribute-above'), or else an anchor at the end of
+the title text, after a space.  A section that has one gets no
+auto-id."
+  (or (save-excursion
+        (goto-char (nth 4 descriptor))
+        (adoc--block-attribute-above #'adoc--block-attribute-id))
+      (let ((text (nth 3 descriptor)))
+        (when (string-match (concat "[ \t]\\[\\[\\(" adoc--re-anchor-id
+                                    "\\)\\(?:,[^\n]+\\)?\\]\\][ \t]*\\'")
+                            text)
+          (substring-no-properties (match-string 1 text))))))
+
+(defun adoc--anchor-xrefs (predicate)
+  "Return xref items for the buffer's anchors whose id satisfies PREDICATE.
+Each item's summary is the anchor's line."
+  (let ((buffer (current-buffer)))
+    (save-excursion
+      (cl-loop for (start _end id) in (adoc--anchors)
+               when (funcall predicate id)
+               collect (progn
+                         (goto-char start)
+                         (xref-make (string-trim
+                                     (buffer-substring-no-properties
+                                      (line-beginning-position) (line-end-position)))
+                                    (xref-make-buffer-location buffer start)))))))
 
 ;;;; Antora cross-references
 
@@ -3950,7 +5973,9 @@ page's id (`xref:this/page.adoc#id[]')."
                   (mapconcat (lambda (target)
                                (concat "xref:" (regexp-quote target) "#" qid "\\["))
                              targets "\\|")))
-         (regexp (if cross (concat same "\\|" cross) same)))
+         (regexp (if cross (concat same "\\|" cross) same))
+         ;; ids are case-sensitive (this also keeps grep from using -i)
+         (case-fold-search nil))
     (xref-matches-in-directory regexp "*.adoc" root nil)))
 
 (defun adoc--completion-xref-target-bounds ()
@@ -3990,48 +6015,20 @@ These supplement the attributes actually defined in the buffer.")
 
 (defun adoc--collect-anchor-ids ()
   "Return a list of the explicit anchor ids defined in the buffer.
-Scans for block ids (`[[id]]', `[#id]'), inline anchors
-\(`[[id,reftext]]') and bibliography anchors (`[[[ref]]]').  Computed
-section auto-ids are intentionally not included."
-  (let ((ids '()))
-    (save-excursion
-      (save-match-data
-        ;; block-id and block-id-shorthand expose the bare id in group 1.
-        (dolist (type '(block-id block-id-shorthand))
-          (goto-char (point-min))
-          (let ((re (adoc-re-anchor type)))
-            (while (re-search-forward re nil t)
-              (push (match-string-no-properties 1) ids))))
-        ;; inline-special is `[[id,reftext]]'; group 2 is `id,reftext'.
-        (goto-char (point-min))
-        (let ((re (adoc-re-anchor 'inline-special)))
-          (while (re-search-forward re nil t)
-            (let ((attrlist (match-string-no-properties 2)))
-              (push (car (split-string attrlist "[ \t,]" t)) ids))))
-        ;; biblio is `[[[ref]]]'; group 2 is `[ref]'.
-        (goto-char (point-min))
-        (let ((re (adoc-re-anchor 'biblio)))
-          (while (re-search-forward re nil t)
-            (push (string-trim (match-string-no-properties 2) "\\[" "\\]")
-                  ids)))))
-    (delete-dups (delq nil ids))))
+See `adoc--anchors'.  Computed section auto-ids are intentionally not
+included."
+  (delete-dups (mapcar #'caddr (adoc--anchors))))
 
 (defun adoc--collect-attribute-names ()
   "Return attribute names for completion.
-The union of the attributes defined in the buffer (`:name:' entries)
+The union of the attributes the buffer's `:name:' entries set or unset
 and `adoc-intrinsic-attributes'."
   (let ((names (copy-sequence adoc-intrinsic-attributes)))
     (save-excursion
       (save-match-data
         (goto-char (point-min))
-        (let ((re (adoc-re-attribute-entry)))
-          (while (re-search-forward re nil t)
-            ;; Group 1 is `:name[.subname]:' (optionally `:!name:' to unset).
-            ;; The bare name is the first run of id chars after the leading
-            ;; colon, stopping before any `.subname' or the closing colon.
-            (let ((raw (match-string-no-properties 1)))
-              (when (string-match ":!?\\([-a-zA-Z0-9_]+\\)" raw)
-                (push (match-string 1 raw) names)))))))
+        (while (re-search-forward adoc--re-attribute-entry-line nil t)
+          (push (match-string-no-properties 2) names))))
     (delete-dups names)))
 
 (defun adoc--completion-langs ()
@@ -4196,40 +6193,24 @@ inside `[source,'."
 
 (defun adoc--anchor-id-at-point ()
   "Return the id of the anchor definition point is on, or nil."
-  (save-excursion
-    (let ((pos (point))
-          (eol (line-end-position))
-          (found nil))
-      (beginning-of-line)
-      (dolist (type '(block-id block-id-shorthand inline-special biblio) found)
-        (unless found
-          (save-excursion
-            (let ((re (adoc-re-anchor type)))
-              (while (and (not found) (re-search-forward re eol t))
-                (when (and (<= (match-beginning 0) pos) (<= pos (match-end 0)))
-                  (setq found
-                        (pcase type
-                          ((or 'block-id 'block-id-shorthand)
-                           (match-string-no-properties 1))
-                          ('inline-special
-                           (car (split-string (match-string-no-properties 2)
-                                               "[ \t,]" t)))
-                          ('biblio
-                           (string-trim (match-string-no-properties 2)
-                                        "\\[" "\\]"))))))))))) ))
+  (let ((pos (point)))
+    (nth 2 (seq-find (lambda (anchor) (<= (car anchor) pos (cadr anchor)))
+                     (adoc--anchors (line-beginning-position)
+                                    (line-end-position))))))
 
 (defun adoc--re-xref-to (id)
   "Return a regexp matching a cross-reference to the anchor ID.
 Trailing whitespace is tolerated after the id (as in `<<foo >>'), the
 same way `adoc-re-xref' permits it."
   (let ((q (regexp-quote id)))
-    (concat "<<" q "[ \t\n]*\\(?:,\\|>>\\)\\|xref:" q "\\[")))
+    (concat "<<" q "[ \t\n]*\\(?:,\\|>>\\)\\|xref:#?" q "\\[")))
 
 (defun adoc--xref-collect (regexp)
   "Return a list of xref items, one per match of REGEXP in the buffer.
 Each item's summary is the matched line; its location is the start of
-the match."
+the match.  The search is case-sensitive, like ids."
   (let ((buffer (current-buffer))
+        (case-fold-search nil)
         (items '()))
     (save-excursion
       (save-match-data
@@ -4243,15 +6224,28 @@ the match."
                   items)))))
     (nreverse items)))
 
+(defun adoc--section-id-at-point ()
+  "Return the id of the section title point is on, or nil.
+That's its explicit id, or else its auto-id.  The document title isn't
+a section, so it has none."
+  (when (adoc-title-descriptor)         ; cheap, before fontifying
+    (font-lock-ensure)
+    (let ((descriptor (adoc--heading-descriptor-at-point)))
+      (when (and descriptor (> (nth 2 descriptor) 0))
+        (or (adoc--section-explicit-id descriptor)
+            (car (cl-find (nth 4 descriptor) (adoc--section-table)
+                          :key #'caddr)))))))
+
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql adoc)))
   (or (adoc-xref-id-at-point)
-      (adoc--anchor-id-at-point)))
+      (adoc--anchor-id-at-point)
+      (adoc--section-id-at-point)))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql adoc)))
   (delete-dups (append (adoc--collect-anchor-ids) (adoc--collect-section-ids))))
 
 (cl-defmethod xref-backend-definitions ((_backend (eql adoc)) identifier)
-  (append (adoc--xref-collect (adoc-re-anchor nil identifier))
+  (append (adoc--anchor-xrefs (lambda (id) (equal id identifier)))
           (adoc--section-definitions identifier)))
 
 (cl-defmethod xref-backend-references ((_backend (eql adoc)) identifier)
@@ -4264,9 +6258,7 @@ the match."
 (cl-defmethod xref-backend-apropos ((_backend (eql adoc)) pattern)
   (require 'apropos)                    ; for `apropos-parse-pattern'
   (let ((re (xref-apropos-regexp pattern)))
-    (cl-loop for id in (adoc--collect-anchor-ids)
-             when (string-match-p re id)
-             append (adoc--xref-collect (adoc-re-anchor nil id)))))
+    (adoc--anchor-xrefs (lambda (id) (string-match-p re id)))))
 
 ;;;; Heading navigation
 
@@ -4315,14 +6307,11 @@ and `adoc-imenu-create-index' call `font-lock-ensure' first.
 
 For a one-line title the leading delimiter at START carries
 `adoc-meta-hide-face'.  Inline markup in the title text does not
-touch that delimiter (so a title made entirely of a macro is still
-recognised), whereas a surrounding delimited block repaints the
-whole line and thus the delimiter too - which is precisely why a
-`==' line inside a block is rejected.  The check therefore relies on
-the block keywords winning the face-override war on the delimiter;
-the navigation tests guard that assumption.  A two-line title has no
-such delimiter, so fall back to looking for a title face on its
-text."
+touch that delimiter, so a title made entirely of a macro is still
+recognised.  The title keywords skip the inside of delimited blocks
+\(see `adoc--outside-delimited-block-p'), so a `==' line there never
+gets that face.  A two-line title has no such delimiter, so fall back
+to looking for a title face on its text."
   (or (adoc--face-memq '(adoc-meta-hide-face) (get-text-property start 'face))
       (let ((pos start) found)
         (while (and (not found) (< pos end))
@@ -4496,6 +6485,37 @@ buffer stops the search.  With a negative ARG, move forward."
 
 ;;;; Outline cycling
 
+(defun adoc--outline-search (&optional bound move backward looking-at)
+  "Search for the next section title, for `outline-search-function'.
+That's the next match of `outline-regexp' at the beginning of a line,
+like `outline-minor-mode' does without this function, except that lines
+inside delimited blocks don't count.  BOUND, MOVE, BACKWARD and
+LOOKING-AT are as in `outline-search-function'."
+  (if looking-at
+      (and (looking-at outline-regexp)
+           (not (adoc--delimited-block-at (point))))
+    (let ((regexp (concat "^\\(?:" outline-regexp "\\)"))
+          (limit (or bound (if backward (point-min) (point-max))))
+          (origin (point))
+          (more t)
+          found)
+      (while (and more
+                  (if backward
+                      (re-search-backward regexp limit t)
+                    (re-search-forward regexp limit t)))
+        (let ((block (adoc--delimited-block-at (match-beginning 0))))
+          (if (not block)
+              (setq found t more nil)
+            ;; Carry on past the block, none of its lines can be a title.
+            (let* ((outer (adoc--outermost-block block))
+                   (next (if backward (car outer) (nth 3 outer))))
+              (if (if backward (> next limit) (< next limit))
+                  (goto-char next)
+                (setq more nil))))))
+      (unless found
+        (goto-char (if move limit origin)))
+      found)))
+
 (defun adoc-cycle (&optional arg)
   "Cycle the visibility of the section subtree at point.
 On a section title, rotate its subtree between folded, child
@@ -4508,7 +6528,10 @@ underlying `outline-minor-mode'."
   (interactive "P")
   (cond
    (arg (adoc-cycle-buffer))
-   ((outline-on-heading-p) (outline-cycle))
+   ;; Emacs 28 has no `outline-search-function', so check for a block here.
+   ((and (outline-on-heading-p)
+         (not (adoc--delimited-block-at (line-beginning-position))))
+    (outline-cycle))
    (t (indent-for-tab-command))))
 
 (defun adoc-cycle-buffer ()
@@ -4753,38 +6776,27 @@ Each heading contains its sub-headings as a nested menu."
                                       (car item) (cdr item)))))
                        flat-index)))
     ;; items is now ((name pos . level) ...)
-    (adoc--imenu-build-tree items 0)))
+    (adoc--imenu-build-tree items)))
 
-(defun adoc--imenu-build-tree (items min-level)
-  "Build a nested imenu tree from ITEMS starting at MIN-LEVEL.
-ITEMS is a list of (name pos . level)."
+(defun adoc--imenu-build-tree (items)
+  "Build a nested imenu tree from ITEMS, a list of (NAME POS . LEVEL).
+Each item gets the items that follow it as its children, up to the
+next one at the same or a higher level.  The first item can be at any
+level, so a document without a level 0 title, or one that skips a
+level, keeps all its sections."
   (let (result)
     (while items
-      (let* ((item (car items))
-             (name (car item))
-             (pos (cadr item))
-             (level (cddr item)))
-        (cond
-         ;; Item is at a higher level than we're collecting — return
-         ((< level min-level)
-          (setq items nil))
-         ;; Item is at a deeper level — shouldn't happen if called correctly
-         ((> level min-level)
-          (setq items (cdr items)))
-         ;; Item is at our level — collect it and its children
-         (t
-          (setq items (cdr items))
-          ;; Collect children (items with level > current level, up to
-          ;; next item at same or higher level)
-          (let (children)
-            (while (and items (> (cddr (car items)) level))
-              (push (car items) children)
-              (setq items (cdr items)))
-            (if children
-                (let ((subtree (adoc--imenu-build-tree
-                                (nreverse children) (1+ level))))
-                  (push (cons name (cons (cons nil pos) subtree)) result))
-              (push (cons name pos) result)))))))
+      (let* ((item (pop items))
+             (level (cddr item))
+             children)
+        (while (and items (> (cddr (car items)) level))
+          (push (pop items) children))
+        (push (if children
+                  (cons (car item)
+                        (cons (cons nil (cadr item))
+                              (adoc--imenu-build-tree (nreverse children))))
+                (cons (car item) (cadr item)))
+              result)))
     (nreverse result)))
 
 (defvar adoc-mode-syntax-table
@@ -5013,15 +7025,15 @@ ITEMS is a list of (name pos . level)."
            :help ,adoc-help-anchor]
           ["Anchor (syntax 2): anchor:id[xreflabel]" tempo-template-adoc-anchor-default-syntax
            :help ,adoc-help-anchor]
-          ["Xref (syntax 1): <<id,caption>>" adoc-xref
+          ["Xref (syntax 1): <<id,caption>>" tempo-template-adoc-xref
            :help ,adoc-help-xref]
-          ["Xref (syntax 2): xref:id[caption]" adoc-xref-default-syntax
+          ["Xref (syntax 2): xref:id[caption]" tempo-template-adoc-xref-default-syntax
            :help ,adoc-help-xref]
-          ["Image: image:target-path[caption]" adoc-image]
-          ["Comment: //" tempo-template-adoc-comment
+          ["Image: image:target-path[caption]" tempo-template-adoc-image]
+          ["Comment: //" adoc-insert-comment
            :help ,adoc-help-comment]
           ("Passthrough macros"
-           :help adoc-help-passthrough-macros
+           :help ,adoc-help-passthrough-macros
            ["pass:[text]" tempo-template-adoc-pass
             :help ,adoc-help-pass]
            ["ASCIIMath: asciimath:[text]" tempo-template-adoc-asciimath
@@ -5067,6 +7079,7 @@ Turning on Adoc mode runs the normal hook `adoc-mode-hook'."
   (setq-local font-lock-unfontify-region-function 'adoc-unfontify-region-function)
   (setq-local font-lock-extend-after-change-region-function #'adoc-font-lock-extend-after-change-region)
   (add-hook 'font-lock-extend-region-functions #'adoc-font-lock-extend-region nil t)
+  (add-hook 'before-change-functions #'adoc--invalidate-block-extents nil t)
 
   ;; outline mode
   (setq-local outline-regexp "=\\{1,6\\}[ \t]+[^ \t\n]")
@@ -5074,6 +7087,9 @@ Turning on Adoc mode runs the normal hook `adoc-mode-hook'."
                               (save-excursion
                                 (skip-chars-forward "=")
                                 (current-column))))
+  ;; Emacs 29+ (on 28, title-like lines in blocks still count as headings)
+  (when (boundp 'outline-search-function)
+    (setq-local outline-search-function #'adoc--outline-search))
   (outline-minor-mode 1)
 
   ;; fill
@@ -5089,6 +7105,10 @@ Turning on Adoc mode runs the normal hook `adoc-mode-hook'."
   ;; cross-references (`M-?' for references, the xref marker stack, etc.)
   (add-hook 'xref-backend-functions #'adoc--xref-backend nil t)
 
+  (adoc--warn-about-two-line-titles)
+  ;; also catch the option being set as a file- or dir-local variable
+  (add-hook 'hack-local-variables-hook #'adoc--warn-about-two-line-titles nil t)
+
   ;; misc
   (setq-local page-delimiter "^<<<+$")
   (setq-local require-final-newline mode-require-final-newline)
@@ -5098,20 +7118,28 @@ Turning on Adoc mode runs the normal hook `adoc-mode-hook'."
   ;; nil, or even something else. See also similar comment in sgml-mode.
   (setq-local imenu-create-index-function adoc-imenu-create-index-function)
 
-  ;; compilation
-  ;; Matches both the modern Asciidoctor (`asciidoctor: ...') and the legacy
-  ;; Python AsciiDoc (`asciidoc: ...') diagnostic formats.
-  (add-to-list 'compilation-error-regexp-alist-alist
-               '(asciidoc
-                 "^asciidoc\\(?:tor\\)?: +\\(?:ERROR\\|\\(WARNING\\|DEPRECATED\\)\\): +\\([^:\n]*\\): line +\\([0-9]+\\)"
-                 2 3 nil (1 . nil)))
-  (setq-local compilation-error-regexp-alist
-              (cons 'asciidoc compilation-error-regexp-alist))
   (when (and (display-graphic-p) adoc-display-images)
     (adoc-display-images)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.a\\(?:scii\\)?doc\\'" . adoc-mode))
+
+(defvar adoc--two-line-title-warning-shown nil
+  "Non-nil once the two-line title deprecation warning has been shown.")
+
+(defun adoc--warn-about-two-line-titles ()
+  "Warn once per session when two-line titles are enabled.
+They're deprecated, see `adoc-enable-two-line-title'."
+  (when (and adoc-enable-two-line-title
+             (not adoc--two-line-title-warning-shown))
+    (setq adoc--two-line-title-warning-shown t)
+    (display-warning
+     '(adoc-mode two-line-titles)
+     (substitute-command-keys
+      "`adoc-enable-two-line-title' is set, but two-line (setext) titles are \
+deprecated and `adoc-mode' will drop support for them in a future release.  \
+\\<adoc-mode-map>\\[adoc-toggle-title-type] converts the title at point to the \
+one-line style."))))
 
 
 ;; Auto-fill

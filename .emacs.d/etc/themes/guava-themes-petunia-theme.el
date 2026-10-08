@@ -59,6 +59,7 @@
       (petunia-purple                    "#8a5aff")
 
       (petunia-fg                        "#FFFFFF")
+      (petunia-fg-2                      "#c3c3c3")
       (petunia-bg                        "#000000")
       (petunia-highlight                 "#1e1e1e")
       (petunia-shadow                    "#b3b3b3")
@@ -69,6 +70,7 @@
 
       (petunia-mode-line                 "#8a5aff")
       (petunia-mode-line-inactive        "#008741")
+      (petunia-mode-line-modified        "#00c3d7")
       (petunia-bell                      "#FFDB5A")
 
       (petunia-tab-1                     petunia-mode-line)
@@ -84,7 +86,7 @@
       (petunia-fl-variable-name          petunia-pink)
       (petunia-fl-constant               petunia-green-forest)
       (petunia-fl-warning                petunia-warning)
-      (petunia-fl-punctuation            petunia-light-purple)
+      (petunia-fl-punctuation            petunia-fg-2)
       (petunia-fl-negation-char          petunia-light-orange)
 
       (petunia-diff-added                "#5aa05a")
@@ -165,7 +167,9 @@
 
    ;; mode-line
    `(mode-line ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line))))
-   `(mode-line-inactive ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,petunia-class (:background ,petunia-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,petunia-class (:weight bold))))
+   `(mode-line-highlight ((,petunia-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,petunia-class (:foreground ,petunia-white :background ,petunia-bell))))
 
    ;; minibuffer
@@ -189,8 +193,9 @@
    `(tab-line-tab-current ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,petunia-class (:foreground ,petunia-light-blue :weight bold))))
+   `(tab-line-tab-modified ((,petunia-class (:foreground ,petunia-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,petunia-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,petunia-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,petunia-class (:foreground ,petunia-black :background ,petunia-bell))))
@@ -279,6 +284,7 @@
    ;; custom-button
    `(custom-button ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -304,6 +310,7 @@
    `(doom-modeline-project-name ((,petunia-class (:foreground ,petunia-light-green :inherit italic))))
    `(doom-modeline-project-parent-dir ((,petunia-class (:foreground ,petunia-light-green))))
    `(doom-modeline-buffer-minor-mode ((,petunia-class (:foreground ,petunia-yellow))))
+   `(doom-modeline-buffer-modified ((,petunia-class (:foreground ,petunia-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,petunia-class (:foreground ,petunia-fg :background ,petunia-bg))))
@@ -327,7 +334,7 @@
    `(envrc-mode-line-on-face ((,petunia-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,petunia-class (:weight bold :background ,petunia-highlight))))
+   `(devdocs-code-block ((,petunia-class (:weight bold :background ,petunia-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

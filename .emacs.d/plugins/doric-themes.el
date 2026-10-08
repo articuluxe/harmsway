@@ -49,6 +49,7 @@
     doric-light
     doric-lilac
     doric-marble
+    doric-meadow
     doric-oak
     doric-siren
     doric-tiger
@@ -63,6 +64,7 @@
     doric-lion
     doric-magma
     doric-mermaid
+    doric-mountain
     doric-obsidian
     doric-pine
     doric-plum
@@ -140,20 +142,24 @@ This is used by the commands `doric-themes-toggle',
   (doric-themes--enable-themes)
   (seq-filter #'doric-themes--doric-p custom-known-themes))
 
-(defun doric-themes--current-theme ()
-  "Return first enabled Doric theme."
-  (car (or (doric-themes--list-enabled-themes)
-           (doric-themes--list-known-themes))))
+(defun doric-themes--current-theme (&optional as-string)
+  "Return first enabled Doric theme.
+With optional AS-STRING, return a string."
+  (when-let* ((match (or (doric-themes--list-enabled-themes)
+                         (doric-themes--enable-themes)))
+              (first (car match)))
+    (if as-string
+        (symbol-name first)
+      first)))
 
 (defun doric-themes--annotate-theme (theme)
   "Return description of THEME ."
   (when-let* ((symbol (intern-soft theme))
               (properties (get symbol 'theme-properties))
-              (doc-string (or (get symbol 'theme-documentation)
-                              (plist-get properties :doric-documentation))))
-    (format " %s"
-            (propertize (concat "-- " (car (split-string doc-string "\\.")))
-                        'face 'completions-annotations))))
+              (docstring (or (get symbol 'theme-documentation) (plist-get properties :doric-documentation)))
+              (docstring-parts (split-string docstring "\\."))
+              (docstring-first (car docstring-parts)))
+    (format " %s" (propertize (concat "-- " docstring-first) 'face 'completions-annotations))))
 
 (defvar doric-themes-select-theme-history nil
   "Minibuffer history of `doric-themes-select-prompt'.")
@@ -194,16 +200,28 @@ If TRANSFORM is non-nil, return THEME as-is."
 (defun doric-themes-select-prompt (&optional prompt)
   "Minibuffer prompt to select a Doric theme.
 With optional PROMPT string, use it.  Else use a generic prompt."
-  (let ((default (car doric-themes-select-theme-history)))
+  (let ((default (or (doric-themes--current-theme :as-string)
+                     (car doric-themes-select-theme-history))))
     (intern
      (completing-read
       (format-prompt (or prompt "Select Doric theme") default)
       (doric-themes--completion-table (doric-themes--list-known-themes))
       nil t nil 'doric-themes-select-theme-history default))))
 
+(defun doric-themes--disable-themes (themes)
+  "Disable THEMES per `doric-themes-disable-other-themes'."
+  (mapc #'disable-theme themes))
+
+(defun doric-themes--get-color-schemes ()
+  "Return `custom-enabled-themes' of :kind `color-scheme'."
+  (seq-filter
+   (lambda (theme)
+     (eq (plist-get (get theme 'theme-properties) :kind) 'color-scheme))
+   custom-enabled-themes))
+
 (defun doric-themes-load-theme (theme)
   "Load THEME while disabling other themes and return THEME."
-  (mapc #'disable-theme custom-enabled-themes)
+  (doric-themes--disable-themes (doric-themes--get-color-schemes))
   (load-theme theme :no-confirm)
   (run-hooks 'doric-themes-after-load-theme-hook)
   theme)
@@ -240,10 +258,10 @@ Run `doric-themes-after-load-theme-hook' after loading the theme."
         (if (eq (car custom-enabled-themes) one)
             (doric-themes-load-theme two)
           (doric-themes-load-theme one)))
-    (doric-themes-load-theme
-     (doric-themes-select-prompt
-      (concat "Set two `doric-themes-to-toggle'; "
-              "switching to theme selection for now: ")))))
+    (when-let* ((selection (doric-themes-select-prompt
+                            (concat "Set two `doric-themes-to-toggle'; "
+                                    "switching to theme selection for now: "))))
+      (doric-themes-load-theme selection))))
 
 (defun doric-themes--rotate (themes)
   "Rotate THEMES rightward such that the car is moved to the end."
@@ -405,7 +423,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-diff-lines-boundary
     org-agenda-clocking
     region
-    show-paren-match
     speedbar-separator-face
     substitute-match))
 
@@ -741,9 +758,9 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-branch-remote-head
     magit-branch-upstream
     magit-diff-file-heading
+    notmuch-tag-unread
     org-document-title
-    org-imminent-deadline
-    notmuch-tag-unread))
+    org-imminent-deadline))
 
 (defconst doric-themes-main-foreground-only-faces
   '(border
@@ -1532,6 +1549,7 @@ default to a generic text that mentions the BACKGROUND-MODE."
               `(tty-menu-enabled-face ((t :background ,bg-accent :foreground ,fg-main)))
               `(tty-menu-selected-face ((t :background ,fg-main :foreground ,bg-main)))
               `(read-multiple-choice-face ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-main :inverse-video t)))
+              `(show-paren-match ((t :inherit error :background ,bg-shadow-subtle :foreground ,fg-magenta)))
 
               '(adoc-meta-face ((t :inherit fixed-pitch)))
               '(adoc-meta-hide-face ((t :inherit fixed-pitch)))

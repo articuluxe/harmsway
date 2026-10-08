@@ -930,6 +930,7 @@ Also see `magit-git-config-p'."
                 (expand-file-name (or file default-directory))))
           (previous nil))
       (while (not (file-accessible-directory-p dir))
+        ;; Do not use file-name-parent-directory.
         (setq dir (file-name-directory (directory-file-name dir)))
         (when (equal dir previous)
           (throw 'unsafe-default-dir nil))
@@ -1045,7 +1046,6 @@ tree, then it is not possible to avoid returning the truename."
                               (magit-expand-git-file-name gitdir))
                     (expand-file-name gitdir)))]
          (cond-let*
-           ((magit-bare-repo-p) gitdir)
            ;; Return the linked working tree, if any.
            ([link (expand-file-name "gitdir" gitdir)]
             [wtree (and (file-exists-p link)
@@ -1055,28 +1055,26 @@ tree, then it is not possible to avoid returning the truename."
             ;; exist that contain such a file.  See #2364.
             [_(not (equal wtree ".git"))]
             (file-name-directory (expand-file-name wtree default-directory)))
+           ;; Keep the bare repo check after the linked working tree
+           ;; check.  See #5636.
+           ((magit-bare-repo-p) gitdir)
            ;; The working directory may not be the parent
            ;; directory of .git if it was set up with
            ;; "git init --separate-git-dir".  See #2955.
            ((car (rassoc gitdir magit--separated-gitdirs)))
-           ;; We might be in the gitdir of a submodule.  Git isn't being
-           ;; helpful.  This does not work in sub-directories of such a
-           ;; gitdir.
-           [[defdir default-directory]
-            [updir  (file-name-directory (directory-file-name gitdir))]
-            [upname (file-name-nondirectory (directory-file-name updir))]
-            [module (file-name-nondirectory (directory-file-name gitdir))]]
-           ([_(equal upname "modules")]
-            [default-directory updir]
+           ;; We might be inside the nested gitdir of a submodule.
+           ([parts (nreverse (file-name-split gitdir))]
+            [_(equal (nth 2 parts) "modules")]
+            [_(equal (nth 3 parts) ".git")]
+            [default-directory (file-name-parent-directory gitdir)]
             [default-directory (magit-toplevel)]
-            [default-directory
-             (expand-file-name
-              (magit-git-string "config" "-f" ".gitmodules"
-                                (format "submodule.%s.path" module)))]
-            [_(file-equal-p (magit-gitdir) defdir)]
+            [path (magit-git-string "config" "-f" ".gitmodules"
+                                    (format "submodule.%s.path" (nth 1 parts)))]
+            [default-directory (expand-file-name path)]
+            [_(file-equal-p (magit-gitdir) gitdir)]
             default-directory)
            ;; Step outside the control directory to enter the working tree.
-           (updir)))))))
+           ((file-name-parent-directory gitdir))))))))
 
 (defun magit--toplevel-safe ()
   (or (magit-toplevel)

@@ -152,7 +152,7 @@ Set to nil to disable."
 (defcustom consult-mode-histories
   '((eshell-mode eshell-history-ring eshell-history-index    eshell-bol)
     (comint-mode comint-input-ring   comint-input-ring-index comint-bol)
-    (term-mode   term-input-ring     term-input-ring-index   term-bol))
+    (term-mode   term-input-ring     term-input-ring-index))
   "Alist of mode histories (mode history index bol).
 The histories can be rings or lists.  Index, if provided, is a
 variable to set to the index of the selection within the ring or

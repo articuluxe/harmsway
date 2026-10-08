@@ -65,6 +65,7 @@
       (ceiba-brown-wood                "#53453d")
 
       (ceiba-fg                        "#000000")
+      (ceiba-fg-2                      "#3c3c3c")
       (ceiba-bg                        "#bab49e")
       (ceiba-highlight                 "#a6a08a")
       (ceiba-shadow                    "#898989")
@@ -75,7 +76,8 @@
 
       (ceiba-mode-line                 "#5b6452")
       (ceiba-mode-line-inactive        "#826e51")
-      (ceiba-bell                      "#645264")
+      (ceiba-mode-line-modified        "#b287b2")
+      (ceiba-bell                      "#786678")
 
       (ceiba-tab-1                     ceiba-mode-line)
       (ceiba-tab-2                     ceiba-mode-line-inactive)
@@ -90,7 +92,7 @@
       (ceiba-fl-variable-name          ceiba-green)
       (ceiba-fl-constant               ceiba-deep-orange)
       (ceiba-fl-warning                ceiba-warning)
-      (ceiba-fl-punctuation            ceiba-green-forest)
+      (ceiba-fl-punctuation            ceiba-fg-2)
       (ceiba-fl-negation-char          ceiba-orange)
 
       (ceiba-diff-added                "#c8f0c8")
@@ -171,7 +173,9 @@
 
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line))))
-   `(mode-line-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,ceiba-class (:background ,ceiba-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,ceiba-class (:weight bold))))
+   `(mode-line-highlight ((,ceiba-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-bell))))
 
    ;; minibuffer
@@ -195,8 +199,9 @@
    `(tab-line-tab-current ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,ceiba-class (:foreground ,ceiba-purple-red :weight bold))))
+   `(tab-line-tab-modified ((,ceiba-class (:foreground ,ceiba-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,ceiba-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,ceiba-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-bell))))
@@ -285,6 +290,7 @@
    ;; custom-button
    `(custom-button ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -310,6 +316,7 @@
    `(doom-modeline-project-name ((,ceiba-class (:foreground ,ceiba-steel-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,ceiba-class (:foreground ,ceiba-steel-blue))))
    `(doom-modeline-buffer-minor-mode ((,ceiba-class (:foreground ,ceiba-shadow))))
+   `(doom-modeline-buffer-modified ((,ceiba-class (:foreground ,ceiba-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,ceiba-class (:foreground ,ceiba-fg :background ,ceiba-bg))))
@@ -333,7 +340,7 @@
    `(envrc-mode-line-on-face ((,ceiba-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,ceiba-class (:weight bold :background ,ceiba-highlight))))
+   `(devdocs-code-block ((,ceiba-class (:weight bold :background ,ceiba-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

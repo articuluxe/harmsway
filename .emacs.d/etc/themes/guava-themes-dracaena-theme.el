@@ -63,6 +63,7 @@
       (dracaena-dark-cyan                 "#005f55")
 
       (dracaena-fg                        "#becee6")
+      (dracaena-fg-2                      "#8292aa")
       (dracaena-bg                        "#3e4441")
       (dracaena-highlight                 "#2a302d")
       (dracaena-shadow                    "#b3b3b3")
@@ -73,6 +74,7 @@
 
       (dracaena-mode-line                 "#792725")
       (dracaena-mode-line-inactive        "#353838")
+      (dracaena-mode-line-modified        "#e6825f")
       (dracaena-bell                      "#257950")
 
       (dracaena-tab-1                     dracaena-mode-line)
@@ -88,7 +90,7 @@
       (dracaena-fl-variable-name          dracaena-orange-red)
       (dracaena-fl-constant               dracaena-light-blue)
       (dracaena-fl-warning                dracaena-warning)
-      (dracaena-fl-punctuation            dracaena-light-brown)
+      (dracaena-fl-punctuation            dracaena-fg-2)
       (dracaena-fl-negation-char          dracaena-orange)
 
       (dracaena-diff-added                "#5aa05a")
@@ -169,7 +171,9 @@
 
    ;; mode-line
    `(mode-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line))))
-   `(mode-line-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,dracaena-class (:background ,dracaena-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,dracaena-class (:weight bold))))
+   `(mode-line-highlight ((,dracaena-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-bell))))
 
    ;; minibuffer
@@ -193,8 +197,9 @@
    `(tab-line-tab-current ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,dracaena-class (:foreground ,dracaena-orange :weight bold))))
+   `(tab-line-tab-modified ((,dracaena-class (:foreground ,dracaena-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,dracaena-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,dracaena-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-bell))))
@@ -283,6 +288,7 @@
    ;; custom-button
    `(custom-button ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -308,6 +314,7 @@
    `(doom-modeline-project-name ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow :inherit italic))))
    `(doom-modeline-project-parent-dir ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
    `(doom-modeline-buffer-minor-mode ((,dracaena-class (:foreground ,dracaena-green))))
+   `(doom-modeline-buffer-modified ((,dracaena-class (:foreground ,dracaena-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,dracaena-class (:foreground ,dracaena-fg :background ,dracaena-bg))))
@@ -331,7 +338,7 @@
    `(envrc-mode-line-on-face ((,dracaena-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,dracaena-class (:weight bold :background ,dracaena-highlight))))
+   `(devdocs-code-block ((,dracaena-class (:weight bold :background ,dracaena-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

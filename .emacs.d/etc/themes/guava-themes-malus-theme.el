@@ -60,6 +60,7 @@
       (malus-purple                    "#8468ed")
 
       (malus-fg                        "#fafbb7")
+      (malus-fg-2                      "#bebf7b")
       (malus-bg                        "#1e0910")
       (malus-highlight                 "#321d24")
       (malus-shadow                    "#b3b3b3")
@@ -70,6 +71,7 @@
 
       (malus-mode-line                 "#cd5a5f")
       (malus-mode-line-inactive        "#49835f")
+      (malus-mode-line-modified        "#4548e3")
       (malus-bell                      "#5A99CD")
 
       (malus-tab-1                     malus-mode-line)
@@ -85,7 +87,7 @@
       (malus-fl-variable-name          malus-yellow-subdued)
       (malus-fl-constant               malus-purple)
       (malus-fl-warning                malus-warning)
-      (malus-fl-punctuation            malus-brown)
+      (malus-fl-punctuation            malus-fg-2)
       (malus-fl-negation-char          malus-oceanic-blue)
 
       (malus-diff-added                "#5aa05a")
@@ -166,7 +168,9 @@
 
    ;; mode-line
    `(mode-line ((,malus-class (:foreground ,malus-white :background ,malus-mode-line))))
-   `(mode-line-inactive ((,malus-class (:foreground ,malus-white :background ,malus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,malus-class (:background ,malus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,malus-class (:weight bold))))
+   `(mode-line-highlight ((,malus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,malus-class (:foreground ,malus-white :background ,malus-bell))))
 
    ;; minibuffer
@@ -190,8 +194,9 @@
    `(tab-line-tab-current ((,malus-class (:foreground ,malus-white :background ,malus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,malus-class (:foreground ,malus-white :background ,malus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,malus-class (:foreground ,malus-blue :weight bold))))
+   `(tab-line-tab-modified ((,malus-class (:foreground ,malus-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,malus-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,malus-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,malus-class (:foreground ,malus-white :background ,malus-bell))))
@@ -280,6 +285,7 @@
    ;; custom-button
    `(custom-button ((,malus-class (:foreground ,malus-white :background ,malus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,malus-class (:foreground ,malus-white :background ,malus-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,malus-class (:foreground ,malus-white :background ,malus-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -305,6 +311,7 @@
    `(doom-modeline-project-name ((,malus-class (:foreground ,malus-green-granny :inherit italic))))
    `(doom-modeline-project-parent-dir ((,malus-class (:foreground ,malus-green-granny))))
    `(doom-modeline-buffer-minor-mode ((,malus-class (:foreground ,malus-shadow))))
+   `(doom-modeline-buffer-modified ((,malus-class (:foreground ,malus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,malus-class (:foreground ,malus-fg :background ,malus-bg))))
@@ -328,7 +335,7 @@
    `(envrc-mode-line-on-face ((,malus-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,malus-class (:weight bold :background ,malus-highlight))))
+   `(devdocs-code-block ((,malus-class (:weight bold :background ,malus-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

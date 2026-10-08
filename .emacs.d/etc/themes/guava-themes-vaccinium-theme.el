@@ -62,6 +62,7 @@
       (vaccinium-purple-pink               "#aa78cf")
 
       (vaccinium-fg                        "#FFFFFF")
+      (vaccinium-fg-2                      "#c3c3c3")
       (vaccinium-bg                        "#1c1c26")
       (vaccinium-highlight                 "#30303a")
       (vaccinium-shadow                    "#b3b3b3")
@@ -72,6 +73,7 @@
 
       (vaccinium-mode-line                 "#5582d7")
       (vaccinium-mode-line-inactive        "#6a7e98")
+      (vaccinium-mode-line-modified        "#ffa07a")
       (vaccinium-bell                      "#D76955")
 
       (vaccinium-tab-1                     vaccinium-mode-line)
@@ -87,7 +89,7 @@
       (vaccinium-fl-variable-name          vaccinium-red)
       (vaccinium-fl-constant               vaccinium-pink)
       (vaccinium-fl-warning                vaccinium-warning)
-      (vaccinium-fl-punctuation            vaccinium-light-purple)
+      (vaccinium-fl-punctuation            vaccinium-fg-2)
       (vaccinium-fl-negation-char          vaccinium-purple-pink)
 
       (vaccinium-diff-added                "#5aa05a")
@@ -168,7 +170,9 @@
 
    ;; mode-line
    `(mode-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line))))
-   `(mode-line-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,vaccinium-class (:background ,vaccinium-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,vaccinium-class (:weight bold))))
+   `(mode-line-highlight ((,vaccinium-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-bell))))
 
    ;; minibuffer
@@ -192,8 +196,9 @@
    `(tab-line-tab-current ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,vaccinium-class (:foreground ,vaccinium-orange :weight bold))))
+   `(tab-line-tab-modified ((,vaccinium-class (:foreground ,vaccinium-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,vaccinium-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,vaccinium-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-bell))))
@@ -282,6 +287,7 @@
    ;; custom-button
    `(custom-button ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -307,6 +313,7 @@
    `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-deep-purple :inherit italic))))
    `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-deep-purple))))
    `(doom-modeline-buffer-minor-mode ((,vaccinium-class (:foreground ,vaccinium-yellow))))
+   `(doom-modeline-buffer-modified ((,vaccinium-class (:foreground ,vaccinium-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,vaccinium-class (:foreground ,vaccinium-fg :background ,vaccinium-bg))))
@@ -330,7 +337,7 @@
    `(envrc-mode-line-on-face ((,vaccinium-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,vaccinium-class (:weight bold :background ,vaccinium-highlight))))
+   `(devdocs-code-block ((,vaccinium-class (:weight bold :background ,vaccinium-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

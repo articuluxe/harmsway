@@ -61,6 +61,7 @@
       (solanum-alt-dark-purple           "#59536e")
 
       (solanum-fg                        "#FFFFFF")
+      (solanum-fg-2                      "#c3c3c3")
       (solanum-bg                        "#130d1a")
       (solanum-highlight                 "#27212e")
       (solanum-shadow                    "#b3b3b3")
@@ -71,6 +72,7 @@
 
       (solanum-mode-line                 "#672b5f")
       (solanum-mode-line-inactive        "#3b3550")
+      (solanum-mode-line-modified        "#cd151f")
       (solanum-bell                      "#41672B")
 
       (solanum-tab-1                     solanum-mode-line)
@@ -86,7 +88,7 @@
       (solanum-fl-variable-name          solanum-light-green)
       (solanum-fl-constant               solanum-light-purple)
       (solanum-fl-warning                solanum-warning)
-      (solanum-fl-punctuation            solanum-purple-pink)
+      (solanum-fl-punctuation            solanum-fg-2)
       (solanum-fl-negation-char          solanum-alt-light-green)
 
       (solanum-diff-added                "#5aa05a")
@@ -167,7 +169,9 @@
 
    ;; mode-line
    `(mode-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line))))
-   `(mode-line-inactive ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,solanum-class (:background ,solanum-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,solanum-class (:weight bold))))
+   `(mode-line-highlight ((,solanum-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,solanum-class (:foreground ,solanum-white :background ,solanum-bell))))
 
    ;; minibuffer
@@ -191,8 +195,9 @@
    `(tab-line-tab-current ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,solanum-class (:foreground ,solanum-red-tomato :weight bold))))
+   `(tab-line-tab-modified ((,solanum-class (:foreground ,solanum-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,solanum-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,solanum-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,solanum-class (:foreground ,solanum-white :background ,solanum-bell))))
@@ -281,6 +286,7 @@
    ;; custom-button
    `(custom-button ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -306,6 +312,7 @@
    `(doom-modeline-project-name ((,solanum-class (:foreground ,solanum-red-tomato :inherit italic))))
    `(doom-modeline-project-parent-dir ((,solanum-class (:foreground ,solanum-red-tomato))))
    `(doom-modeline-buffer-minor-mode ((,solanum-class (:foreground ,solanum-yellow-potato))))
+   `(doom-modeline-buffer-modified ((,solanum-class (:foreground ,solanum-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,solanum-class (:foreground ,solanum-fg :background ,solanum-bg))))
@@ -329,7 +336,7 @@
    `(envrc-mode-line-on-face ((,solanum-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,solanum-class (:weight bold :background ,solanum-highlight))))
+   `(devdocs-code-block ((,solanum-class (:weight bold :background ,solanum-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

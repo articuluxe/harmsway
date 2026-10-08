@@ -46,6 +46,20 @@
 ;;; Pull
 ;;;; Repository
 
+(cl-defmethod forge--identify-repo ((_class (subclass forge-gitlab-repository))
+                                    host owner name)
+  (pcase-let ((`(,_ ,apihost ,hostid ,_) (forge--get-forge-host host t)))
+    (and-let ((data (ghub-get (format "/projects/%s%%2F%s"
+                                      (string-replace "/" "%2F" owner)
+                                      name)
+                              nil :host apihost
+                              :auth 'forge :forge 'gitlab :noerror t)))
+      (let-alist data
+        (list (base64-encode-string (format "%s:%s" hostid .id) t)
+              .namespace.full_path
+              .path
+              (number-to-string .id))))))
+
 (cl-defmethod forge--pull ((repo forge-gitlab-repository)
                            &optional callback since)
   (cl-assert (not (and since (forge-get-repository repo nil :tracked?))))
@@ -123,6 +137,8 @@
   (pcase-let
       ((`(,type ,number)
         (cond-let
+          ((cl-typep topic 'forge-issue)   `(issue   ,(oref topic number)))
+          ((cl-typep topic 'forge-pullreq) `(pullreq ,(oref topic number)))
           ((string-match "\\`#?\\([1-9][0-9]*\\)\\'" topic)
            `(issue   ,(string-to-number (match-string 1 topic))))
           ((string-match "\\`!\\([1-9][0-9]*\\)\\'" topic)
@@ -424,16 +440,12 @@
 
 (cl-defmethod forge--update-forks ((repo forge-gitlab-repository) data)
   (oset repo forks
-        (with-slots (id) repo
+        (let ((class (eieio-object-class repo))
+              (host (oref repo githost)))
           (mapcar (lambda (row)
                     (let-alist row
-                      (nconc (forge--repository-ids
-                              (eieio-object-class repo)
-                              (oref repo githost)
-                              .namespace.path
-                              .path)
-                             (list .namespace.path
-                                   .path))))
+                      (butlast (forge--identify-repo
+                                class host .namespace.path .path))))
                   data))))
 
 (cl-defmethod forge--fetch-labels ((repo forge-gitlab-repository) callback)

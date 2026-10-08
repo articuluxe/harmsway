@@ -55,22 +55,24 @@
       (acer-blue                      "#2134d5")
       (acer-deep-blue                 "#1B3B4D")
 
-      (acer-purple                    "#9e4d76")
+      (acer-purple                    "#8a618a")
       (acer-deep-purple               "#60366e")
       (acer-purple-red                "#9b234b")
       (acer-purple-pink               "#5f2258")
 
       (acer-fg                        "#000000")
+      (acer-fg-2                      "#3c3c3c")
       (acer-bg                        "#f7bb78")
       (acer-highlight                 "#e3a764")
       (acer-shadow                    "#717171")
 
       (acer-error                     "#d70000")
-      (acer-warning                   "#f0dc00")
+      (acer-warning                   "#b4a000")
       (acer-success                   "#28823c")
 
       (acer-mode-line                 "#e76144")
       (acer-mode-line-inactive        "#ff8c4e")
+      (acer-mode-line-modified        "#277a6a")
       (acer-bell                      "#4478E7")
 
       (acer-tab-1                     acer-mode-line)
@@ -86,7 +88,7 @@
       (acer-fl-variable-name          acer-orange-pink)
       (acer-fl-constant               acer-green-cyan)
       (acer-fl-warning                acer-warning)
-      (acer-fl-punctuation            acer-purple-pink)
+      (acer-fl-punctuation            acer-fg-2)
       (acer-fl-negation-char          acer-light-blue)
 
       (acer-diff-added                "#c8f0c8")
@@ -167,7 +169,9 @@
 
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-mode-line))))
-   `(mode-line-inactive ((,acer-class (:foreground ,acer-white :background ,acer-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,acer-class (:background ,acer-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,acer-class (:weight bold))))
+   `(mode-line-highlight ((,acer-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,acer-class (:foreground ,acer-white :background ,acer-bell))))
 
    ;; minibuffer
@@ -191,8 +195,9 @@
    `(tab-line-tab-current ((,acer-class (:foreground ,acer-white :background ,acer-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-green-cyan :weight bold))))
+   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,acer-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,acer-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,acer-class (:foreground ,acer-black :background ,acer-bell))))
@@ -281,6 +286,7 @@
    ;; custom-button
    `(custom-button ((,acer-class (:foreground ,acer-white :background ,acer-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,acer-class (:foreground ,acer-white :background ,acer-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -306,6 +312,7 @@
    `(doom-modeline-project-name ((,acer-class (:foreground ,acer-deep-purple :inherit italic))))
    `(doom-modeline-project-parent-dir ((,acer-class (:foreground ,acer-deep-purple))))
    `(doom-modeline-buffer-minor-mode ((,acer-class (:foreground ,acer-purple))))
+   `(doom-modeline-buffer-modified ((,acer-class (:foreground ,acer-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,acer-class (:foreground ,acer-fg :background ,acer-bg))))
@@ -329,7 +336,7 @@
    `(envrc-mode-line-on-face ((,acer-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,acer-class (:weight bold :background ,acer-highlight))))
+   `(devdocs-code-block ((,acer-class (:weight bold :background ,acer-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

@@ -61,6 +61,7 @@
       (eucalyptus-brown-wood                "#675951")
 
       (eucalyptus-fg                        "#373c4b")
+      (eucalyptus-fg-2                      "#737887")
       (eucalyptus-bg                        "#a5aa96")
       (eucalyptus-highlight                 "#919682")
       (eucalyptus-shadow                    "#7f7f7f")
@@ -71,6 +72,7 @@
 
       (eucalyptus-mode-line                 "#373c4b")
       (eucalyptus-mode-line-inactive        "#737887")
+      (eucalyptus-mode-line-modified        "#aa5956")
       (eucalyptus-bell                      "#464B37")
 
       (eucalyptus-tab-1                     eucalyptus-mode-line)
@@ -86,7 +88,7 @@
       (eucalyptus-fl-variable-name          eucalyptus-gray-green)
       (eucalyptus-fl-constant               eucalyptus-light-blue)
       (eucalyptus-fl-warning                eucalyptus-warning)
-      (eucalyptus-fl-punctuation            eucalyptus-gray)
+      (eucalyptus-fl-punctuation            eucalyptus-fg-2)
       (eucalyptus-fl-negation-char          eucalyptus-alt-cyan)
 
       (eucalyptus-diff-added                "#c8f0c8")
@@ -167,7 +169,9 @@
 
    ;; mode-line
    `(mode-line ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line))))
-   `(mode-line-inactive ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,eucalyptus-class (:background ,eucalyptus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,eucalyptus-class (:weight bold))))
+   `(mode-line-highlight ((,eucalyptus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-bell))))
 
    ;; minibuffer
@@ -191,8 +195,9 @@
    `(tab-line-tab-current ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,eucalyptus-class (:foreground ,eucalyptus-deep-red :weight bold))))
+   `(tab-line-tab-modified ((,eucalyptus-class (:foreground ,eucalyptus-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,eucalyptus-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,eucalyptus-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-bell))))
@@ -281,6 +286,7 @@
    ;; custom-button
    `(custom-button ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -306,6 +312,7 @@
    `(doom-modeline-project-name ((,eucalyptus-class (:foreground ,eucalyptus-light-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,eucalyptus-class (:foreground ,eucalyptus-light-blue))))
    `(doom-modeline-buffer-minor-mode ((,eucalyptus-class (:foreground ,eucalyptus-tab-3))))
+   `(doom-modeline-buffer-modified ((,eucalyptus-class (:foreground ,eucalyptus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,eucalyptus-class (:foreground ,eucalyptus-fg :background ,eucalyptus-bg))))
@@ -329,7 +336,7 @@
    `(envrc-mode-line-on-face ((,eucalyptus-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,eucalyptus-class (:weight bold :background ,eucalyptus-highlight))))
+   `(devdocs-code-block ((,eucalyptus-class (:weight bold :background ,eucalyptus-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

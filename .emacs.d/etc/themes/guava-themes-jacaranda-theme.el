@@ -60,6 +60,7 @@
       (jacaranda-purple-red                "#8b2252")
 
       (jacaranda-fg                        "#000000")
+      (jacaranda-fg-2                      "#3c3c3c")
       (jacaranda-bg                        "#e9d9f9")
       (jacaranda-highlight                 "#d5c5e5")
       (jacaranda-shadow                    "#898989")
@@ -70,6 +71,7 @@
 
       (jacaranda-mode-line                 "#655db0")
       (jacaranda-mode-line-inactive        "#aa69e6")
+      (jacaranda-mode-line-modified        "#ff9f79")
       (jacaranda-bell                      "#7EB05D")
 
       (jacaranda-tab-1                     jacaranda-mode-line)
@@ -85,7 +87,7 @@
       (jacaranda-fl-variable-name          jacaranda-light-cyan)
       (jacaranda-fl-constant               jacaranda-oceanic-green)
       (jacaranda-fl-warning                jacaranda-warning)
-      (jacaranda-fl-punctuation            jacaranda-brown)
+      (jacaranda-fl-punctuation            jacaranda-fg-2)
       (jacaranda-fl-negation-char          jacaranda-red)
 
       (jacaranda-diff-added                "#c8f0c8")
@@ -166,7 +168,9 @@
 
    ;; mode-line
    `(mode-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line))))
-   `(mode-line-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,jacaranda-class (:background ,jacaranda-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,jacaranda-class (:weight bold))))
+   `(mode-line-highlight ((,jacaranda-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-bell))))
 
    ;; minibuffer
@@ -190,8 +194,9 @@
    `(tab-line-tab-current ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,jacaranda-class (:foreground ,jacaranda-orange :weight bold))))
+   `(tab-line-tab-modified ((,jacaranda-class (:foreground ,jacaranda-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,jacaranda-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,jacaranda-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-bell))))
@@ -280,6 +285,7 @@
    ;; custom-button
    `(custom-button ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -305,6 +311,7 @@
    `(doom-modeline-project-name ((,jacaranda-class (:foreground ,jacaranda-light-green :inherit italic))))
    `(doom-modeline-project-parent-dir ((,jacaranda-class (:foreground ,jacaranda-light-green))))
    `(doom-modeline-buffer-minor-mode ((,jacaranda-class (:foreground ,jacaranda-antarctic-blue))))
+   `(doom-modeline-buffer-modified ((,jacaranda-class (:foreground ,jacaranda-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,jacaranda-class (:foreground ,jacaranda-fg :background ,jacaranda-bg))))
@@ -328,7 +335,7 @@
    `(envrc-mode-line-on-face ((,jacaranda-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,jacaranda-class (:weight bold :background ,jacaranda-highlight))))
+   `(devdocs-code-block ((,jacaranda-class (:weight bold :background ,jacaranda-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

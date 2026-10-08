@@ -205,7 +205,7 @@ Given a repository object, you can query its `condition' slot to learn
 whether it is `:tracked', `:known' (i.e., has a valid ID and is stored
 in the database), or merely a `:stub'.
 
-You can also use (forge-get repository OBJECT nil DEMAND) to check the
+You can also use (forge-get-repository OBJECT nil DEMAND) to check the
 condition of a repository object, or even to ensure a repository object
 has a valid upstream ID (using `:valid?'), or that it is tracked in the
 database (using `:insert!').
@@ -285,9 +285,8 @@ is non-nil."
 (cl-defgeneric forge--object-id (class &rest args)
   "Return the database id for the CLASS object specified by ARGS.")
 
-(cl-defgeneric forge--repository-ids ( class host owner name
-                                       &optional stub noerror)
-  "Return the database and forge ids for the specified CLASS object.")
+(cl-defgeneric forge--identify-repo (arg host owner name)
+  "Return (ID OWNER NAME THEIR-ID) of the specified repository.")
 
 (defun forge--their-id (arg &optional type repo)
   "Return the forge's ID for ARG.

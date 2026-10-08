@@ -61,6 +61,7 @@
       (pyrus-deep-magenta              "#642864")
 
       (pyrus-fg                        "#780000")
+      (pyrus-fg-2                      "#b43c3c")
       (pyrus-bg                        "#f9fefd")
       (pyrus-highlight                 "#e5eae9")
       (pyrus-shadow                    "#898989")
@@ -71,6 +72,7 @@
 
       (pyrus-mode-line                 "#295323")
       (pyrus-mode-line-inactive        "#228b22")
+      (pyrus-mode-line-modified        "#f38866")
       (pyrus-bell                      "#532341")
 
       (pyrus-tab-1                     pyrus-mode-line)
@@ -86,7 +88,7 @@
       (pyrus-fl-variable-name          pyrus-orange-pink)
       (pyrus-fl-constant               pyrus-light-purple)
       (pyrus-fl-warning                pyrus-warning)
-      (pyrus-fl-punctuation            pyrus-deep-magenta)
+      (pyrus-fl-punctuation            pyrus-fg-2)
       (pyrus-fl-negation-char          pyrus-orange-subdued)
 
       (pyrus-diff-added                "#c8f0c8")
@@ -167,7 +169,9 @@
 
    ;; mode-line
    `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
-   `(mode-line-inactive ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,pyrus-class (:background ,pyrus-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,pyrus-class (:weight bold))))
+   `(mode-line-highlight ((,pyrus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-bell))))
 
    ;; minibuffer
@@ -191,8 +195,9 @@
    `(tab-line-tab-current ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,pyrus-class (:foreground ,pyrus-orange-pink :weight bold))))
+   `(tab-line-tab-modified ((,pyrus-class (:foreground ,pyrus-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,pyrus-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,pyrus-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-bell))))
@@ -281,6 +286,7 @@
    ;; custom-button
    `(custom-button ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -306,6 +312,7 @@
    `(doom-modeline-project-name ((,pyrus-class (:foreground ,pyrus-light-green :inherit italic))))
    `(doom-modeline-project-parent-dir ((,pyrus-class (:foreground ,pyrus-light-green))))
    `(doom-modeline-buffer-minor-mode ((,pyrus-class (:foreground ,pyrus-orange-pink))))
+   `(doom-modeline-buffer-modified ((,pyrus-class (:foreground ,pyrus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,pyrus-class (:foreground ,pyrus-fg :background ,pyrus-bg))))
@@ -329,7 +336,7 @@
    `(envrc-mode-line-on-face ((,pyrus-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,pyrus-class (:weight bold :background ,pyrus-highlight))))
+   `(devdocs-code-block ((,pyrus-class (:weight bold :background ,pyrus-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

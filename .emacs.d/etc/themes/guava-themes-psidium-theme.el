@@ -50,7 +50,7 @@
 
       (psidium-brown                     "#785f46")
 
-      (psidium-light-blue                "#41C3CA")
+      (psidium-light-blue                "#37b9c0")
       (psidium-blue                      "#2a4ad9")
       (psidium-deep-blue                 "#483d8b")
 
@@ -58,6 +58,7 @@
       (psidium-purple                    "#812db2")
 
       (psidium-fg                        "#000000")
+      (psidium-fg-2                      "#3c3c3c")
       (psidium-bg                        "#F1EECE")
       (psidium-highlight                 "#dddaba")
       (psidium-shadow                    "#7f7f7f")
@@ -68,6 +69,7 @@
 
       (psidium-mode-line                 "#F8767C")
       (psidium-mode-line-inactive        "#aecd34")
+      (psidium-mode-line-modified        "#483d8b")
       (psidium-bell                      "#76BEF8")
 
       (psidium-tab-1                     psidium-mode-line)
@@ -83,7 +85,7 @@
       (psidium-fl-variable-name          psidium-purple)
       (psidium-fl-constant               psidium-blue)
       (psidium-fl-warning                psidium-warning)
-      (psidium-fl-punctuation            psidium-red-orange)
+      (psidium-fl-punctuation            psidium-fg-2)
       (psidium-fl-negation-char          psidium-pink)
 
       (psidium-diff-added                "#c8f0c8")
@@ -164,7 +166,9 @@
 
    ;; mode-line
    `(mode-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line))))
-   `(mode-line-inactive ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,psidium-class (:background ,psidium-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,psidium-class (:weight bold))))
+   `(mode-line-highlight ((,psidium-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,psidium-class (:foreground ,psidium-white :background ,psidium-bell))))
 
    ;; minibuffer
@@ -188,8 +192,9 @@
    `(tab-line-tab-current ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,psidium-class (:foreground ,psidium-deep-blue :weight bold))))
+   `(tab-line-tab-modified ((,psidium-class (:foreground ,psidium-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,psidium-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,psidium-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,psidium-class (:foreground ,psidium-black :background ,psidium-bell))))
@@ -278,6 +283,7 @@
    ;; custom-button
    `(custom-button ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -303,6 +309,7 @@
    `(doom-modeline-project-name ((,psidium-class (:foreground ,psidium-deep-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,psidium-class (:foreground ,psidium-deep-blue))))
    `(doom-modeline-buffer-minor-mode ((,psidium-class (:foreground ,psidium-shadow))))
+   `(doom-modeline-buffer-modified ((,psidium-class (:foreground ,psidium-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,psidium-class (:foreground ,psidium-fg :background ,psidium-bg))))
@@ -326,7 +333,7 @@
    `(envrc-mode-line-on-face ((,psidium-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,psidium-class (:weight bold :background ,psidium-highlight))))
+   `(devdocs-code-block ((,psidium-class (:weight bold :background ,psidium-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

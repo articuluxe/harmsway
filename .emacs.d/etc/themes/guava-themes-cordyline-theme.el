@@ -39,30 +39,30 @@
       (cordyline-white                     "#FFFFFF")
 
       (cordyline-orange-red                "#ce462c")
-      (cordyline-pink-red                  "#cb646e")
+      (cordyline-pink-red                  "#df7882")
       (cordyline-pink-purple               "#da70d6")
       (cordyline-deep-fuchsia              "#6e1551")
 
-      (cordyline-light-blue                "#5f70cb")
-      (cordyline-blue                      "#3150af")
+      (cordyline-light-blue                "#7387e1")
+      (cordyline-blue                      "#505ab9")
       (cordyline-deep-blue                 "#214bd5")
       (cordyline-steel-blue                "#4f94cd")
       (cordyline-cyan                      "#00ffff")
-      (cordyline-dark-cyan                 "#007896")
+      (cordyline-dark-cyan                 "#007d9b")
 
       (cordyline-light-green               "#afd2b9")
       (cordyline-green                     "#005f55")
 
-      (cordyline-light-purple              "#a25ad1")
+      (cordyline-light-purple              "#ac64db")
       (cordyline-alt-light-purple          "#a29cf1")
-      (cordyline-purple                    "#7050af")
-      (cordyline-alt-purple                "#493d4e")
-      (cordyline-deep-purple               "#3c193c")
+      (cordyline-purple                    "#7a5ab9")
+      (cordyline-alt-purple                "#5a5064")
       (cordyline-purple-red                "#a03c5a")
 
       (cordyline-fg                        "#FFFFFF")
-      (cordyline-bg                        "#392b38")
-      (cordyline-highlight                 "#251724")
+      (cordyline-fg-2                      "#c3c3c3")
+      (cordyline-bg                        "#2f212e")
+      (cordyline-highlight                 "#433542")
       (cordyline-shadow                    "#b3b3b3")
 
       (cordyline-error                     "#FF0000")
@@ -70,7 +70,8 @@
       (cordyline-success                   "#23a334")
 
       (cordyline-mode-line                 "#a03c5a")
-      (cordyline-mode-line-inactive        "#3c193c")
+      (cordyline-mode-line-inactive        "#502d50")
+      (cordyline-mode-line-modified        "#4f94cd")
       (cordyline-bell                      "#3C8CA0")
 
       (cordyline-tab-1                     cordyline-mode-line)
@@ -86,7 +87,7 @@
       (cordyline-fl-variable-name          cordyline-blue)
       (cordyline-fl-constant               cordyline-dark-cyan)
       (cordyline-fl-warning                cordyline-warning)
-      (cordyline-fl-punctuation            cordyline-light-green)
+      (cordyline-fl-punctuation            cordyline-fg-2)
       (cordyline-fl-negation-char          cordyline-orange-red)
 
       (cordyline-diff-added                "#5aa05a")
@@ -167,7 +168,9 @@
 
    ;; mode-line
    `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line))))
-   `(mode-line-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line-inactive :inherit mode-line))))
+   `(mode-line-inactive ((,cordyline-class (:background ,cordyline-mode-line-inactive :inherit mode-line))))
+   `(mode-line-emphasis ((,cordyline-class (:weight bold))))
+   `(mode-line-highlight ((,cordyline-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
 
    ;; minibuffer
@@ -191,8 +194,9 @@
    `(tab-line-tab-current ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,cordyline-class (:foreground ,cordyline-steel-blue :weight bold))))
+   `(tab-line-tab-modified ((,cordyline-class (:foreground ,cordyline-mode-line-modified :weight bold))))
    `(tab-line-tab-special ((,cordyline-class (:slant italic :weight bold))))
+   `(tab-line-highlight ((,cordyline-class (:foreground unspecified :background unspecified :box (:line-width 2 :style released-button)))))
 
    ;; parentheses
    `(show-paren-match ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
@@ -281,6 +285,7 @@
    ;; custom-button
    `(custom-button ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style pressed-button)))))
+   `(custom-button-mouse ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-3 :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages
@@ -306,6 +311,7 @@
    `(doom-modeline-project-name ((,cordyline-class (:foreground ,cordyline-steel-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,cordyline-class (:foreground ,cordyline-steel-blue))))
    `(doom-modeline-buffer-minor-mode ((,cordyline-class (:foreground ,cordyline-pink-red))))
+   `(doom-modeline-buffer-modified ((,cordyline-class (:foreground ,cordyline-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
    `(corfu-default ((,cordyline-class (:foreground ,cordyline-fg :background ,cordyline-bg))))
@@ -329,7 +335,7 @@
    `(envrc-mode-line-on-face ((,cordyline-class (:inherit success))))
 
    ;; devdocs
-   `(devdocs-code-block ((,cordyline-class (:weight bold :background ,cordyline-highlight))))
+   `(devdocs-code-block ((,cordyline-class (:weight bold :background ,cordyline-highlight :extend t))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

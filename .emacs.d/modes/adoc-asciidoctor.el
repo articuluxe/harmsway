@@ -41,6 +41,8 @@
 
 (declare-function xwidget-webkit-browse-url "xwidget" (url &optional new-session))
 (declare-function eww-open-file "eww" (file &optional new-buffer))
+(declare-function adoc--antora-root "adoc-mode" ())
+(defvar xwidget-webkit-last-session-buffer)
 
 ;;; Customization
 
@@ -75,6 +77,20 @@ The value is one of the following symbols:
                  (const :tag "External browser" browser))
   :group 'adoc-asciidoctor)
 
+;;; Compilation
+
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(asciidoc
+               "^asciidoc\\(?:tor\\)?: +\\(?:ERROR\\|\\(WARNING\\|DEPRECATED\\)\\): +\\([^:\n]*\\): [Ll]ine +\\([0-9]+\\)"
+               2 3 nil (1 . nil)))
+
+(define-compilation-mode adoc-asciidoctor-compilation-mode "Asciidoctor"
+  "Mode for the output of the Asciidoctor export commands.
+Asciidoctor's warnings and errors in it are navigable.  It recognises
+both the modern Asciidoctor (`asciidoctor: ...') and the legacy Python
+AsciiDoc (`asciidoc: ...') diagnostic formats."
+  (setq-local compilation-error-regexp-alist '(asciidoc)))
+
 ;;; Running Asciidoctor
 
 (defun adoc--asciidoctor-ensure ()
@@ -90,6 +106,9 @@ customize `adoc-asciidoctor-command'" adoc-asciidoctor-command)))
 
 (defvar-local adoc--preview-file nil
   "Absolute path to the current buffer's temporary preview HTML file.")
+;; Keep track of the file across `revert-buffer' and the like, so it still
+;; gets deleted.
+(put 'adoc--preview-file 'permanent-local t)
 
 (defun adoc--asciidoctor-render-preview ()
   "Render the current buffer to its preview HTML file.
@@ -108,7 +127,10 @@ regardless of the exit status."
         (errfile (make-temp-file "adoc-asciidoctor-err")))
     (unless (and adoc--preview-file (file-exists-p adoc--preview-file))
       (setq adoc--preview-file
-            (make-temp-file (expand-file-name "adoc-preview-" base) nil ".html")))
+            (make-temp-file (expand-file-name "adoc-preview-" base) nil ".html"))
+      ;; It sits next to the document, so don't leave it behind.
+      (add-hook 'kill-buffer-hook #'adoc--preview-cleanup nil t)
+      (add-hook 'kill-emacs-hook #'adoc--preview-cleanup-all))
     (unwind-protect
         (let ((status (apply #'call-process-region
                              (point-min) (point-max)
@@ -148,7 +170,7 @@ compilation buffer."
                              (list (file-name-nondirectory file)))
                      " ")))
       (compilation-start
-       command nil
+       command #'adoc-asciidoctor-compilation-mode
        (lambda (_mode)
          (format "*asciidoctor: %s*" (file-name-nondirectory file)))))))
 
@@ -182,11 +204,17 @@ Requires the `asciidoctor-epub3' converter to be installed."
 
 ;;; Preview
 
+(defun adoc--xwidgets-available-p ()
+  "Return non-nil when this Emacs was built with xwidget support.
+`xwidget-webkit-browse-url' is autoloaded on every build, so it being
+defined says nothing about that."
+  (featurep 'xwidget-internal))
+
 (defun adoc--preview-resolve-backend ()
   "Resolve `adoc-preview-backend' to a concrete backend symbol."
   (if (eq adoc-preview-backend 'auto)
       (if (and (display-graphic-p)
-               (fboundp 'xwidget-webkit-browse-url))
+               (adoc--xwidgets-available-p))
           'xwidget
         'eww)
     adoc-preview-backend))
@@ -199,9 +227,10 @@ Focus stays in the source buffer so the viewer acts as a side pane."
     (pcase backend
       ('browser (browse-url url))
       ('xwidget
-       (save-selected-window
+       (save-window-excursion
          (xwidget-webkit-browse-url url))
-       (when-let* ((buf (get-buffer "*xwidget-webkit*")))
+       (when-let* ((buf xwidget-webkit-last-session-buffer)
+                   ((buffer-live-p buf)))
          (display-buffer-in-side-window
           buf '((side . right) (window-width . 0.5)))))
       ('eww
@@ -222,9 +251,18 @@ preview in place rather than showing a blank page."
 
 (defun adoc--preview-cleanup ()
   "Delete the current buffer's temporary preview file, if any."
-  (when (and adoc--preview-file (file-exists-p adoc--preview-file))
+  (when adoc--preview-file
     (ignore-errors (delete-file adoc--preview-file)))
   (setq adoc--preview-file nil))
+
+(defun adoc--preview-cleanup-all ()
+  "Delete the temporary preview files of all buffers.
+Emacs doesn't kill buffers when it exits, so `kill-buffer-hook' can't
+be relied on for that."
+  (dolist (buffer (buffer-list))
+    (when (buffer-local-value 'adoc--preview-file buffer)
+      (with-current-buffer buffer
+        (adoc--preview-cleanup)))))
 
 ;;;###autoload
 (defun adoc-preview ()
@@ -239,10 +277,8 @@ preview in place rather than showing a blank page."
   (if adoc-live-preview-mode
       (progn
         (add-hook 'after-save-hook #'adoc--preview-update nil t)
-        (add-hook 'kill-buffer-hook #'adoc--preview-cleanup nil t)
         (adoc--preview-update))
     (remove-hook 'after-save-hook #'adoc--preview-update t)
-    (remove-hook 'kill-buffer-hook #'adoc--preview-cleanup t)
     (adoc--preview-cleanup)))
 
 ;;; Flymake
@@ -257,12 +293,19 @@ case-insensitive alternative.")
 (defvar-local adoc--flymake-proc nil
   "The most recent Asciidoctor Flymake process for this buffer.")
 
-(defun adoc--flymake-parse-output (output source &optional exit-status)
+(defconst adoc--flymake-antora-include-re
+  "\\`include file not found: .*\\(?:partial\\|example\\|attachment\\|image\\|page\\)\\$"
+  "Regexp matching Asciidoctor's complaint about an Antora resource include.
+Asciidoctor can't resolve an Antora resource id like `partial$x.adoc'
+on its own, so in an Antora component these aren't real errors.")
+
+(defun adoc--flymake-parse-output (output source &optional exit-status antora)
   "Parse Asciidoctor OUTPUT into Flymake diagnostics for buffer SOURCE.
 OUTPUT is the combined standard error/output of an Asciidoctor run over
 the buffer's contents.  When EXIT-STATUS is non-zero and no per-line
 diagnostics are found, the first Asciidoctor message is reported as a
-buffer-level error so a fatal failure is not swallowed."
+buffer-level error so a fatal failure is not swallowed.  When ANTORA
+is non-nil, missing includes of Antora resource ids are left out."
   (let ((diags '())
         (count 0))
     (with-temp-buffer
@@ -277,7 +320,10 @@ buffer-level error so a fatal failure is not swallowed."
                (msg (match-string 3))
                (region (flymake-diag-region source line)))
           (when region
-            (setq count (1+ count))
+            (setq count (1+ count)))
+          (when (and region
+                     (not (and antora
+                               (string-match-p adoc--flymake-antora-include-re msg))))
             (push (flymake-make-diagnostic source (car region) (cdr region)
                                            type msg)
                   diags))))
@@ -302,7 +348,8 @@ diagnostics into Flymake reports via REPORT-FN.  Suitable as a member of
   (when (process-live-p adoc--flymake-proc)
     (kill-process adoc--flymake-proc))
   (let ((source (current-buffer))
-        (base (expand-file-name default-directory)))
+        (base (expand-file-name default-directory))
+        (antora (and (adoc--antora-root) t)))
     (save-restriction
       (widen)
       (setq
@@ -324,7 +371,7 @@ diagnostics into Flymake reports via REPORT-FN.  Suitable as a member of
                              (adoc--flymake-parse-output
                               (with-current-buffer (process-buffer proc)
                                 (buffer-string))
-                              source (process-exit-status proc)))
+                              source (process-exit-status proc) antora))
                   (flymake-log :warning "Canceling obsolete check %s" proc))
               (kill-buffer (process-buffer proc)))))))
       (process-send-region adoc--flymake-proc (point-min) (point-max))

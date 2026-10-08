@@ -55,11 +55,21 @@
 ;;; Pull
 ;;;; GraphQL
 
+(defconst forge--github-identify-repo-query
+  '(query
+    (  repository
+       [(owner $owner String!)
+        (name  $name  String!)]
+       (owner login)
+       name
+       id)))
+
 (defconst forge--github-sparse-repository-query
   '(query
     (  repository
        [(owner $owner String!)
         (name  $name  String!)]
+       (owner login)
        name
        id
        createdAt
@@ -128,6 +138,11 @@
                 updatedAt
                 body))
           (   labels [(:edges t)] id))
+       ;; Disabled for now because likely too expensive.
+       ;; (  forks [(:edges t)]
+       ;;    id
+       ;;    (owner login)
+       ;;    name)
        (  issues [(:edges t)
                   (:singular issue number)
                   (orderBy ((field UPDATED_AT) (direction DESC)))]
@@ -204,27 +219,58 @@
 
 ;;;; Repository
 
+(cl-defmethod forge--identify-repo ((_class (subclass forge-github-repository))
+                                    host owner name)
+  (pcase-let ((`(,_ ,apihost ,hostid ,_) (forge--get-forge-host host t)))
+    (let-alist (ghub-query forge--github-identify-repo-query
+                 `((owner . ,owner)
+                   (name  . ,name))
+                 :host apihost
+                 :auth 'forge :forge 'github :synchronous t :noerror t)
+      (and .repository.id
+           (list (base64-encode-string
+                  (format "%s:%s" hostid
+                          (condition-case nil
+                              (base64-decode-string .repository.id)
+                            ;; For some repos this is not base64 encoded.
+                            (error .repository.id)))
+                  t)
+                 .repository.owner.login
+                 .repository.name
+                 .repository.id)))))
+
 (cl-defmethod forge--pull ((repo forge-github-repository)
                            &optional callback since)
   (cl-assert (not (and since (forge-get-repository repo nil :tracked?))))
   (setq forge--mode-line-buffer (current-buffer))
   (forge--msg repo t nil "Pulling REPO")
-  (let ((buf (current-buffer)))
+  (pcase-let ((buf (current-buffer))
+              ((eieio owner name remote) repo))
     (forge--query repo
       (if (oref repo selective-p)
           forge--github-sparse-repository-query
         forge--github-repository-query)
-      `((owner . ,(oref repo owner))
-        (name  . ,(oref repo name)))
+      `((owner . ,owner)
+        (name  . ,name))
       :callback
       (lambda (data)
         (forge--msg repo t t   "Pulling REPO")
         (forge--msg repo t nil "Storing REPO")
-        (closql-with-transaction (forge-db)
-          (let-alist data
+        (let-alist data
+          (when (and (not (and (equal owner .owner.login)
+                               (equal name .name)))
+                     (yes-or-no-p
+                      (format "Moved to %s/%s on forge.  Update remote.%s.url?"
+                              .owner.login .name remote)))
+            (oset repo owner .owner.login)
+            (oset repo name .name)
+            (magit-call-git "config"
+                            (format "remote.%s.url" remote)
+                            (forge-get-url repo)))
+          (closql-with-transaction (forge-db)
             (forge--update-repository  repo data)
             (forge--update-assignees   repo .assignableUsers)
-            (forge--update-forks       repo .forks)
+            ;; (forge--update-forks    repo .forks)
             (forge--update-labels      repo .labels)
             (forge--update-milestones  repo .milestones)
             (forge--update-discussion-categories repo .discussionCategories)
@@ -298,16 +344,12 @@
 
 (cl-defmethod forge--update-forks ((repo forge-github-repository) data)
   (oset repo forks
-        (with-slots (id) repo
+        (let ((class (eieio-object-class repo))
+              (host (oref repo githost)))
           (mapcar (lambda (row)
                     (let-alist row
-                      (nconc (forge--repository-ids
-                              (eieio-object-class repo)
-                              (oref repo githost)
-                              .owner.login
-                              .name)
-                             (list .owner.login
-                                   .name))))
+                      (butlast (forge--identify-repo
+                                class host .owner.login .name))))
                   (delete-dups data)))))
 
 (cl-defmethod forge--update-labels ((repo forge-github-repository) data)

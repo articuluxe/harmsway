@@ -1,9 +1,9 @@
 ;;; beach-theme.el --- A light, sunny and calm Emacs theme  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021–2024 Dan Dee
+;; Copyright (C) 2021–2026 Dan Dee
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/beach-emacs-theme
-;; Version: 1.4.0
+;; Version: 1.4.1
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
@@ -87,6 +87,7 @@
    `(widget-field ((t (:foreground ,color-fg-alt :background ,color-bg-alt :box (:color ,color-bg)))))
    `(trailing-whitespace ((t (:background ,color-strong-light))))
    `(escape-glyph ((t (:weight bold :inherit shadow))))
+   `(child-frame-border ((t (:border (:color ,color-fg-dimmer)))))
 
    `(font-lock-builtin-face ((t (:foreground ,color-bright :slant italic))))
    `(font-lock-comment-face ((t (:foreground ,color-fg-dim))))
@@ -356,7 +357,7 @@
    `(magit-popup-argument ((t (:inherit font-lock-function-name-face))))
    `(magit-popup-disabled-argument ((t (:inherit font-lock-comment-face))))
    `(magit-process-ok ((t (:inherit success))))
-   `(magit-diff-hunk-heading ((t (:background ,color-bg :inherit header-line :underline (:color ,color-fg)))))
+   `(magit-diff-hunk-heading ((t (:background ,color-bg :inherit header-line :underline (:color ,color-fg-dim)))))
    `(magit-diff-hunk-heading-highlight ((t (:inherit magit-section-highlight))))
    `(magit-filename ((t (:inherit git-commit-comment-file))))
 

@@ -195,24 +195,22 @@ neither is set we simply display the current number of jobs."
   (force-mode-line-update)
   (let ((job-count (length (dired-rsync--get-active-buffers))))
     (setq dired-rsync-modeline-status
-          (s-replace
-           "%" "%%"
-           (cond
-            ;; error has occurred
-            (err (propertize
-                  (format " R:%d %s!!" job-count err)
-                  'font-lock-face '(:foreground "red")))
-            ;; we still have jobs but no error
-            ((> job-count 1)
-             (format " R:%d" job-count))
-            ((> job-count 0)
-             (format " R:%s" (or ind job-count)))
-            ;; Any stale?
-            ((dired-rsync--get-proc-buffers)
-             (propertize " R:hung :-("
-                         'font-lock-face '(:foreground "red")))
-            ;; nothing going on
-            (t ""))))))
+          (cond
+           ;; error has occurred
+           (err (propertize
+                 (format " R:%d %s!!" job-count err)
+                 'font-lock-face '(:foreground "red")))
+           ;; we still have jobs but no error
+           ((> job-count 1)
+            (format " R:%d" job-count))
+           ((> job-count 0)
+            (format " R:%s" (or ind job-count)))
+           ;; Any stale?
+           ((dired-rsync--get-proc-buffers)
+            (propertize " R:hung :-("
+                        'font-lock-face '(:foreground "red")))
+           ;; nothing going on
+           (t "")))))
 
 ;;
 ;; Running rsync: We need to take care of a couple of things here. We
@@ -321,7 +319,7 @@ Fortunately both forms are broadly the same."
 ;; ref: https://unix.stackexchange.com/questions/183504/how-to-rsync-files-between-two-remotes
 (defun dired-rsync--remote-to-remote-cmd (shost sport sfiles duser dhost dport dpath)
   "Construct and trigger an rsync run for remote copy.
-The source SHOST and SFILES to remote DUSER @ DHOST to DPATH.
+The source SHOST, SPORT and SFILES to remote DUSER @ DHOST, DPORT to DPATH.
 
 rsync doesn't support this mode of operation but we can fake it by
 providing a port forward from the source host which we pass onto the
@@ -369,8 +367,7 @@ the copy is running.  It also handles both source and destinations on
 ssh/scp tramp connections."
   ;; Interactively grab dest if not called with
   (interactive
-   (list (read-file-name "rsync to: " (dired-dwim-target-directory)
-                         nil nil nil 'file-directory-p)))
+   (list (read-file-name "rsync to: " (dired-dwim-target-directory))))
 
   (setq dest (expand-file-name dest))
 
