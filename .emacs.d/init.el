@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-10-10 16:12:04 dharms>
+;; Modified Time-stamp: <2026-10-10 16:21:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3298,12 +3298,13 @@ ARGS are the additional arguments."
 (defun harmsway-toggle-eldoc-box-mode ()
   "Toggle `eldoc-box-hover-mode' in current buffer."
   (interactive)
-  (if eldoc-box-hover-mode
+  (if (and (featurep 'eldoc-box) eldoc-box-hover-mode)
       (eldoc-box-hover-mode -1)
     (eldoc-box-hover-mode 1)))
 
 (use-package eldoc-box
   :if (version<= "26.1" emacs-version)
+  :commands (eldoc-box-hover-mode)
   :bind ((:map harmsway-eglot-keymap
                ("b" . harmsway-toggle-eldoc-box-mode)
                ("?" . eldoc-box-help-at-point)))
