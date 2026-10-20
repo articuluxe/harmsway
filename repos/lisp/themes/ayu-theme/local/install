@@ -1,0 +1,2 @@
+find src -maxdepth 1 -name ayu-\*-theme.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
+find src -maxdepth 1 -name ayu-themes.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../../.emacs.d/plugins
