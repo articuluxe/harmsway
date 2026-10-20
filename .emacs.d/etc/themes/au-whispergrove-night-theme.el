@@ -1,0 +1,180 @@
+;;; au-whispergrove-night-theme.el --- Deep dark theme calibrated for OLED and LCD screens -*- lexical-binding:t -*-
+
+;; Copyright (C) 2026  Szymon Wilczek
+
+;; Author: Szymon Wilczek <swilczek.lx@gmail.com>
+;; URL: https://github.com/szymonwilczek/au-themes
+;; Keywords: faces, themes, accessibility, autism, neurodivergence
+
+;; This file is not part of GNU Emacs.
+
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;;
+;; Dark theme with organic muted greens and earth tones.
+;; Calibrated for unlit rooms, low photic irradiation, and anti-glare
+;; thresholds.
+;; Part of the `au-themes' collection.
+
+;;; Code:
+
+(require 'ef-themes)
+
+(defconst au-whispergrove-night-palette-partial
+  '(;; Canvas & Chrome
+    (cursor "#4a9cb2")                    ; Point / cursor indicator
+    (bg-main "#0a0d08")                   ; Primary canvas background
+    (bg-dim "#1a1e17")                    ; Inactive windows, dim canvas
+    (bg-alt "#282e24")                    ; Subtle borders, alternating stripes
+    (fg-main "#9ca69e")                   ; Default buffer text
+    (fg-dim "#586c5a")                    ; Comments, metadata
+    (fg-alt "#6ea288")                    ; Struct properties
+    (fg-var "#98aba0")                    ; Variable definitions
+    (bg-active "#3e463a")                 ; Active modeline frame, focused bars
+    (bg-inactive "#1a1e17")               ; Inactive modeline
+    (border "#424a3e")                    ; Window dividers
+
+    ;; Basic Chromatic Scale
+    (red "#b6463e")                       ; Errors, critical warnings
+    (red-warmer "#9e604e")                ; String literals
+    (red-cooler "#a44a42")                ; Diff deletions, removal markers
+    (red-faint "#687e6b")                 ; Structural brackets
+
+    (green "#51a85f")                     ; Primitive types
+    (green-warmer "#b05c70")              ; Constant values and macros
+    (green-cooler "#a47028")              ; Control keywords
+    (green-faint "#586c5a")               ; Documentation strings, inline comments
+
+    (yellow "#a47028")                    ; Keyword alias
+    (yellow-warmer "#bca03c")             ; Numeric literals
+    (yellow-cooler "#7e5a28")             ; Preprocessor directives
+    (yellow-faint "#647062")              ; Informational tooltips, fringe markers
+
+    (blue "#227086")                      ; Function definitions
+    (blue-warmer "#4e92a4")               ; Function calls
+    (blue-cooler "#5e8274")               ; Binary and unary operators
+    (blue-faint "#398a80")                ; Built-in functions
+
+    (magenta "#8c6238")                   ; Composite types: struct, union, enum
+    (magenta-warmer "#62a28c")            ; Extended library types
+    (magenta-cooler "#72627e")            ; Rare syntax nodes, special escapes
+    (magenta-faint "#586c5a")             ; Inactive conditional blocks
+
+    (cyan "#a47028")                      ; Keyword fallback
+    (cyan-warmer "#7e5a28")               ; Preprocessor alias
+    (cyan-cooler "#5e8274")               ; Operator alias
+    (cyan-faint "#6a756b")                ; Punctuation delimiters
+
+    ;; Panels, Diffs and Structural Highlights
+    (bg-red-intense "#741d1a")            ; Blocking errors, fatal assertion panel
+    (bg-green-intense "#1e5224")          ; Success banner
+    (bg-yellow-intense "#604210")         ; Warning banner, review request
+    (bg-blue-intense "#1a4658")           ; Info banner, active selections
+    (bg-magenta-intense "#502842")        ; Special prompt background
+    (bg-cyan-intense "#14484c")           ; Incsearch current match target
+
+    (bg-red-subtle "#381614")             ; Diff context deletion background
+    (bg-green-subtle "#122a18")           ; Diff context addition background
+    (bg-yellow-subtle "#34200e")          ; Diff whitespace/context change
+    (bg-blue-subtle "#102832")            ; Mode-line subtle indicators
+    (bg-magenta-subtle "#2c1626")         ; Matching paren context background
+    (bg-cyan-subtle "#102c2e")            ; Structural block highlight
+
+    (bg-added "#17360f")                  ; Diff added line baseline
+    (bg-added-faint "#0a2900")            ; Diff added unchanged context
+    (bg-added-refine "#204810")           ; Diff added word-level highlight
+    (fg-added "#91c796")                  ; Diff added foreground text
+
+    (bg-changed "#363300")                ; Diff changed line baseline
+    (bg-changed-faint "#2a1f00")          ; Diff changed unchanged context
+    (bg-changed-refine "#4a4a00")         ; Diff changed word-level highlight
+    (fg-changed "#c6be62")                ; Diff changed foreground text
+
+    (bg-removed "#4b120a")                ; Diff removed line baseline
+    (bg-removed-faint "#3a0a00")          ; Diff removed unchanged context
+    (bg-removed-refine "#6f1a16")         ; Diff removed word-level highlight
+    (fg-removed "#e7a8a8")                ; Diff removed foreground text
+
+    (bg-mode-line-active "#1e2420")       ; Active modeline surface
+    (fg-mode-line-active "#9ca69e")       ; Active modeline primary text
+    (bg-completion "#202622")             ; Minibuffer completion selected row
+    (bg-popup "#151912")                  ; Autocomplete tooltip surface
+    (bg-hover "#24382e")                  ; Mouse hover overlay
+    (bg-hover-secondary "#362a3c")        ; Secondary hover overlay
+    (bg-hl-line "#12160f")                ; Current line indicator
+    (bg-paren-match "#284c38")            ; Matching delimiter highlight
+    (bg-err "#3a1210")                    ; Flymake error inline box
+    (bg-warning "#30260a")                ; Flymake warning inline box
+    (bg-info "#102816")                   ; Flymake info inline box
+    (bg-region "#1a3226")                 ; Marked region
+    (fg-line-number-inactive "#546458"))) ; Inactive line numbers margin
+
+(defconst au-whispergrove-night-palette-mappings-partial
+  '((err red)
+    (warning yellow-warmer)
+    (info green)
+
+    (fg-link blue-warmer)
+    (fg-link-visited blue)
+    (name blue)
+    (keybind red)
+    (identifier fg-alt)
+    (fg-prompt blue)
+
+    ;; Syntax Mappings:
+    (keyword green-cooler)
+    (builtin blue-faint)
+    (type green)
+    (preprocessor yellow-cooler)
+    (constant green-warmer)
+    (number yellow-warmer)
+    (fnname blue)
+    (fnname-call blue-warmer)
+    (string red-warmer)
+    (property fg-alt)
+    (variable fg-var)
+    (variable-use fg-main)
+    (operator blue-cooler)
+    (bracket red-faint)
+    (delimiter cyan-faint)
+    (comment green-faint)
+    (docstring green-faint)
+    (rx-backslash yellow-cooler)
+    (rx-construct red)
+
+    (accent-0 blue)
+    (accent-1 green)
+    (accent-2 yellow)
+    (accent-3 green-warmer)))
+
+(defconst au-whispergrove-night-palette
+  (modus-themes-generate-palette
+   au-whispergrove-night-palette-partial
+   nil
+   nil
+   (append au-whispergrove-night-palette-mappings-partial ef-themes-palette-common)))
+
+;;;###theme-autoload
+(modus-themes-theme
+ 'au-whispergrove-night
+ 'ef-themes
+ "Deep nocturnal theme calibrated for low photic irradiation and OLED/LCD displays."
+ 'dark
+ 'au-whispergrove-night-palette
+ nil
+ nil)
+
+(provide 'au-whispergrove-night-theme)
+;;; au-whispergrove-night-theme.el ends here
