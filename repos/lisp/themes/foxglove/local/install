@@ -1,0 +1,2 @@
+cp src/foxglove-themes.el ../../../../.emacs.d/plugins
+cp src/foxglove-*-theme.el ../../../../.emacs.d/etc/themes
