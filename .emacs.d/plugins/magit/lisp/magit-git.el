@@ -99,6 +99,8 @@ this."
 
 (defun magit--early-process-lines (program &rest args)
   "Only used to initialize custom options."
+  ;; `magit-process-environment' isn't defined yet
+  ;; and uses this function, so it cannot be used here.
   (let ((process-environment
          (append magit-git-environment process-environment)))
     (ignore-error file-missing
@@ -164,7 +166,8 @@ run by the Git hooks `post-commit', `post-merge' and `post-rewrite'.
 Use `magit-user-githook-file' (which see) to define additional hooks.
 
 Git hooks can only run Lisp hooks, if Magit invokes Git asynchronously
-and on the local machine, and at least Git v2.54.0 is used."
+and on the local machine, `with-editor-emacsclient-executable' is set,
+and at least Git v2.54.0 is used."
   :package-version '(magit . "4.6.0")
   :group 'magit-process
   :type 'boolean)
@@ -405,17 +408,35 @@ kludge to fix an unusable value of `shell-file-name'."
        ,@body)))
 
 (defmacro magit--with-temp-process-buffer (&rest body)
-  "Like `with-temp-buffer', but always propagate `process-environment'.
-When that var is buffer-local in the calling buffer, it is not
-propagated by `with-temp-buffer', so we explicitly ensure that
-happens, so that processes will be invoked consistently.  BODY is
-as for that macro."
+  "Like `with-temp-buffer', but propagate `process-environment' binding.
+
+When that variable is buffer-local in the previously current buffer,
+it is not propagated by `with-temp-buffer', so we explicitly ensure
+that happens, so that processes are invoked consistently.  BODY is
+as for that macro.
+
+Note that itself Magit does not ever make this variable buffer-local.
+This macro only exists to cope with third-party code doing that."
   (declare (indent 0) (debug (body)))
-  (let ((p (gensym)))
-    `(let ((,p process-environment))
-       (with-temp-buffer
-         (setq-local process-environment ,p)
-         ,@body))))
+  (static-if (fboundp 'buffer-local-toplevel-value)
+      (let ((top (make-symbol "def"))
+            (let (make-symbol "let")))
+        `(let ((,top (condition-case nil
+                         (buffer-local-toplevel-value 'process-environment)
+                       (void-variable
+                        (default-toplevel-value 'process-environment))))
+               (,let process-environment))
+           (with-temp-buffer
+             (setq-local process-environment ,top)
+             (let ((process-environment ,let))
+               ,@body))))
+    (when (fboundp 'buffer-local-toplevel-value)
+      (error "Magit needs to be recompiled"))
+    (let ((env (make-symbol "env")))
+      `(let ((,env process-environment))
+         (with-temp-buffer
+           (let ((process-environment ,env))
+             ,@body))))))
 
 (defsubst magit-git-executable ()
   "Return value of `magit-git-executable' or `magit-remote-git-executable'.
@@ -515,8 +536,7 @@ still subject to major changes."
             (and (not (bobp))
                  (progn
                    (goto-char (point-min))
-                   (buffer-substring-no-properties
-                    (point) (line-end-position))))
+                   (magit--eol-substring)))
           (let ((buf (current-buffer)))
             (with-current-buffer (magit-process-buffer t)
               (magit-process-insert-section default-directory
@@ -540,7 +560,7 @@ ignore `magit-git-debug'."
       (magit-process-git (list t nil) args)
       (unless (bobp)
         (goto-char (point-min))
-        (buffer-substring-no-properties (point) (line-end-position))))))
+        (magit--eol-substring)))))
 
 (defun magit-git-output (&rest args)
   "Execute Git with ARGS, returning its output."
@@ -597,7 +617,7 @@ insert the run command and stderr into the process buffer."
       (let (log)
         (unwind-protect
             (let (exit errmsg)
-              (setq log (make-temp-file "magit-stderr"))
+              (setq log (make-nearby-temp-file "magit-stderr"))
               (delete-file log)
               (setq exit (magit-process-git (list t log) args))
               (when (or (> exit 0) (eq magit-git-debug 'include-success))
@@ -650,7 +670,7 @@ want, then use `magit-git-string-ng' instead."
            (not (bobp))
            (progn
              (goto-char (point-min))
-             (buffer-substring-no-properties (point) (line-end-position)))))))
+             (magit--eol-substring))))))
 
 (defun magit-git-lines (&rest args)
   "Execute Git with ARGS, returning its output as a list of lines.
@@ -1825,6 +1845,11 @@ to, or to some other symbolic-ref that points to the same ref."
       (and (or (not predicate)
                (funcall predicate module))
            module))))
+
+(defun magit-repository-at-point ()
+  (or (magit-module-at-point)
+      (and (derived-mode-p 'magit-repolist-mode)
+           (tabulated-list-get-id))))
 
 (defun magit-get-current-branch ()
   "Return the refname of the currently checked out branch.

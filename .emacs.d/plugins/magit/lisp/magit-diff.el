@@ -209,12 +209,12 @@ keep their distinct foreground colors."
        Refreshing the buffer removes all refinement.  This
        variant is only provided for performance reasons."
   :group 'magit-diff
+  :local 'permanent-only
   :safe (##memq % '(nil t all))
   :type '(choice (const :tag "No refinement" nil)
                  (const :tag "Immediately refine all hunks" all)
                  (const :tag "Refine each hunk when moving to it" t)))
-
-(put 'magit-diff-refine-hunk 'permanent-local t)
+(put 'magit-diff-refine-hunk 'permanent-local t) ;< 31.1
 
 (defcustom magit-diff-fontify-hunk nil
   "Whether to apply syntax highlighting to diff hunks.
@@ -236,12 +236,12 @@ delay.  The plan is to make it asynchronous, probably with the help of
 the new `futur' package, which itself still under heavy development."
   :package-version '(magit . "4.6.0")
   :group 'magit-diff
+  :local 'permanent-only
   :safe (##memq % '(nil t all))
   :type '(choice (const :tag "No fontification" nil)
                  (const :tag "Immediately fontify all hunks" all)
                  (const :tag "Fontify each hunk when moving to it" t)))
-
-(put 'magit-diff-fontify-hunk 'permanent-local t)
+(put 'magit-diff-fontify-hunk 'permanent-local t) ;< 31.1
 
 (defcustom magit-diff-refine-ignore-whitespace smerge-refine-ignore-whitespace
   "Whether to ignore whitespace changes in word-granularity differences."
@@ -2043,7 +2043,7 @@ the Magit-Status buffer for DIRECTORY."
 
 (defun magit-diff-hunk-line (section goto-from)
   (save-excursion
-    (goto-char (line-beginning-position))
+    (goto-char (pos-bol))
     (with-slots (content combined from-ranges from-range to-range) section
       (when (or from-range to-range)
         (when (< (point) content)
@@ -2066,7 +2066,7 @@ the Magit-Status buffer for DIRECTORY."
   (if (or (< (magit-point)
              (oref section content))
           (and (not goto-from)
-               (= (char-after (line-beginning-position)) ?-)))
+               (= (char-after (pos-bol)) ?-)))
       0
     (max 0 (- (+ (current-column) 2)
               (length (oref section value))))))
@@ -2635,7 +2635,7 @@ keymap is the parent of their keymaps."
   (when (member "--stat" args)
     (magit-diff-wash-diffstat))
   (when (re-search-forward magit-diff-headline-re limit t)
-    (goto-char (line-beginning-position))
+    (goto-char (pos-bol))
     (magit-wash-sequence (##magit-diff-wash-diff args))
     (insert ?\n)))
 
@@ -2651,13 +2651,11 @@ Primary key fingerprint: \\|\
      Subkey fingerprint: \\)")
            (cond
              ((looking-at "^gpg: Good signature from")
-              (setq title (magit--propertize-face
-                           (buffer-substring (point) (line-end-position))
-                           'magit-signature-good)))
+              (setq title (magit--propertize-face (magit--eol-substring)
+                                                  'magit-signature-good)))
              ((looking-at "^gpg: Can't check signature")
-              (setq title (magit--propertize-face
-                           (buffer-substring (point) (line-end-position))
-                           '(italic bold)))))
+              (setq title (magit--propertize-face (magit--eol-substring)
+                                                  '(italic bold)))))
            (forward-line))
          (setq end (point-marker)))
        (magit-insert-section (signature object title)
@@ -2775,12 +2773,13 @@ Primary key fingerprint: \\|\
                          (t                                     "unmerged")))
            (orig nil)
            (file (or (match-str 2) (match-str 3)))
-           (header (list (buffer-substring-no-properties
-                          (line-beginning-position) (1+ (line-end-position)))))
+           (header (list (buffer-substring-no-properties (pos-bol)
+                                                         (1+ (pos-eol)))))
            (modes nil)
            (rename nil)
-           (binary nil))
-       (magit-delete-line)
+           (binary nil)
+           (beg (point)))
+       (forward-line)
        (while (not (or (eobp)
                        (looking-at magit-diff-headline-re)
                        (looking-at magit-log-heading-re)))
@@ -2816,12 +2815,13 @@ Primary key fingerprint: \\|\
            ;; TODO Use all combined diff extended headers.
            ((looking-at "mode .+\n"))
            ((error "BUG: Unknown extended header: %S"
-                   (buffer-substring (point) (line-end-position)))))
+                   (magit--eol-substring))))
          ;; These headers are treated as some sort of special hunk.
          (unless (or (string-prefix-p "old mode" (match-str 0))
                      (string-prefix-p "rename"   (match-str 0)))
            (push (match-str 0) header))
-         (magit-delete-match))
+         (goto-char (match-end 0)))
+       (delete-region beg (point))
        (when orig
          (setq orig (magit-decode-git-path orig)))
        (setq file (magit-decode-git-path file))
@@ -2861,7 +2861,8 @@ Primary key fingerprint: \\|\
       (cond ((and binary long-status)
              (format " (%s, binary)" long-status))
             ((or binary long-status)
-             (format " (%s)" (if binary "binary" long-status)))))
+             (format " (%s)" (if binary "binary" long-status))))
+      "\n")
     (when modes
       (magit-insert-section (hunk '(chmod))
         (magit-insert-heading (magit--propertize-face modes 'default))))
@@ -2981,8 +2982,7 @@ function errors."
 
 (defun magit-diff-wash-hunk ()
   (when (looking-at "^@\\{2,\\} \\(.+?\\) @\\{2,\\}\\(?: \\(.*\\)\\)?")
-    (let* ((heading  (match-str 0))
-           (ranges   (mapcar
+    (let* ((ranges   (mapcar
                       (lambda (str)
                         (let ((range
                                (mapcar #'string-to-number
@@ -2994,17 +2994,17 @@ function errors."
                       (split-string (match-str 1))))
            (about    (match-str 2))
            (combined (length= ranges 3))
-           (value    (cons about ranges)))
-      (magit-delete-line)
+           (value    (cons about ranges))
+           (beg      (point)))
       (magit-insert-section
           ( hunk value nil
             :combined combined
             :from-range (if combined (butlast ranges) (car ranges))
             :to-range (car (last ranges))
             :about about)
-        (magit-insert-heading
-          (propertize (concat heading "\n")
-                      'font-lock-face 'magit-diff-hunk-heading))
+        (forward-line)
+        (put-text-property beg (point) 'font-lock-face 'magit-diff-hunk-heading)
+        (magit-insert-heading)
         (while (not (or (eobp) (looking-at "^[^-+\s\\]")))
           (forward-line))))
     t))
@@ -3211,7 +3211,7 @@ or a ref which is not a branch, then it inserts nothing."
     (when magit-revision-fill-summary-line
       (let ((fill-column (min magit-revision-fill-summary-line
                               (window-width (get-buffer-window nil t)))))
-        (fill-region (point) (line-end-position))))
+        (fill-region (point) (pos-eol))))
     (run-hook-wrapped 'magit-revision-wash-message-hook
                       (lambda (fn) (prog1 nil (save-excursion (funcall fn)))))
     (buffer-string)))
@@ -3444,7 +3444,7 @@ It the SECTION has a different type, then do nothing."
   (nconc (cl-call-next-method)
          (and (region-active-p)
               (progn
-                (goto-char (line-beginning-position))
+                (goto-char (pos-bol))
                 (when  (looking-at "^[-+]") (forward-line))
                 (while (looking-at "^[ @]") (forward-line))
                 (let ((beg (magit-point)))
@@ -3454,8 +3454,8 @@ It the SECTION has a different type, then do nothing."
                            (while (looking-at "^[-+]") (forward-line))
                            (while (looking-at "^ ")    (forward-line))
                            (forward-line -1)
-                           (regexp-quote (buffer-substring-no-properties
-                                          beg (line-end-position))))
+                           (regexp-quote
+                            (buffer-substring-no-properties beg (pos-eol))))
                           (t))))))))
 
 (cl-defmethod magit-section-goto-successor ((section magit-hunk-section)
@@ -3697,7 +3697,7 @@ actually a `diff' but a `diffstat' section."
     (forward-line)
     (while (< (point) end)
       (let ((bol (point))
-            (eol (line-end-position))
+            (eol (pos-eol))
             (sign-face nil)
             (line-face nil))
         (when (and magit-diff-hide-trailing-cr-characters
@@ -3795,7 +3795,7 @@ actually a `diff' but a `diffstat' section."
     (forward-char (if merging 2 1))
     (while (= (char-after) ?\t)
       (put-text-property (point) (1+ (point))
-                         'display (list (list 'space :width width)))
+                         'display (list 'space :width width))
       (forward-char))))
 
 (defun magit-diff-paint-whitespace (merging line-type diff-type)
@@ -4016,8 +4016,7 @@ last (visual) lines of the region."
               'display (list 'space :align-to
                              `(+ (0 . right)
                                  ,(min (window-hscroll)
-                                       (- (line-end-position)
-                                          (line-beginning-position)))))
+                                       (- (pos-eol) (pos-bol)))))
               ;; This prevents the cursor from being rendered at the
               ;; edge of the window.
               'cursor t))

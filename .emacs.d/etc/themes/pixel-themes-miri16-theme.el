@@ -1,13 +1,18 @@
-;;; pixel-themes-miri16-theme.el --- miri16 -*- lexical-binding:t -*-
-;; ===============================================================
+;;; pixel-themes-miri16-theme.el --- miri16 palette -*- lexical-binding: t -*-
+
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
+;; URL: https://github.com/lucasobx/pixel-themes
+;; Keywords: faces, theme
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 ;; https://lospec.com/palette-list/miri16
+
 ;;; Code:
 
-(require-theme 'modus-themes)
 (require 'pixel-themes)
 
-(defvar pixel-themes-miri16-palette
+(defconst pixel-themes-miri16-palette
   (modus-themes-generate-palette
    '((cursor "#ac82b2")
 
@@ -98,21 +103,7 @@
    'dark
    nil
 
-   (append
-    '(;; theme-specific mappings
-      (constant  magenta-faint)
-
-      ;; rainbow
-      (rainbow-0 magenta)
-      (rainbow-1 blue-cooler)
-      (rainbow-2 yellow-warmer)
-      (rainbow-3 green)
-      (rainbow-4 cyan)
-      (rainbow-5 magenta-cooler)
-      (rainbow-6 red-cooler)
-      (rainbow-7 green-faint)
-      (rainbow-8 yellow))
-    pixel-themes-palette-common)))
+   pixel-themes-palette-common))
 
 (defcustom pixel-themes-miri16-palette-overrides nil
   "Overrides for `pixel-themes-miri16-palette'."
@@ -120,14 +111,7 @@
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
-(modus-themes-theme
- 'pixel-themes-miri16
- 'pixel-themes
- "Dark theme: indigo, olive, dusty mauve and harvest gold."
- 'dark
- 'pixel-themes-miri16-palette
- nil
- 'pixel-themes-miri16-palette-overrides)
+(apply #'modus-themes-theme
+       (assq 'pixel-themes-miri16 pixel-themes-with-properties))
 
-(provide-theme 'pixel-themes-miri16)
 ;;; pixel-themes-miri16-theme.el ends here

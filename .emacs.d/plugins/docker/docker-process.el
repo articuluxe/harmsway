@@ -80,17 +80,50 @@ When set to `auto', prefer eat, then ghostel, then vterm, then shell."
 ARGS may nest lists and hold blank strings, which are dropped."
   (s-join " " (cons program (-remove #'s-blank? (-flatten args)))))
 
+(defconst docker--stderr-script
+  "{ err=$(exec \"$@\" 2>&1 1>&3 3>&-); rc=$?; } 3>&1 2>/dev/null; printf '\\n%s\\n%s' \"$0\" \"$err\"; exit $rc"
+  "POSIX shell script running its arguments with their standard error last.
+
+Standard output passes through as it comes.  Standard error is held back
+and written after it, below a line holding the $0 of the script.  The exit
+status is the one of the arguments.")
+
+(defun docker--start-shell-command (command separate-stderr)
+  "Run the shell command line COMMAND and return the process.
+
+With SEPARATE-STDERR, `docker--stderr-script' runs COMMAND and the line it
+writes between the two streams is the `docker-stderr-token' property of the
+process.  A local host without a POSIX shell leaves the streams mixed."
+  (docker-with-sudo
+    (when docker-show-messages (message "Running: %s" command))
+    (let* ((buffer (docker-utils-generate-new-buffer-name command))
+           (token (and separate-stderr
+                       (or (file-remote-p default-directory) (executable-find "sh"))
+                       (format "docker-stderr-%x" (random most-positive-fixnum))))
+           (process (if token
+                        ;; COMMAND goes to the shell `start-file-process-shell-command' would
+                        ;; run it in.  That one has the PATH of the user and may not be a POSIX
+                        ;; shell, so the script gets COMMAND as arguments and never as text.
+                        (with-connection-local-variables
+                         (start-file-process command buffer "sh" "-c" docker--stderr-script token
+                                             shell-file-name shell-command-switch command))
+                      (start-file-process-shell-command command buffer command))))
+      (process-put process 'docker-command command)
+      (process-put process 'docker-directory default-directory)
+      (process-put process 'docker-stderr-token token)
+      process)))
+
 (defun docker-run-start-file-process-shell-command (program &rest args)
   "Execute \"PROGRAM ARGS\" and return the process."
-  (docker-with-sudo
-    (let ((command (docker--process-command program args)))
-      (when docker-show-messages (message "Running: %s" command))
-      (start-file-process-shell-command command (docker-utils-generate-new-buffer-name command) command))))
+  (docker--start-shell-command (docker--process-command program args) nil))
 
 (defun docker-run-async (program &rest args)
-  "Execute \"PROGRAM ARGS\" and return a promise with the results."
-  (let* ((process (apply #'docker-run-start-file-process-shell-command program args))
-         (promise (aio-promise)))
+  "Execute \"PROGRAM ARGS\" and return a promise with its standard output.
+
+Standard error is logged in `docker-diagnostics-buffer-name'.  When the
+command fails that buffer is displayed and the promise is rejected."
+  (let ((process (docker--start-shell-command (docker--process-command program args) t))
+        (promise (aio-promise)))
     (set-process-query-on-exit-flag process nil)
     (set-process-sentinel process (-partial #'docker-process-sentinel promise))
     promise))
@@ -235,22 +268,72 @@ top-level `timer-list'."
     (aio-resolve promise value-function)
     (set-default-toplevel-value 'timer-list timer-list)))
 
+(defconst docker-diagnostics-buffer-name "*docker-diagnostics*"
+  "Name of the buffer logging what the asynchronous commands report.")
+
+(defun docker--process-output (process)
+  "Return the output of PROCESS as (STDOUT . STDERR) and kill its buffer.
+STDERR is nil when PROCESS leaves it among STDOUT, which is what a process
+without a `docker-stderr-token' property does."
+  (let ((buffer (process-buffer process))
+        (token (process-get process 'docker-stderr-token)))
+    (if (not (buffer-live-p buffer))
+        (cons "" (and token ""))
+      (with-current-buffer buffer
+        (goto-char (point-min))
+        (prog1 (if (and token (re-search-forward (format "\r?\n%s\r?\n" (regexp-quote token)) nil t))
+                   (cons (buffer-substring-no-properties (point-min) (match-beginning 0))
+                         (buffer-substring-no-properties (match-end 0) (point-max)))
+                 (cons (buffer-substring-no-properties (point-min) (point-max)) (and token "")))
+          (kill-buffer))))))
+
+(defun docker--log-diagnostics (process status &rest sections)
+  "Log PROCESS ending with STATUS and return the position of the entry.
+SECTIONS are (TITLE . TEXT) conses, and the blank ones are left out."
+  (with-current-buffer (get-buffer-create docker-diagnostics-buffer-name)
+    (unless (derived-mode-p 'special-mode) (special-mode))
+    (let ((inhibit-read-only t))
+      (save-excursion
+        (goto-char (point-max))
+        (prog1 (point)
+          (insert (format "Command: %s\nDirectory: %s\nStatus: %s\n"
+                          (process-get process 'docker-command)
+                          (process-get process 'docker-directory)
+                          status))
+          (--each sections
+            (unless (s-blank? (cdr it))
+              (insert "\n" (car it) ":\n" (s-chomp (cdr it)) "\n")))
+          (insert "\n"))))))
+
 (defun docker-process-sentinel (promise process event)
   "Sentinel that resolves the PROMISE using PROCESS and EVENT."
-  (when (memq (process-status process) '(exit signal))
-    (setq event (substring event 0 -1))
-    (if (not (string-equal event "finished"))
-        (docker--resolve-promise promise
-                                 (lambda ()
-                                   (error "Error running: \"%s\" (%s)" (process-name process) event)))
-      (docker--resolve-promise promise
-                               (lambda ()
-                                 (when docker-show-messages
-                                   (message "Finished: %s" (process-name process)))
-                                 (run-with-timer 2 nil (lambda () (message nil)))
-                                 (with-current-buffer (process-buffer process)
-                                   (prog1 (buffer-substring-no-properties (point-min) (point-max))
-                                     (kill-buffer))))))))
+  (when (and (memq (process-status process) '(exit signal))
+             (not (process-get process 'docker-completed)))
+    (process-put process 'docker-completed t)
+    (-let* ((command (process-get process 'docker-command))
+            (status (substring event 0 -1))
+            ((stdout . stderr) (docker--process-output process)))
+      (if (string-equal status "finished")
+          (let ((warned (not (s-blank? stderr))))
+            (when warned
+              (docker--log-diagnostics process status (cons "Standard error" stderr)))
+            (when docker-show-messages
+              (message "Finished: %s%s" command
+                       (if warned (format " (warnings in %s)" docker-diagnostics-buffer-name) ""))
+              (run-with-timer 2 nil (lambda () (message nil))))
+            (docker--resolve-promise promise (lambda () stdout)))
+        (let ((entry (if stderr
+                         (docker--log-diagnostics process status
+                                                  (cons "Standard output" stdout)
+                                                  (cons "Standard error" stderr))
+                       (docker--log-diagnostics process status (cons "Output" stdout))))
+              (reason (-last-item (s-lines (s-trim (or stderr stdout))))))
+          (docker--resolve-promise promise
+                                   (lambda ()
+                                     (error "Error running: \"%s\" (%s)%s" command status
+                                            (if (s-blank? reason) "" (concat ": " reason)))))
+          (-when-let (window (display-buffer docker-diagnostics-buffer-name docker-pop-to-buffer-action))
+            (set-window-point window entry)))))))
 
 (provide 'docker-process)
 

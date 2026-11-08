@@ -5,7 +5,7 @@
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dmitry@gutov.dev>
 ;; URL: http://company-mode.github.io/
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "26.1") (posframe "1.5.1"))
 
@@ -875,13 +875,6 @@ This is a default value of `company-quick-access-hint-function'."
   :type '(choice (const :tag "off" nil)
                  (const :tag "on" t)))
 
-(defcustom company-async-redisplay-delay 0.005
-  "Delay before redisplay when fetching candidates asynchronously.
-
-You might want to set this to a higher value if your backends respond
-quickly, to avoid redisplaying twice per each typed character."
-  :type 'number)
-
 (defvar company-async-wait 0.03
   "Pause between checks to see if the value's been set when turning an
 asynchronous call into synchronous.")
@@ -893,6 +886,8 @@ asynchronous call into synchronous.")
 
 (defvar company-mode-map
   (let ((keymap (make-sparse-keymap)))
+    (define-key keymap [remap completion-at-point] 'company-complete-common)
+    (define-key keymap [remap complete-symbol] 'company-complete-common)
     (define-key keymap [remap indent-for-tab-command] 'company-indent-for-tab-command)
     (define-key keymap [remap c-indent-line-or-region] 'company-indent-for-tab-command)
     keymap)
@@ -920,10 +915,7 @@ asynchronous call into synchronous.")
     (define-key keymap (kbd "TAB") 'company-complete-common-or-cycle)
     (define-key keymap [backtab] 'company-cycle-backward)
     (define-key keymap (kbd "C-M-i") 'company-complete-common)
-    (define-key keymap (kbd "<f1>") 'company--show-doc-buffer-and-warn)
-    (define-key keymap (kbd "C-h") 'company--show-doc-buffer-and-warn)
     (define-key keymap (kbd "M-h") 'company-show-doc-buffer)
-    (define-key keymap (kbd "C-w") 'company--show-location-and-warn)
     (define-key keymap (kbd "M-g") 'company-show-location)
     (define-key keymap "\C-s" 'company-search-candidates)
     (define-key keymap "\C-\M-s" 'company-filter-candidates)
@@ -932,13 +924,6 @@ asynchronous call into synchronous.")
   "Keymap that is enabled during an active completion.")
 
 (defvar company--disabled-backends nil)
-
-(defun company--warn-changed-binding ()
-  (interactive)
-  (run-with-idle-timer
-   0.01 nil
-   (lambda ()
-     (message "Warning: default bindings are being changed to M-h and M-g"))))
 
 (defun company-init-backend (backend)
   (and (symbolp backend)
@@ -1229,6 +1214,16 @@ MAX-LEN is how far back to try to match the IDLE-BEGIN-AFTER-RE regexp."
          (concat prefix (substring s len))))
      strings)))
 
+(defvar completion-lazy-hilit)
+(defvar completion-lazy-hilit-fn)
+
+(defun company--lazy-hilit (str hilit-fn)
+  (let ((completion-lazy-hilit-fn hilit-fn)
+        (completion-lazy-hilit t))
+    (if (fboundp 'completion-lazy-hilit)
+        (completion-lazy-hilit str)
+      str)))
+
 (defun company--match-from-capf-face (str)
   "Compute `match' result from a CAPF's completion fontification."
   (let* ((match-start nil) (pos -1)
@@ -1261,10 +1256,13 @@ MAX-LEN is how far back to try to match the IDLE-BEGIN-AFTER-RE regexp."
              (completion-styles-alist (copy-tree completion-styles-alist))
              ((nth 2 (assoc 'emacs22 completion-styles-alist))
               wrapper)
+             (completion-lazy-hilit t)
+             (completion-lazy-hilit-fn nil)
              (all (completion-all-completions (concat prefix suffix)
                                               table pred
                                               (length prefix)
                                               meta))
+             (hilit-fn (bound-and-true-p completion-lazy-hilit-fn))
              (last (last all))
              (base-size (or (cdr last) 0))
              ;; base-suffix-size is not available, but it's usually simple.
@@ -1274,6 +1272,7 @@ MAX-LEN is how far back to try to match the IDLE-BEGIN-AFTER-RE regexp."
     (unless keep-suffix
       (setcdr bounds 0))
     `((:completions . ,all)
+      (:hilit-fn . ,hilit-fn)
       (:boundaries . ,(cons (substring prefix base-size)
                             (substring suffix 0 (cdr bounds)))))))
 
@@ -1830,6 +1829,8 @@ update if FORCE-UPDATE."
                      common))
             (car company-candidates)))))
 
+(defvar-local company--show-inline nil)
+
 (defun company-calculate-candidates (prefix ignore-case suffix)
   (let ((candidates (cdr (assoc prefix company-candidates-cache))))
     (or candidates
@@ -1843,17 +1844,13 @@ update if FORCE-UPDATE."
                 (setq candidates (all-completions prefix prev))
                 (cl-return t)))))
         ;; No cache match, call the backend.
-        (let ((refresh-timer (run-with-timer company-async-redisplay-delay
-                                             nil
-                                             #'company--sneaky-refresh
-                                             prefix suffix)))
-          (unwind-protect
-              (setq candidates (company--preprocess-candidates
-                                (company--fetch-candidates prefix suffix)))
-            ;; If the backend is synchronous, no chance for the timer to run.
-            (cancel-timer refresh-timer))
+        (progn
+          (company--early-refresh prefix suffix)
+          (setq candidates (company--preprocess-candidates
+                            (company--fetch-candidates prefix suffix)))
           ;; Save in cache.
           (push (cons prefix candidates) company-candidates-cache)))
+    (setq company--show-inline nil)
     ;; Only now apply the predicate and transformers.
     (company--postprocess-candidates candidates)))
 
@@ -1897,7 +1894,7 @@ update if FORCE-UPDATE."
               (throw 'interrupted 'new-input)
             res-was))))))
 
-(defun company--sneaky-refresh (prefix suffix)
+(defun company--early-refresh (prefix suffix)
   (when company-candidates
     (let* ((company-prefix prefix)
            (company-suffix suffix))
@@ -1905,7 +1902,8 @@ update if FORCE-UPDATE."
            (company-call-frontends 'unhide))))
   (let (inhibit-redisplay)
     (redisplay))
-  (when company-candidates (company-call-frontends 'pre-command)))
+  (let ((inhibit-redisplay t))
+    (when company-candidates (company-call-frontends 'pre-command))))
 
 (defun company--flyspell-workaround-p ()
   ;; https://debbugs.gnu.org/23980
@@ -1915,7 +1913,10 @@ update if FORCE-UPDATE."
 (defun company--preprocess-candidates (candidates)
   (cl-assert (cl-every #'stringp candidates))
   (unless (company-call-backend 'sorted)
-    (setq candidates (sort candidates 'string<)))
+    (setq candidates (sort candidates
+                           (if (< emacs-major-version 30)
+                               'string<
+                             nil))))
   (when (company-call-backend 'duplicates)
     (company--strip-duplicates candidates))
   candidates)
@@ -2885,7 +2886,6 @@ each one wraps a part of the input string."
               (ding)
             (setq company-search-string new)
             (company-set-selection (- selection pos 1) t)))
-        (ding)
         (setq company-search-string new)
         (company-set-selection (+ selection pos) t))))
 
@@ -2979,8 +2979,6 @@ each one wraps a part of the input string."
     (define-key keymap (vector meta-prefix-char t) 'company-search-other-char)
     (define-key keymap (kbd "C-n") 'company-select-next-or-abort)
     (define-key keymap (kbd "C-p") 'company-select-previous-or-abort)
-    (define-key keymap (kbd "M-n") 'company--select-next-and-warn)
-    (define-key keymap (kbd "M-p") 'company--select-previous-and-warn)
     (define-key keymap (kbd "<down>") 'company-select-next-or-abort)
     (define-key keymap (kbd "<up>") 'company-select-previous-or-abort)
     (define-key keymap "\e\e\e" 'company-search-other-char)
@@ -3574,26 +3572,25 @@ from the candidates list.")
   "Show the documentation buffer for the selection."
   (let ((other-window-scroll-buffer)
         (selection (or company-selection 0)))
-      (let* ((selected (nth selection company-candidates))
-             (doc-buffer (or (company-call-backend 'doc-buffer selected)
-                             (user-error "No documentation available")))
-             start)
-        (when (consp doc-buffer)
-          (setq start (cdr doc-buffer)
-                doc-buffer (car doc-buffer)))
-        (setq other-window-scroll-buffer (get-buffer doc-buffer))
-        (let ((win (display-buffer doc-buffer t)))
-          (set-window-start win (if start start (point-min)))))))
+    (let* ((selected (nth selection company-candidates))
+           (doc-buffer (or (company-call-backend 'doc-buffer selected)
+                           (user-error "No documentation available")))
+           start)
+      (when (consp doc-buffer)
+        (setq start (cdr doc-buffer)
+              doc-buffer (car doc-buffer)))
+      (setq other-window-scroll-buffer (get-buffer doc-buffer))
+      (let ((win (display-buffer doc-buffer t)))
+        (set-window-start win (if start start (point-min)))))))
 
 (defun company--fake-capf-complete-common (&rest _)
-  (company-complete-common)
-  (list (point) (point) nil))
+  #'company-complete-common)
 
 (defun company-indent-for-tab-command (&optional arg)
   "Like `indent-for-tab-command' which see but calls `company-complete-common'
 instead of `completion-at-point' as the fallback.  That only happens when
 `tab-always-indent' is `complete', and only when reindentation was a no-op."
-  (interactive)
+  (interactive "P")
   (unwind-protect
       (progn
         (add-hook 'completion-at-point-functions
@@ -3616,12 +3613,6 @@ automatically show the documentation buffer for each selection."
     (company--show-doc-buffer)))
 (put 'company-show-doc-buffer 'company-keep t)
 
-(defun company--show-doc-buffer-and-warn (&optional toggle-auto-update)
-  (interactive "P")
-  (company--warn-changed-binding)
-  (company-show-doc-buffer toggle-auto-update))
-(put 'company--show-doc-buffer-and-warn 'company-keep t)
-
 (defun company-show-location ()
   "Temporarily display a buffer showing the selected candidate in context."
   (interactive)
@@ -3642,12 +3633,6 @@ automatically show the documentation buffer for each selection."
               (forward-line (1- pos))))
           (set-window-start nil (point)))))))
 (put 'company-show-location 'company-keep t)
-
-(defun company--show-location-and-warn ()
-  (interactive)
-  (company--warn-changed-binding)
-  (company-show-location))
-(put 'company--show-location-and-warn 'company-keep t)
 
 ;;; package functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3675,7 +3660,8 @@ automatically show the documentation buffer for each selection."
       (user-error "Cannot complete at point")))
 
 (defun company-begin-with (candidates
-                           &optional prefix-length require-match callback)
+                           &optional prefix-length require-match callback
+                           with-completion-styles)
   "Start a completion at point.
 CANDIDATES is the list of candidates to use and PREFIX-LENGTH is the length
 of the prefix that already is in the buffer before point.
@@ -3684,16 +3670,28 @@ It defaults to 0.
 CALLBACK is a function called with the selected result if the user
 successfully completes the input.
 
+WITH-COMPLETION-STYLES, when non-nil, means to match CANDIDATES using the
+configured completion styles.
+
 Example: \(company-begin-with \\='\(\"foo\" \"foobar\" \"foobarbaz\"\)\)"
-  (let ((begin-marker (copy-marker (point) t)))
+  (let ((begin-marker (copy-marker (- (point)
+                                      (or prefix-length 0))
+                                   nil)))
     (company-begin-backend
      (lambda (command &optional arg &rest _ignored)
        (pcase command
          (`prefix
-          (when (equal (point) (marker-position begin-marker))
-            (buffer-substring (- (point) (or prefix-length 0)) (point))))
+          (when (>= (point) begin-marker)
+            (buffer-substring begin-marker (point))))
          (`candidates
-          (all-completions arg candidates))
+          (if with-completion-styles
+              (assoc-default
+               :completions
+               (company--capf-completions arg "" candidates nil))
+            (all-completions arg candidates)))
+         (`no-cache t)
+         (`match (if with-completion-styles
+                     (company--match-from-capf-face arg)))
          (`require-match
           require-match)))
      callback)))
@@ -4688,6 +4686,18 @@ Delay is determined by `company-tooltip-idle-delay'."
     (company-preview-frontend command)))
 
 (defun company--show-inline-p ()
+  ;; This function is called from frontends' `pre-command' and `unhide', the
+  ;; former before the prefix change, and the latter after.  But with
+  ;; `company-candidates' still having the previous value.  So we check whether
+  ;; inline display fit both old and new prefixes.
+  (let* ((new (or (company--show-inline-check) 'no))
+         (_ (unless company--show-inline
+              (setq company--show-inline new)))
+         (old
+          (not (eq company--show-inline 'no))))
+    (and old (not (eq new 'no)))))
+
+(defun company--show-inline-check ()
   (let* ((boundaries (and company-candidates (company--boundaries)))
          (prefix (car boundaries))
          (suffix (cdr boundaries))

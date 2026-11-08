@@ -61,7 +61,13 @@ Takes the pull-request as only argument and must return a directory."
   :column-widths forge--topic-menus-column-widths
   [forge--topic-menus-group
    ["Fetch"
-    ("f f" "all topics"     forge-pull)
+    ("f f" forge-pull
+     :description (lambda ()
+                    (cond-let
+                      [[repo (forge-get-repository :tracked?)]]
+                      ((not repo) "a repository")
+                      ((oref repo selective-p) "repo only")
+                      ("updated topics"))))
     ("f t" "one topic"      forge-pull-topic)
     ("f n" "notifications"  forge-pull-notifications)]
    ["Create"
@@ -81,8 +87,8 @@ Takes the pull-request as only argument and must return a directory."
      :description (lambda () (let ((repo (forge-get-repository :stub?)))
                           (if (or (not repo)
                                   (eq (oref repo condition) :tracked))
-                              "track some repo"
-                            "track this repository"))))
+                              "track another repository"
+                            "track a repository"))))
     ("c f" "fork this repository" forge-fork
      :if-not (##forge-get-repository :tracked?))
     ("/ M" "merge with api" forge-merge
@@ -144,9 +150,11 @@ Takes the pull-request as only argument and must return a directory."
 If the current repository is still untracked locally, or the current
 repository cannot be determined, instead invoke `forge-add-repository'."
   :description (lambda ()
-                 (if (forge-get-repository :tracked?)
-                     "forge topics"
-                   "new forge repository"))
+                 (cond-let
+                   [[repo (forge-get-repository :tracked?)]]
+                   ((not repo) "new forge repository")
+                   ((oref repo selective-p) "forge repository")
+                   ("forge topics")))
   (interactive)
   (if-let ((repo (forge-get-repository :tracked?)))
       (forge--pull repo)
@@ -379,6 +387,7 @@ commit, and for a file."
       (and$ (magit-commit-at-point)          (forge-get-url :commit $))
       (and$ (magit-branch-at-point)          (forge-get-url :branch $))
       (and$ (magit-remote-at-point)          (forge-get-url :remote $))
+      (and$ (magit-repository-at-point)      (forge-get-url :repo $))
       (and$ (magit-file-at-point)            (forge-get-url :blob nil $))
       (forge-post-at-point)
       (forge-current-topic)
@@ -477,6 +486,13 @@ commit, and for a file."
 (cl-defmethod forge-get-url ((_(eql :remote)) remote)
   (cl-assert (stringp remote))
   (forge--format (forge-get-repository :stub remote) 'remote-url-format))
+
+(cl-defmethod forge-get-url ((_(eql :repo)) path)
+  (cl-assert (stringp path))
+  (and-let* ((default-directory (expand-file-name path (magit-toplevel)))
+             (_(file-exists-p (expand-file-name ".git" default-directory)))
+             (remote (magit-get-some-remote)))
+    (forge--format (forge-get-repository :stub remote) 'remote-url-format)))
 
 (cl-defmethod forge-get-url ((post forge-post))
   (forge--format post (let ((topic (forge-get-parent post)))
@@ -630,24 +646,31 @@ With prefix argument MENU, also show the topic menu."
 
 (defun forge-create-issue (template)
   "Create a new issue for the current repository."
-  (interactive (list (forge--topic-template nil 'forge-issue)))
-  (let-alist template
-    (pcase-exhaustive .type
-      ('redirect (browse-url .url))
-      ('forge-discussion (forge-create-discussion .category))
-      ('forge-issue
-       (forge--setup-post-buffer 'new-issue #'forge--submit-create-issue
-         "new-issue" "Create new issue on %p"
-         `((forge--buffer-template ,template)))))))
+  (interactive (list (forge--read-topic-template 'issue)))
+  (if-let ((url (forge-sql1 [:select [url] :from topic-template
+                             :where (= id $s1)]
+                            template)))
+      (if (or (string-match (forge--format (forge-get-repository :tracked) "\
+\\`https://%h/[^/]+/[^/]+/discussions\\(?:/categories/\\(.+\\)\\)?") url)
+              (string-match (forge--format (forge-get-repository :tracked) "\
+\\`https://%h/.+/.github/blob/.+/discussions/\\(.+\\)\\.md\\'" url) url))
+          (forge-create-discussion
+           (or (match-string 1 url)
+               (forge-read-topic-category nil "Category for new discussion")))
+        (browse-url url))
+    (forge--setup-post-buffer 'new-issue #'forge--submit-create-issue
+      "new-issue" "Create new issue on %p"
+      `((forge--buffer-template ,template)))))
 
-(defun forge-create-pullreq (source target)
+(defun forge-create-pullreq (source target template)
   "Create a new pull-request for the current repository."
-  (interactive (forge-create-pullreq--read-args))
+  (interactive (nconc (forge-create-pullreq--read-args)
+                      (list (forge--read-topic-template 'pullreq))))
   (forge--setup-post-buffer 'new-pullreq #'forge--submit-create-pullreq
     "new-pullreq" "Create new pull-request on %p"
     `((forge--buffer-base-branch ,target)
       (forge--buffer-head-branch ,source)
-      (forge--buffer-template    ,(forge--topic-template nil 'forge-pullreq)))))
+      (forge--buffer-template  ,template))))
 
 (transient-define-suffix forge-create-pullreq-from-issue (issue source target)
   "Convert an existing ISSUE into a pull-request."

@@ -4,7 +4,7 @@
 
 ;; Author: Matúš Goljer <matus.goljer@gmail.com>
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
-;; Version: 1.0.0
+;; Version: 1.2.0
 ;; Created: 10th April 2018
 ;; URL: https://github.com/Fuco1/fontify-face
 ;; Package-requires: ((emacs "25.1"))

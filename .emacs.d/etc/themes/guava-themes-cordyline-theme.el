@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,43 +35,46 @@
 
 (let* (
       (cordyline-class '((class color) (min-colors 257)))
-      ;; (cordyline-black                     "#000000")
+      (cordyline-black                     "#000000")
       (cordyline-white                     "#FFFFFF")
 
       (cordyline-orange-red                "#ce462c")
       (cordyline-pink-red                  "#df7882")
       (cordyline-pink-purple               "#da70d6")
-      (cordyline-deep-fuchsia              "#6e1551")
 
       (cordyline-light-blue                "#7387e1")
-      (cordyline-blue                      "#505ab9")
+      (cordyline-blue                      "#5064b9")
       (cordyline-deep-blue                 "#214bd5")
       (cordyline-steel-blue                "#4f94cd")
       (cordyline-cyan                      "#00ffff")
       (cordyline-dark-cyan                 "#007d9b")
 
       (cordyline-light-green               "#afd2b9")
-      (cordyline-green                     "#005f55")
+      (cordyline-green                     "#00695f")
 
-      (cordyline-light-purple              "#ac64db")
+      (cordyline-light-purple              "#b46ee6")
       (cordyline-alt-light-purple          "#a29cf1")
-      (cordyline-purple                    "#7a5ab9")
-      (cordyline-alt-purple                "#5a5064")
+      (cordyline-purple                    "#7d5ab9")
+      (cordyline-alt-purple                "#785a6e")
       (cordyline-purple-red                "#a03c5a")
 
-      (cordyline-fg                        "#FFFFFF")
+      (cordyline-fg-1                      "#FFFFFF")
       (cordyline-fg-2                      "#c3c3c3")
       (cordyline-bg                        "#2f212e")
-      (cordyline-highlight                 "#433542")
+      (cordyline-highlight                 "#3e303d")
       (cordyline-shadow                    "#b3b3b3")
+      (cordyline-tooltip                   "#ffffe0")
+      (cordyline-region-1                  "#6e1551")
+      (cordyline-region-2                  "#00695f")
 
       (cordyline-error                     "#FF0000")
       (cordyline-warning                   "#f6d909")
       (cordyline-success                   "#23a334")
+      (cordyline-change                    "#214bd5")
 
       (cordyline-mode-line                 "#a03c5a")
-      (cordyline-mode-line-inactive        "#502d50")
-      (cordyline-mode-line-modified        "#4f94cd")
+      (cordyline-mode-line-inactive        "#5a375a")
+      (cordyline-mode-line-modified        "#4fa8cd")
       (cordyline-bell                      "#3C8CA0")
 
       (cordyline-tab-1                     cordyline-mode-line)
@@ -99,17 +102,13 @@
       (cordyline-diff-context              "#828282")
       (cordyline-smerge-base               "#5A5AA0")
 
-      (cordyline-orderless-0               "#af50b9")
-      (cordyline-orderless-1               "#28a03c")
-      (cordyline-orderless-2               "#ff6400")
-      (cordyline-orderless-3               "#3c82ff")
+      (cordyline-square-a-0                "#af50b9")
+      (cordyline-square-a-1                "#28a03c")
+      (cordyline-square-a-2                "#ff6400")
+      (cordyline-square-a-3                "#3c82ff")
 
-      (cordyline-prescient-0               "#46C8A5")
-      (cordyline-prescient-1               "#C84669")
-
-      (cordyline-vc-change                 cordyline-deep-blue)
-      (cordyline-vc-insert                 cordyline-success)
-      (cordyline-vc-delete                 cordyline-error))
+      (cordyline-complementary-a-0         "#46C8A5")
+      (cordyline-complementary-a-1         "#C84669"))
 
   (custom-theme-set-faces
    'guava-themes-cordyline
@@ -118,7 +117,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,cordyline-class (:foreground ,cordyline-fg :background ,cordyline-bg))))
+   `(default ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-bg))))
 
    ;; error, warning, success
    `(error ((,cordyline-class (:foreground ,cordyline-error :weight bold))))
@@ -131,9 +130,12 @@
    ;; shadow
    `(shadow ((,cordyline-class (:foreground ,cordyline-shadow))))
 
+   ;; tooltip
+   `(tooltip ((,cordyline-class (:weight bold :foreground ,cordyline-black :background ,cordyline-tooltip :inherit variable-pitch))))
+
    ;; region
-   `(region ((,cordyline-class (:background ,cordyline-deep-fuchsia :extend t))))
-   `(secondary-selection ((,cordyline-class (:background ,cordyline-green :extend t))))
+   `(region ((,cordyline-class (:background ,cordyline-region-1 :extend t))))
+   `(secondary-selection ((,cordyline-class (:background ,cordyline-region-2 :extend t))))
 
    ;; font-lock
    `(font-lock-comment-face ((,cordyline-class (:foreground ,cordyline-fl-comment :weight medium))))
@@ -156,40 +158,43 @@
 
    ;; fringe
    `(fringe ((,cordyline-class (:foreground ,cordyline-cyan :background ,cordyline-bg))))
-   `(diff-hl-change ((,cordyline-class (:foreground ,cordyline-vc-change :background ,cordyline-vc-change))))
-   `(diff-hl-insert ((,cordyline-class (:foreground ,cordyline-vc-insert :background ,cordyline-vc-insert))))
-   `(diff-hl-delete ((,cordyline-class (:foreground ,cordyline-vc-delete :background ,cordyline-vc-delete))))
+   `(diff-hl-change ((,cordyline-class (:foreground ,cordyline-change :background ,cordyline-change))))
+   `(diff-hl-insert ((,cordyline-class (:foreground ,cordyline-success :background ,cordyline-success))))
+   `(diff-hl-delete ((,cordyline-class (:foreground ,cordyline-error :background ,cordyline-error))))
 
    ;; line-number
-   `(line-number ((,cordyline-class (:foreground ,cordyline-fg :inherit default))))
+   `(line-number ((,cordyline-class (:foreground ,cordyline-fg-1 :inherit default))))
    `(line-number-current-line ((,cordyline-class (:foreground ,cordyline-mode-line :weight bold :inherit (highlight line-number)))))
    `(line-number-minor-tick ((,cordyline-class (:background ,cordyline-tab-2 :inherit line-number))))
    `(line-number-major-tick ((,cordyline-class (:background ,cordyline-tab-3 :inherit line-number))))
 
    ;; mode-line
-   `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line))))
+   `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line
+                                               :box ,(if guava-themes-boxed-mode-line
+                                                         '(:line-width -1 :style released-button)
+                                                       'unspecified)))))
    `(mode-line-inactive ((,cordyline-class (:background ,cordyline-mode-line-inactive :inherit mode-line))))
    `(mode-line-emphasis ((,cordyline-class (:weight bold))))
    `(mode-line-highlight ((,cordyline-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,cordyline-class (:foreground ,cordyline-white))))
+   `(minibuffer-prompt ((,cordyline-class (:weight bold :foreground ,cordyline-mode-line))))
 
    ;; borders
    `(vertical-border ((,cordyline-class (:foreground ,cordyline-mode-line))))
 
    ;; header-line
    `(header-line ((,cordyline-class (:inherit mode-line))))
-   `(which-func ((,cordyline-class (:foreground ,cordyline-white))))
+   `(which-func ((,cordyline-class (:weight bold :foreground ,cordyline-mode-line-modified))))
 
    ;; tab-bar
-   `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold))))
+   `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold :inherit mode-line))))
    `(tab-bar-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold))))
+   `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :weight bold :inherit mode-line))))
    `(tab-line-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-2 :inherit tab-line-tab))))
@@ -254,14 +259,15 @@
    `(completions-first-difference ((,cordyline-class (:foreground ,cordyline-error :weight bold))))
 
    ;; org-faces
-   `(org-todo ((,cordyline-class (:foreground ,cordyline-vc-delete :weight bold))))
-   `(org-done ((,cordyline-class (:foreground ,cordyline-vc-insert :weight bold))))
+   `(org-todo ((,cordyline-class (:foreground ,cordyline-error :weight bold))))
+   `(org-done ((,cordyline-class (:foreground ,cordyline-success :weight bold))))
    `(org-hide ((,cordyline-class (:foreground ,cordyline-bg))))
    `(org-table ((,cordyline-class (:foreground ,cordyline-light-purple))))
+   `(org-table-header ((,cordyline-class (:inverse-video t :inherit org-table))))
    `(org-date ((,cordyline-class (:foreground ,cordyline-orange-red))))
    `(org-date-selected ((,cordyline-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,cordyline-class (:foreground ,cordyline-orderless-2))))
-   `(org-headline-done ((,cordyline-class (:foreground ,cordyline-orderless-1))))
+   `(org-headline-todo ((,cordyline-class (:foreground ,cordyline-square-a-2))))
+   `(org-headline-done ((,cordyline-class (:foreground ,cordyline-square-a-1))))
    `(org-document-title ((,cordyline-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,cordyline-class (:inherit shadow))))
    `(org-meta-line ((,cordyline-class (:inherit font-lock-comment-face))))
@@ -272,70 +278,125 @@
    `(window-divider-last-pixel ((,cordyline-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-orderless-2))))
+   `(isearch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-square-a-2))))
    `(isearch-fail ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-error))))
-   `(lazy-highlight ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-orderless-3))))
-   `(isearch-group-1 ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-orderless-0))))
-   `(isearch-group-2 ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-orderless-1))))
+   `(lazy-highlight ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-square-a-3))))
+   `(isearch-group-1 ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-square-a-0))))
+   `(isearch-group-2 ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-square-a-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,cordyline-class (:inherit isearch))))
    `(match ((,cordyline-class (:inherit lazy-highlight))))
 
-   ;; custom-button
+   ;; custom
+   ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
    `(custom-button ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line :box (:line-width 2 :style pressed-button)))))
    `(custom-button-mouse ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-tab-3 :box (:line-width 2 :style released-button)))))
+   `(custom-button-unraised ((,cordyline-class (:foreground ,cordyline-mode-line :inherit underline))))
+   `(custom-button-pressed-unraised ((,cordyline-class (:foreground ,cordyline-bell :inherit custom-button-unraised))))
+   `(custom-comment ((,cordyline-class (:background ,cordyline-tab-3))))
+   `(custom-variable-tag ((,cordyline-class (:weight bold :foreground ,cordyline-tab-2))))
+   `(custom-group-tag ((,cordyline-class (:height 1.2 :inherit (custom-variable-tag variable-pitch)))))
+   `(custom-state ((,cordyline-class (:foreground ,cordyline-fl-keyword))))
+
+   ;; widget
+   `(widget-field ((,cordyline-class (:background ,cordyline-tab-3 :box (:line-width (1 . -1) :color "gray46") :extend t))))
+   `(widget-single-line-field ((,cordyline-class (:background ,cordyline-tab-3))))
+
+   ;; package
+   `(package-status-dependency ((,cordyline-class (:inherit (font-lock-string-face)))))
+
+   ;; icomplete
+   `(icomplete-selected-match ((,cordyline-class (:weight bold :foreground ,cordyline-mode-line :inherit (highlight)))))
+   `(icomplete-first-match ((,cordyline-class (:weight bold :foreground ,cordyline-mode-line :inherit (highlight)))))
+
+   ;; bookmark
+   `(bookmark-face ((,cordyline-class (:foreground ,cordyline-mode-line :distant-foreground unspecified))))
+   `(bookmark-menu-bookmark ((,cordyline-class (:weight bold :inherit bookmark-face))))
+
+   ;; flymake
+   `(flymake-note ((,cordyline-class (:underline (:style wave :color ,cordyline-success)))))
+   `(flymake-warning ((,cordyline-class (:underline (:style wave :color ,cordyline-warning)))))
+   `(flymake-error ((,cordyline-class (:underline (:style wave :color ,cordyline-error)))))
+
+   ;; eww
+   `(eww-valid-certificate ((,cordyline-class (:weight bold :foreground ,cordyline-success))))
+   `(eww-invalid-certificate ((,cordyline-class (:weight bold :foreground ,cordyline-error))))
+   ;; Example of eww-form-text: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-text ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-3 :box (:line-width 1)))))
+   ;; Example of eww-form-file: https://html.com/input-type-file/
+   `(eww-form-file ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-select: http://savannah.gnu.org/projects/emacs/
+   ;; Example of eww-form-select: https://git.kernel.org/pub/scm/editors/uemacs/uemacs.git/
+   `(eww-form-select ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-submit: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-submit ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-checkbox: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-checkbox ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-textarea: https://en.wikipedia.org/w/index.php?title=Main_Page&action=edit
+   `(eww-form-textarea ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-tab-3 :box (:line-width 1 :color ,cordyline-tab-1)))))
 
 
    ;; external packages
 
    ;; elfeed
-   `(elfeed-search-tag-face ((,cordyline-class (:foreground ,cordyline-light-blue))))
-   `(elfeed-search-date-face ((,cordyline-class (:foreground ,cordyline-green))))
+   `(elfeed-search-tag-face ((,cordyline-class (:foreground ,cordyline-green))))
+   `(elfeed-search-date-face ((,cordyline-class (:foreground ,cordyline-light-blue))))
    `(elfeed-search-feed-face ((,cordyline-class (:foreground ,cordyline-dark-cyan))))
-   `(elfeed-search-title-face ((,cordyline-class (:foreground ,cordyline-pink-red))))
-   `(elfeed-search-unread-title-face ((,cordyline-class (:weight bold :foreground ,cordyline-light-purple))))
+   `(elfeed-search-title-face ((,cordyline-class (:foreground ,cordyline-alt-purple))))
+   `(elfeed-search-unread-title-face ((,cordyline-class (:weight bold :foreground ,cordyline-purple-red))))
    `(elfeed-search-filter-face ((,cordyline-class (:weight bold :foreground ,cordyline-steel-blue))))
    `(elfeed-search-last-update-face ((,cordyline-class (:weight bold :foreground ,cordyline-steel-blue))))
    `(elfeed-search-unread-count-face ((,cordyline-class (:weight bold :foreground ,cordyline-steel-blue))))
 
-   `(elfeed-show-header-face ((,cordyline-class (:foreground ,cordyline-purple-red))))
-   `(elfeed-show-author-face ((,cordyline-class (:weight bold :foreground ,cordyline-light-blue))))
-   `(elfeed-show-title-face ((,cordyline-class (:weight bold :foreground ,cordyline-light-blue))))
-   `(elfeed-show-date-face ((,cordyline-class (:foreground ,cordyline-dark-cyan))))
-   `(elfeed-show-feed-face ((,cordyline-class (:foreground ,cordyline-dark-cyan))))
-   `(elfeed-show-tags-face ((,cordyline-class (:foreground ,cordyline-orange-red))))
+   `(elfeed-show-header-face ((,cordyline-class (:inherit elfeed-search-date-face))))
+   `(elfeed-show-author-face ((,cordyline-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-title-face ((,cordyline-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-date-face ((,cordyline-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-feed-face ((,cordyline-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-tags-face ((,cordyline-class (:inherit elfeed-search-tag-face))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,cordyline-class (:foreground ,cordyline-steel-blue :inherit italic))))
-   `(doom-modeline-project-parent-dir ((,cordyline-class (:foreground ,cordyline-steel-blue))))
-   `(doom-modeline-buffer-minor-mode ((,cordyline-class (:foreground ,cordyline-pink-red))))
+   ;; doom-modeline-buffer-file-name-style
+   `(doom-modeline-project-name ((,cordyline-class (:foreground ,cordyline-steel-blue :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,cordyline-class (:foreground ,cordyline-steel-blue :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,cordyline-class (:foreground ,cordyline-pink-red :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,cordyline-class (:foreground ,cordyline-pink-red :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,cordyline-class (:foreground ,cordyline-pink-red :inherit (doom-modeline)))))
    `(doom-modeline-buffer-modified ((,cordyline-class (:foreground ,cordyline-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,cordyline-class (:foreground ,cordyline-fg :background ,cordyline-bg))))
-   `(corfu-current ((,cordyline-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-default ((,cordyline-class (:foreground ,cordyline-fg-1 :background ,cordyline-bg))))
+   `(corfu-current ((,cordyline-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,cordyline-class (:background ,cordyline-shadow))))
    `(corfu-border ((,cordyline-class (:background ,cordyline-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,cordyline-class (:foreground ,cordyline-orderless-0 :weight bold))))
-   `(orderless-match-face-1 ((,cordyline-class (:foreground ,cordyline-orderless-1 :weight bold))))
-   `(orderless-match-face-2 ((,cordyline-class (:foreground ,cordyline-orderless-2 :weight bold))))
-   `(orderless-match-face-3 ((,cordyline-class (:foreground ,cordyline-orderless-3 :weight bold))))
+   `(orderless-match-face-0 ((,cordyline-class (:foreground ,cordyline-square-a-0 :weight bold))))
+   `(orderless-match-face-1 ((,cordyline-class (:foreground ,cordyline-square-a-1 :weight bold))))
+   `(orderless-match-face-2 ((,cordyline-class (:foreground ,cordyline-square-a-2 :weight bold))))
+   `(orderless-match-face-3 ((,cordyline-class (:foreground ,cordyline-square-a-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
-   `(prescient-primary-highlight ((,cordyline-class (:foreground ,cordyline-prescient-0 :weight bold))))
-   `(prescient-secondary-highlight ((,cordyline-class (:foreground ,cordyline-prescient-1 :underline t :weight bold))))
+   `(prescient-primary-highlight ((,cordyline-class (:foreground ,cordyline-complementary-a-0 :weight bold))))
+   `(prescient-secondary-highlight ((,cordyline-class (:foreground ,cordyline-complementary-a-1 :underline t :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,cordyline-class (:inherit error))))
-   `(envrc-mode-line-none-face ((,cordyline-class (:inherit warning))))
+   `(envrc-mode-line-denied-face ((,cordyline-class (:inherit warning))))
    `(envrc-mode-line-on-face ((,cordyline-class (:inherit success))))
+   `(envrc-mode-line-none-face ((,cordyline-class (:inherit warning))))
+   `(envrc-mode-line-running-face ((,cordyline-class (:inherit warning))))
 
    ;; devdocs
    `(devdocs-code-block ((,cordyline-class (:weight bold :background ,cordyline-highlight :extend t))))
+
+   ;; pdf-tools
+   `(pdf-view-region ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-square-a-3 :inherit region))))
+
+   ;; idle-highlight
+   `(idle-highlight ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-fl-builtin :inherit region))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

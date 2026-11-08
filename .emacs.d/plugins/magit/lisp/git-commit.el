@@ -462,6 +462,8 @@ full loading."
 (with-eval-after-load 'recentf
   (add-to-list 'recentf-exclude git-commit-filename-regexp))
 
+(add-to-list 'inhibit-local-variables-regexps git-commit-filename-regexp)
+
 (add-to-list 'with-editor-file-name-history-exclude git-commit-filename-regexp)
 
 (defun git-commit-setup-font-lock-in-buffer ()
@@ -629,7 +631,7 @@ completing modified symbols and other text appearing in the diff."
   (unless dabbrev--abbrev-char-regexp
     ;; Initialize (not "reset") variables.  See #5545.
     (dabbrev--reset-global-variables))
-  (add-hook 'completion-at-point-functions #'dabbrev-capf -90 t))
+  (add-hook 'completion-at-point-functions #'dabbrev-capf 90 t))
 
 (defun git-commit-setup-changelog-support ()
   "Treat ChangeLog entries as unindented paragraphs."
@@ -647,7 +649,7 @@ Ensure auto filling happens everywhere, except in the summary line."
 
 (defun git-commit--auto-fill-except-summary ()
   "Do not fill summary line."
-  (unless (eq (line-beginning-position) 1)
+  (unless (eq (pos-bol) 1)
     (do-auto-fill)))
 
 (defun git-commit-setup-orglink ()
@@ -685,7 +687,7 @@ comment and anything below the cut line (\"--- >8 ---\")."
 
 (defun git-commit--flyspell-verify ()
   "Do not check spelling in comments."
-  (not (= (char-after (line-beginning-position))
+  (not (= (char-after (pos-bol))
           (aref comment-start 0))))
 
 (defun git-commit-collapse-diff ()
@@ -695,7 +697,7 @@ comment and anything below the cut line (\"--- >8 ---\")."
     (when (re-search-forward (format "%s -+ >8 -+" comment-start) nil t)
       (let ((elt '(git-commit-diff t)))
         (add-to-invisibility-spec elt)
-        (make-button (line-beginning-position) (point)
+        (make-button (pos-bol) (point)
                      'face 'git-commit-comment-button
                      'keymap (define-keymap :parent button-map
                                "<return>" #'push-button
@@ -840,7 +842,7 @@ Save current message first."
       (insert str)
       (goto-char (point-min))
       (when (re-search-forward (concat flush " -+ >8 -+$") nil t)
-        (delete-region (line-beginning-position) (point-max)))
+        (delete-region (pos-bol) (point-max)))
       (goto-char (point-min))
       (flush-lines flush)
       (goto-char (point-max))
@@ -1220,7 +1222,7 @@ Added to `font-lock-extend-region-functions'."
                (fboundp 'markdown-fill-paragraph))
       (setq-local fill-paragraph-function
                   (lambda (&optional justify)
-                    (and (not (= (char-after (line-beginning-position))
+                    (and (not (= (char-after (pos-bol))
                                  (aref comment-start 0)))
                          (markdown-fill-paragraph justify)))))
     (setq-local git-commit--branch-name-regexp

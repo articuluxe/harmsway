@@ -112,7 +112,8 @@ is loaded, then `magit-mode-map' ends up being modified anyway.")
 ;;;###autoload
 (with-eval-after-load 'magit-repos
   (when forge-add-default-bindings
-    (keymap-set magit-repolist-mode-map "N" #'forge-dispatch)))
+    (keymap-set magit-repolist-mode-map "N" #'forge-dispatch)
+    (keymap-set magit-repolist-mode-map "C-c C-o" #'forge-browse)))
 
 ;;;###autoload
 (with-eval-after-load 'git-commit

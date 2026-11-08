@@ -103,6 +103,7 @@
                    (forge--update-pullreqs   repo .pullreqs)
                    (oset repo condition :tracked)))
                (forge--msg repo t t "Storing REPO")
+               (forge--update-templates repo)
                (cond (callback (funcall callback repo))
                      ((oref repo selective-p))
                      ((forge--maybe-git-fetch repo buffer)))))))))
@@ -214,6 +215,8 @@
   (closql-with-transaction (forge-db)
     (let-alist data
       (let* ((issue-id (forge--object-id 'forge-issue repo .iid))
+             (saved-p (and$ (forge-get-issue .iid)
+                            (oref $ saved-p)))
              (issue
               (forge-issue
                :id           issue-id
@@ -235,6 +238,7 @@
                ;; at least can serve as a boolean.
                :closed       (or .closed_at (and (equal .state "closed") 1))
                :locked-p     .discussion_locked
+               :saved-p      saved-p
                :milestone    .milestone.iid
                :body         (forge--sanitize-string .description))))
         (closql-insert (forge-db) issue t)
@@ -345,6 +349,8 @@
   (closql-with-transaction (forge-db)
     (let-alist data
       (let* ((pullreq-id (forge--object-id 'forge-pullreq repo .iid))
+             (saved-p (and$ (forge-get-pullreq .iid)
+                            (oref $ saved-p)))
              (pullreq
               (forge-pullreq
                :id           pullreq-id
@@ -373,6 +379,7 @@
                :editable-p   .allow_maintainer_to_push
                :cross-repo-p (not (equal .source_project_id
                                          .target_project_id))
+               :saved-p      saved-p
                :base-ref     .target_branch
                :base-rev     .diff_refs.start_sha
                :base-repo    .target_project.path_with_namespace
@@ -487,6 +494,32 @@
 ;; looked at yet.  Gitlab doesn't make a distinction between unread
 ;; and read events, so this is rather useless and we don't use it for
 ;; the time being.
+
+;;;; Templates
+
+(cl-defmethod forge--update-templates ((repo forge-gitlab-repository))
+  (when-let* ((default-directory (forge-get-worktree repo))
+              (branch (forge--get-default-branch repo))
+              (repoid (oref repo id)))
+    (oset repo topic-templates
+          (mapcan
+           (pcase-lambda (`(,type . ,dir))
+             (seq-keep
+              (lambda (path)
+                (let* ((file (file-name-nondirectory path))
+                       (name (file-name-sans-extension file)))
+                  (and (equal (file-name-extension file) "md")
+                       (list (forge--object-id repoid name)
+                             type file name nil nil
+                             (with-temp-buffer
+                               (magit-git-insert "cat-file" "-p"
+                                                 (concat branch ":" path))
+                               (buffer-str))
+                             nil nil nil nil nil))))
+              (magit-git-items "ls-tree" "-z" "--full-tree"
+                               "--name-only" "-r" branch "--" dir)))
+           '((issue   . ".gitlab/issue_templates")
+             (pullreq . ".gitlab/merge_request_templates"))))))
 
 ;;; Mutations
 
@@ -631,14 +664,6 @@
        "/projects/:project/issues/:topic/notes/:number")))
   (closql-delete post)
   (forge-refresh-buffer))
-
-(cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
-                                           (_ (subclass forge-issue)))
-  (forge--topic-template-files-1 repo "md" ".gitlab/issue_templates"))
-
-(cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
-                                           (_ (subclass forge-pullreq)))
-  (forge--topic-template-files-1 repo "md" ".gitlab/merge_request_templates"))
 
 (cl-defmethod forge--fork-repository ((repo forge-gitlab-repository) fork _all)
   (with-slots (name apihost) repo

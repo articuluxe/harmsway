@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -58,6 +58,17 @@ If this variable is set to 0.0, the function `guava-themes-change-visible-bell'
 is still called but does not display `guava-themes-visible-bell'."
   :group 'guava-themes
   :type 'float)
+
+(defcustom guava-themes-boxed-mode-line nil
+  "Add a box attribute to the `mode-line' face.
+
+Note that any faces that inherit from `mode-line' are also affected.
+
+Non-exhaustive list of affected faces: `mode-line',`header-line',
+`tab-line', `tab-bar'."
+  :group 'guava-themes
+  :type '(choice (const :tag "Don't add a box attribute to the `mode-line' face" nil)
+                 (const :tag "Add a box attribute to the `mode-line' face" t)))
 
 (defcustom guava-themes-visible-bell-faces-list (if (>= emacs-major-version 29) '(mode-line-active) '(mode-line))
   "List of faces modified when `guava-themes-change-visible-bell' is called.

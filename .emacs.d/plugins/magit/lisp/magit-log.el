@@ -883,7 +883,7 @@ https://github.com/mhagger/git-when-merged."
         (setq exit (magit-process-git t "when-merged" "-c"
                                       (magit-abbrev-arg)
                                       commit branch)))
-      (setq m (buffer-substring-no-properties (point) (line-end-position))))
+      (setq m (magit--eol-substring)))
     (if (zerop exit)
         (magit-log-setup-buffer (list (format "%s^1..%s" m m))
                                 args files nil commit)
@@ -1532,7 +1532,7 @@ Do not add this to a hook variable."
           (insert ?\s trailers)))
       (insert ?\n)
       (when (memq style '(log reflog stash))
-        (goto-char (line-beginning-position))
+        (goto-char (pos-bol))
         (when (and refsub
                    (string-match "\\`\\([^ ]\\) \\+\\(..\\)\\(..\\)" date))
           (setq date (+ (string-to-number (match-str 1 date))
@@ -1805,8 +1805,9 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
 (put 'magit-log-select-mode 'magit-log-default-arguments
      '("--graph" "-n256" "--decorate"))
 
-(defun magit-log-select-setup-buffer (revs args)
+(defun magit-log-select-setup-buffer (revs args select-section)
   (magit-setup-buffer #'magit-log-select-mode nil
+    :select-section select-section
     (magit-buffer-log-revisions revs)
     (magit-buffer-log-args args)))
 
@@ -1832,15 +1833,16 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
   (magit-log-select-setup-buffer
    (or branch (magit-get-current-branch) "HEAD")
    (append args
-           (car (magit-log--get-value 'magit-log-select-mode 'direct))))
-  (if initial
-      (magit-log-goto-commit-section initial)
-    (while-let* ((rev (magit-section-value-if 'commit))
-                 (_(string-match-p "\\`\\(squash!\\|fixup!\\|amend!\\)"
-                                   (magit-rev-format "%s" rev)))
-                 (section (magit-current-section))
-                 (next (car (magit-section-siblings section 'next))))
-      (magit-section-goto next)))
+           (car (magit-log--get-value 'magit-log-select-mode 'direct)))
+   (lambda ()
+     (if initial
+         (magit-log-goto-commit-section initial)
+       (while-let* ((rev (magit-section-value-if 'commit))
+                    (_(string-match-p "\\`\\(squash!\\|fixup!\\|amend!\\)"
+                                      (magit-rev-format "%s" rev)))
+                    (section (magit-current-section))
+                    (next (car (magit-section-siblings section 'next))))
+         (magit-section-goto next)))))
   (setq magit-log-select-pick-function pick)
   (setq magit-log-select-quit-function quit)
   (when magit-log-select-show-usage

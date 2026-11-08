@@ -1,14 +1,14 @@
-;;; flx-ido.el --- flx integration for ido -*- lexical-binding: t; -*-
+;;; flx-ido.el --- Flx integration for ido  -*- lexical-binding: t; -*-
 
-;; Copyright © 2013, 2015 Le Wang
+;; Copyright © 2013-2022 Le Wang
 
 ;; Author: Le Wang
 ;; Maintainer: Le Wang
 ;; Description: flx integration for ido
 ;; Created: Sun Apr 21 20:38:36 2013 (+0800)
-;; Version: 0.6.3
+;; Version: 0.6.4
+;; Package-Requires: ((emacs "24.3") (flx "0.6.4"))
 ;; URL: https://github.com/lewang/flx
-;; Package-Requires: ((emacs "24.1") (flx "0.1") (cl-lib "0.3"))
 
 ;; This file is NOT part of GNU Emacs.
 

@@ -1,11 +1,11 @@
 ;;; flymake-elisp-config.el --- Setup load-path for flymake on Emacs Lisp mode  -*- Lexical-binding: t; -*-
 
-;; Copyright (C) 2022-2023  ROCKTAKEY
+;; Copyright (C) 2022-2023, 2026  ROCKTAKEY
 
 ;; Author: ROCKTAKEY <rocktakey@gmail.com>
 ;; Keywords: lisp
 
-;; Version: 1.2.0
+;; Version: 1.2.1
 ;; Package-Requires: ((emacs "28.1"))
 ;; URL: https://github.com/ROCKTAKEY/flymake-elisp-config
 
@@ -424,7 +424,7 @@ It also runs when the buffer initialized."
 `load-path' used by flymake is provided by
 `flymake-elisp-config-get-load-path-cask'."
   (interactive
-   (current-buffer))
+   (list (current-buffer)))
 
   (unless (executable-find "cask")
     (user-error "`cask' executable is not found.  Please install it and run M-x `flymake-elisp-config-as-cask'"))

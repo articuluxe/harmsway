@@ -994,12 +994,19 @@ HEREDOC-START."
   (syntax-propertize-rules php-cc-syntax-propertize-rules))
 
 (defun php-cc--syntax-propertize-heredoc (start id _is-heredoc)
-  "Apply propertize Heredoc and Nowdoc from START, with ID and IS-HEREDOC."
-  (let ((terminator (rx-to-string `(: line-start (* (syntax whitespace)) ,id word-boundary))))
-    (put-text-property start (1+ start) 'syntax-table (string-to-syntax "|"))
-    (re-search-forward terminator nil t)
-    (when (match-string 0)
-      (put-text-property (1- (point)) (point) 'syntax-table (string-to-syntax "|")))))
+  "Apply propertize Heredoc and Nowdoc from START, with ID and IS-HEREDOC.
+A `<<<' inside a comment or string is not a heredoc opener.  Searching
+for its terminator anyway would take the closing marker of the next real
+heredoc, leaving that heredoc without an opening fence and inverting the
+string state of the rest of the buffer.  As in
+`php-cc--syntax-propertize-attributes', the check parses only up to
+START and must not move point."
+  (unless (save-excursion (nth 8 (syntax-ppss start)))
+    (let ((terminator (rx-to-string `(: line-start (* (syntax whitespace)) ,id word-boundary))))
+      (put-text-property start (1+ start) 'syntax-table (string-to-syntax "|"))
+      (re-search-forward terminator nil t)
+      (when (match-string 0)
+        (put-text-property (1- (point)) (point) 'syntax-table (string-to-syntax "|"))))))
 
 (defun php-cc--syntax-propertize-quotes-in-comment (pos)
   "Apply propertize quotes (' and \") from POS."
@@ -1587,12 +1594,22 @@ matcher is set to override that face."
         (setq found t)))
     found))
 
+(defun php-cc-mode--interpolation-escaped-p (pos)
+  "Return non-nil if the interpolation matched at POS is escaped.
+An odd number of backslashes before `$' escapes it.  `{' cannot be
+escaped, so a `{$' interpolation never is."
+  (and (eq (char-after pos) ?$)
+       (save-excursion
+         (goto-char pos)
+         (/= 0 (% (skip-chars-backward "\\\\") 2)))))
+
 (defun php-cc-mode--string-interpolated-variable-font-lock-find (limit)
   "Apply text-property to LIMIT for string interpolation by font-lock."
   (let (quoted-stuff)
     (while (re-search-forward php-cc-string-interpolated-variable-regexp limit t)
       (setq quoted-stuff (php-in-string-p))
-      (when (or (eq ?\" quoted-stuff) (eq ?` quoted-stuff))
+      (when (and (or (eq ?\" quoted-stuff) (eq ?` quoted-stuff))
+                 (not (php-cc-mode--interpolation-escaped-p (match-beginning 0))))
         (put-text-property (match-beginning 0) (match-end 0) 'face 'php-variable-name))))
   nil)
 

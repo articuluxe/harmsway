@@ -56,8 +56,11 @@
       (bg-shadow-intense "#d69f60")
       (fg-shadow-intense "#90300f")
 
-      (bg-accent "#dec780")
-      (fg-accent "#7e4e0a")
+      (bg-accent-primary "#dec780")
+      (fg-accent-primary "#7e4e0a")
+
+      (bg-accent-secondary "#f6ffcf")
+      (fg-accent-secondary "#182007")
 
       (fg-red "#a02600")
       (fg-green "#406900")
@@ -66,9 +69,9 @@
       (fg-magenta "#820145")
       (fg-cyan "#025763")
 
-      (bg-red "#ffbc87")
-      (bg-green "#b2d078")
-      (bg-yellow "#e6c264")
+      (bg-red "#f2b783")
+      (bg-green "#b4d178")
+      (bg-yellow "#d6c964")
       (bg-blue "#aac0df")
       (bg-magenta "#d2c3d0")
       (bg-cyan "#b5e0c3"))

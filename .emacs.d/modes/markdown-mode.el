@@ -49,6 +49,7 @@
 (defvar flyspell-generic-check-word-predicate)
 (defvar electric-pair-pairs)
 (defvar sh-ancestor-alist)
+(defvar auto-insert)
 
 (declare-function project-roots "project")
 (declare-function sh-set-shell "sh-script")
@@ -2865,22 +2866,31 @@ because `thing-at-point-looking-at' does not work reliably with
 The match data is set as follows:
 Group 1 matches the opening backquotes.
 Group 2 matches the code fragment itself, without backquotes.
-Group 3 matches the closing backquotes."
+Group 3 matches the closing backquotes.
+
+A table row cannot contain a code fragment that spans lines, so
+when POS is on a table row only that row is searched.  Otherwise
+every candidate would rescan the whole table, which is a single
+text block, making fontification quadratic in the table size."
   (save-excursion
     (goto-char pos)
-    (let ((old-point (point))
-          (end-of-block (progn (markdown-end-of-text-block) (point)))
-          found)
-      (if from
-          (goto-char from)
-        (markdown-beginning-of-text-block))
-      (while (and (markdown-match-code end-of-block)
-                  (setq found t)
-                  (< (match-end 0) old-point)))
-      (let ((match-group (if (eq (char-after (match-beginning 0)) ?`) 0 1)))
-        (and found                                        ; matched something
-             (<= (match-beginning match-group) old-point) ; match contains old-point
-             (> (match-end 0) old-point))))))
+    (save-restriction
+      (when (progn (beginning-of-line) (looking-at-p "[ \t]*|"))
+        (narrow-to-region (line-beginning-position) (line-end-position)))
+      (goto-char pos)
+      (let ((old-point (point))
+            (end-of-block (progn (markdown-end-of-text-block) (point)))
+            found)
+        (if from
+            (goto-char from)
+          (markdown-beginning-of-text-block))
+        (while (and (markdown-match-code end-of-block)
+                    (setq found t)
+                    (< (match-end 0) old-point)))
+        (let ((match-group (if (eq (char-after (match-beginning 0)) ?`) 0 1)))
+          (and found                                        ; matched something
+               (<= (match-beginning match-group) old-point) ; match contains old-point
+               (> (match-end 0) old-point)))))))
 
 (defun markdown-inline-code-at-pos-p (pos)
   "Return non-nil if there is an inline code fragment at POS.
@@ -7962,6 +7972,7 @@ current filename, but with the extension removed and replaced with .html."
     (let* ((init-buf (current-buffer))
            (init-point (point))
            (init-buf-string (buffer-string))
+           (auto-insert nil)
            (output-buffer (find-file-noselect output-file))
            (output-buffer-name (buffer-name output-buffer)))
       (run-hooks 'markdown-before-export-hook)
@@ -9305,18 +9316,24 @@ mode to use is `tuareg-mode'."
 (defun markdown-get-lang-mode (lang)
   "Return major mode that should be used for LANG.
 LANG is a string, and the returned major mode is a symbol."
-  (cl-find-if
-   #'markdown--lang-mode-predicate
-   (nconc (list (cdr (assoc lang markdown-code-lang-modes))
-                (cdr (assoc (downcase lang) markdown-code-lang-modes)))
-          (and (fboundp 'treesit-language-available-p)
-               (list (and (treesit-language-available-p (intern lang))
-                          (intern (concat lang "-ts-mode")))
-                     (and (treesit-language-available-p (intern (downcase lang)))
-                          (intern (concat (downcase lang) "-ts-mode")))))
-          (list
-           (intern (concat lang "-mode"))
-           (intern (concat (downcase lang) "-mode"))))))
+  (let ((down (downcase lang)))
+    (or
+     (cl-find-if #'markdown--lang-mode-predicate
+                 (list (cdr (assoc lang markdown-code-lang-modes))
+                       (cdr (assoc down markdown-code-lang-modes))))
+     ;; Only probe grammars when an eligible tree-sitter mode could win.
+     ;; Avoid caching so newly installed grammars and mode mappings take
+     ;; effect immediately.
+     (and (fboundp 'treesit-language-available-p)
+          (cl-loop for name in (if (equal lang down) (list lang)
+                                (list lang down))
+                   for mode = (intern (concat name "-ts-mode"))
+                   when (and (markdown--lang-mode-predicate mode)
+                             (treesit-language-available-p (intern name)))
+                   return mode))
+     (cl-find-if #'markdown--lang-mode-predicate
+                 (list (intern (concat lang "-mode"))
+                       (intern (concat down "-mode")))))))
 
 (defun markdown--lang-mode-predicate (mode)
   (and mode

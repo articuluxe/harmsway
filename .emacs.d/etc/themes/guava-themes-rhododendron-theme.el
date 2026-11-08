@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 19, 2026
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -38,7 +38,6 @@
       (rhododendron-black                     "#000000")
       (rhododendron-white                     "#FFFFFF")
 
-      (rhododendron-light-green               "#64d264")
       (rhododendron-forest-green              "#228b22")
       (rhododendron-deep-green                "#3e7411")
 
@@ -56,25 +55,29 @@
       (rhododendron-deep-pink                 "#c00e88")
 
       (rhododendron-light-purple              "#e0bde7")
-      (rhododendron-purple                    "#a08ce8")
+      (rhododendron-purple                    "#826ec0")
       (rhododendron-purple-pink               "#ad20f0")
       (rhododendron-purple-blue               "#5346cc")
       (rhododendron-purple-red                "#a8206f")
       (rhododendron-dark-purple-red           "#7d2061")
 
-      (rhododendron-fg                        "#000000")
+      (rhododendron-fg-1                      "#000000")
       (rhododendron-fg-2                      "#3c3c3c")
       (rhododendron-bg                        "#e8c7e3")
       (rhododendron-highlight                 "#d4b3cf")
       (rhododendron-shadow                    "#898989")
+      (rhododendron-tooltip                   "#ffffe0")
+      (rhododendron-region-1                  "#e78deb")
+      (rhododendron-region-2                  "#64d264")
 
       (rhododendron-error                     "#FF0000")
       (rhododendron-warning                   "#F68511")
       (rhododendron-success                   "#29b425")
+      (rhododendron-change                    "#3c3cee")
 
       (rhododendron-mode-line                 "#c00353")
       (rhododendron-mode-line-inactive        "#fd3aae")
-      (rhododendron-mode-line-modified        "#5346cc")
+      (rhododendron-mode-line-modified        "#3AAFFD")
       (rhododendron-bell                      "#03C013")
 
       (rhododendron-tab-1                     rhododendron-mode-line)
@@ -102,17 +105,13 @@
       (rhododendron-diff-context              "#dcdcdc")
       (rhododendron-smerge-base               "#C8C8F0")
 
-      (rhododendron-orderless-0               "#af50c8")
-      (rhododendron-orderless-1               "#28a03c")
-      (rhododendron-orderless-2               "#ff6400")
-      (rhododendron-orderless-3               "#3c82ff")
+      (rhododendron-square-a-0                "#af50c8")
+      (rhododendron-square-a-1                "#28a03c")
+      (rhododendron-square-a-2                "#ff6400")
+      (rhododendron-square-a-3                "#3c82ff")
 
-      (rhododendron-prescient-0               "#4680DE")
-      (rhododendron-prescient-1               "#DE4680")
-
-      (rhododendron-vc-change                 rhododendron-blue)
-      (rhododendron-vc-insert                 rhododendron-success)
-      (rhododendron-vc-delete                 rhododendron-error))
+      (rhododendron-complementary-a-0         "#4680DE")
+      (rhododendron-complementary-a-1         "#DE4680"))
 
   (custom-theme-set-faces
    'guava-themes-rhododendron
@@ -121,7 +120,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,rhododendron-class (:foreground ,rhododendron-fg :background ,rhododendron-bg))))
+   `(default ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-bg))))
 
    ;; error, warning, success
    `(error ((,rhododendron-class (:foreground ,rhododendron-error :weight bold))))
@@ -134,9 +133,12 @@
    ;; shadow
    `(shadow ((,rhododendron-class (:foreground ,rhododendron-shadow))))
 
+   ;; tooltip
+   `(tooltip ((,rhododendron-class (:weight bold :foreground ,rhododendron-black :background ,rhododendron-tooltip :inherit variable-pitch))))
+
    ;; region
-   `(region ((,rhododendron-class (:background ,rhododendron-alt-bright-pink :extend t))))
-   `(secondary-selection ((,rhododendron-class (:background ,rhododendron-light-green :extend t))))
+   `(region ((,rhododendron-class (:background ,rhododendron-region-1 :extend t))))
+   `(secondary-selection ((,rhododendron-class (:background ,rhododendron-region-2 :extend t))))
 
    ;; font-lock
    `(font-lock-comment-face ((,rhododendron-class (:foreground ,rhododendron-fl-comment :weight medium))))
@@ -159,40 +161,43 @@
 
    ;; fringe
    `(fringe ((,rhododendron-class (:foreground ,rhododendron-red :background ,rhododendron-bg))))
-   `(diff-hl-change ((,rhododendron-class (:foreground ,rhododendron-vc-change :background ,rhododendron-vc-change))))
-   `(diff-hl-insert ((,rhododendron-class (:foreground ,rhododendron-vc-insert :background ,rhododendron-vc-insert))))
-   `(diff-hl-delete ((,rhododendron-class (:foreground ,rhododendron-vc-delete :background ,rhododendron-vc-delete))))
+   `(diff-hl-change ((,rhododendron-class (:foreground ,rhododendron-change :background ,rhododendron-change))))
+   `(diff-hl-insert ((,rhododendron-class (:foreground ,rhododendron-success :background ,rhododendron-success))))
+   `(diff-hl-delete ((,rhododendron-class (:foreground ,rhododendron-error :background ,rhododendron-error))))
 
    ;; line-number
-   `(line-number ((,rhododendron-class (:foreground ,rhododendron-fg :inherit default))))
+   `(line-number ((,rhododendron-class (:foreground ,rhododendron-fg-1 :inherit default))))
    `(line-number-current-line ((,rhododendron-class (:foreground ,rhododendron-mode-line :weight bold :inherit (highlight line-number)))))
    `(line-number-minor-tick ((,rhododendron-class (:background ,rhododendron-tab-2 :inherit line-number))))
    `(line-number-major-tick ((,rhododendron-class (:background ,rhododendron-tab-3 :inherit line-number))))
 
    ;; mode-line
-   `(mode-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line))))
+   `(mode-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line
+                                                  :box ,(if guava-themes-boxed-mode-line
+                                                            '(:line-width -1 :style released-button)
+                                                          'unspecified)))))
    `(mode-line-inactive ((,rhododendron-class (:background ,rhododendron-mode-line-inactive :inherit mode-line))))
    `(mode-line-emphasis ((,rhododendron-class (:weight bold))))
    `(mode-line-highlight ((,rhododendron-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,rhododendron-class (:foreground ,rhododendron-black))))
+   `(minibuffer-prompt ((,rhododendron-class (:weight bold :foreground ,rhododendron-mode-line))))
 
    ;; borders
    `(vertical-border ((,rhododendron-class (:foreground ,rhododendron-mode-line))))
 
    ;; header-line
    `(header-line ((,rhododendron-class (:inherit mode-line))))
-   `(which-func ((,rhododendron-class (:foreground ,rhododendron-white))))
+   `(which-func ((,rhododendron-class (:weight bold :foreground ,rhododendron-mode-line-modified))))
 
    ;; tab-bar
-   `(tab-bar ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold))))
+   `(tab-bar ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold :inherit mode-line))))
    `(tab-bar-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold))))
+   `(tab-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :weight bold :inherit mode-line))))
    `(tab-line-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-2 :inherit tab-line-tab))))
@@ -253,18 +258,19 @@
    `(smerge-base ((,rhododendron-class (:foreground ,rhododendron-black :background ,rhododendron-smerge-base :extend t))))
 
    ;; completions
-   `(completions-common-part ((,rhododendron-class (:foreground ,rhododendron-vc-change :weight bold))))
+   `(completions-common-part ((,rhododendron-class (:foreground ,rhododendron-change :weight bold))))
    `(completions-first-difference ((,rhododendron-class (:foreground ,rhododendron-error :weight bold))))
 
    ;; org-faces
-   `(org-todo ((,rhododendron-class (:foreground ,rhododendron-vc-delete :weight bold))))
-   `(org-done ((,rhododendron-class (:foreground ,rhododendron-vc-insert :weight bold))))
+   `(org-todo ((,rhododendron-class (:foreground ,rhododendron-error :weight bold))))
+   `(org-done ((,rhododendron-class (:foreground ,rhododendron-success :weight bold))))
    `(org-hide ((,rhododendron-class (:foreground ,rhododendron-bg))))
    `(org-table ((,rhododendron-class (:foreground ,rhododendron-red))))
+   `(org-table-header ((,rhododendron-class (:inverse-video t :inherit org-table))))
    `(org-date ((,rhododendron-class (:foreground ,rhododendron-red-orange))))
    `(org-date-selected ((,rhododendron-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,rhododendron-class (:foreground ,rhododendron-orderless-0))))
-   `(org-headline-done ((,rhododendron-class (:foreground ,rhododendron-orderless-3))))
+   `(org-headline-todo ((,rhododendron-class (:foreground ,rhododendron-square-a-0))))
+   `(org-headline-done ((,rhododendron-class (:foreground ,rhododendron-square-a-3))))
    `(org-document-title ((,rhododendron-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,rhododendron-class (:inherit shadow))))
    `(org-meta-line ((,rhododendron-class (:inherit font-lock-comment-face))))
@@ -275,70 +281,125 @@
    `(window-divider-last-pixel ((,rhododendron-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-orderless-2))))
+   `(isearch ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-square-a-2))))
    `(isearch-fail ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-error))))
-   `(lazy-highlight ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-orderless-3))))
-   `(isearch-group-1 ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-orderless-0))))
-   `(isearch-group-2 ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-orderless-1))))
+   `(lazy-highlight ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-square-a-3))))
+   `(isearch-group-1 ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-square-a-0))))
+   `(isearch-group-2 ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-square-a-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,rhododendron-class (:inherit isearch))))
    `(match ((,rhododendron-class (:inherit lazy-highlight))))
 
-   ;; custom-button
+   ;; custom
+   ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
    `(custom-button ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line :box (:line-width 2 :style pressed-button)))))
    `(custom-button-mouse ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-3 :box (:line-width 2 :style released-button)))))
+   `(custom-button-unraised ((,rhododendron-class (:foreground ,rhododendron-mode-line :inherit underline))))
+   `(custom-button-pressed-unraised ((,rhododendron-class (:foreground ,rhododendron-bell :inherit custom-button-unraised))))
+   `(custom-comment ((,rhododendron-class (:background ,rhododendron-tab-3))))
+   `(custom-variable-tag ((,rhododendron-class (:weight bold :foreground ,rhododendron-tab-2))))
+   `(custom-group-tag ((,rhododendron-class (:height 1.2 :inherit (custom-variable-tag variable-pitch)))))
+   `(custom-state ((,rhododendron-class (:foreground ,rhododendron-fl-keyword))))
+
+   ;; widget
+   `(widget-field ((,rhododendron-class (:background ,rhododendron-tab-3 :box (:line-width (1 . -1) :color "gray46") :extend t))))
+   `(widget-single-line-field ((,rhododendron-class (:background ,rhododendron-tab-3))))
+
+   ;; package
+   `(package-status-dependency ((,rhododendron-class (:inherit (font-lock-string-face)))))
+
+   ;; icomplete
+   `(icomplete-selected-match ((,rhododendron-class (:weight bold :foreground ,rhododendron-mode-line :inherit (highlight)))))
+   `(icomplete-first-match ((,rhododendron-class (:weight bold :foreground ,rhododendron-mode-line :inherit (highlight)))))
+
+   ;; bookmark
+   `(bookmark-face ((,rhododendron-class (:foreground ,rhododendron-mode-line :distant-foreground unspecified))))
+   `(bookmark-menu-bookmark ((,rhododendron-class (:weight bold :inherit bookmark-face))))
+
+   ;; flymake
+   `(flymake-note ((,rhododendron-class (:underline (:style wave :color ,rhododendron-success)))))
+   `(flymake-warning ((,rhododendron-class (:underline (:style wave :color ,rhododendron-warning)))))
+   `(flymake-error ((,rhododendron-class (:underline (:style wave :color ,rhododendron-error)))))
+
+   ;; eww
+   `(eww-valid-certificate ((,rhododendron-class (:weight bold :foreground ,rhododendron-success))))
+   `(eww-invalid-certificate ((,rhododendron-class (:weight bold :foreground ,rhododendron-error))))
+   ;; Example of eww-form-text: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-text ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-tab-3 :box (:line-width 1)))))
+   ;; Example of eww-form-file: https://html.com/input-type-file/
+   `(eww-form-file ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-select: http://savannah.gnu.org/projects/emacs/
+   ;; Example of eww-form-select: https://git.kernel.org/pub/scm/editors/uemacs/uemacs.git/
+   `(eww-form-select ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-submit: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-submit ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-checkbox: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-checkbox ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-textarea: https://en.wikipedia.org/w/index.php?title=Main_Page&action=edit
+   `(eww-form-textarea ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-tab-3 :box (:line-width 1 :color ,rhododendron-tab-1)))))
 
 
    ;; external packages
 
    ;; elfeed
-   `(elfeed-search-tag-face ((,rhododendron-class (:foreground ,rhododendron-bright-pink))))
-   `(elfeed-search-date-face ((,rhododendron-class (:foreground ,rhododendron-forest-green))))
+   `(elfeed-search-tag-face ((,rhododendron-class (:foreground ,rhododendron-dark-purple-red))))
+   `(elfeed-search-date-face ((,rhododendron-class (:foreground ,rhododendron-purple-red))))
    `(elfeed-search-feed-face ((,rhododendron-class (:foreground ,rhododendron-purple-blue))))
-   `(elfeed-search-title-face ((,rhododendron-class (:foreground ,rhododendron-deep-blue))))
-   `(elfeed-search-unread-title-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-purple-red))))
+   `(elfeed-search-title-face ((,rhododendron-class (:foreground ,rhododendron-purple))))
+   `(elfeed-search-unread-title-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-deep-blue))))
    `(elfeed-search-filter-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-light-purple))))
    `(elfeed-search-last-update-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-light-purple))))
    `(elfeed-search-unread-count-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-light-purple))))
 
-   `(elfeed-show-header-face ((,rhododendron-class (:foreground ,rhododendron-purple-red))))
-   `(elfeed-show-author-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-deep-blue))))
-   `(elfeed-show-title-face ((,rhododendron-class (:weight bold :foreground ,rhododendron-deep-blue))))
-   `(elfeed-show-date-face ((,rhododendron-class (:foreground ,rhododendron-forest-green))))
-   `(elfeed-show-feed-face ((,rhododendron-class (:foreground ,rhododendron-forest-green))))
-   `(elfeed-show-tags-face ((,rhododendron-class (:foreground ,rhododendron-purple-pink))))
+   `(elfeed-show-header-face ((,rhododendron-class (:inherit elfeed-search-date-face))))
+   `(elfeed-show-author-face ((,rhododendron-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-title-face ((,rhododendron-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-date-face ((,rhododendron-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-feed-face ((,rhododendron-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-tags-face ((,rhododendron-class (:inherit elfeed-search-tag-face))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,rhododendron-class (:foreground ,rhododendron-light-purple :inherit italic))))
-   `(doom-modeline-project-parent-dir ((,rhododendron-class (:foreground ,rhododendron-light-purple))))
-   `(doom-modeline-buffer-minor-mode ((,rhododendron-class (:foreground ,rhododendron-bright-orange))))
+   ;; doom-modeline-buffer-file-name-style
+   `(doom-modeline-project-name ((,rhododendron-class (:foreground ,rhododendron-light-purple :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,rhododendron-class (:foreground ,rhododendron-light-purple :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,rhododendron-class (:foreground ,rhododendron-bright-orange :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,rhododendron-class (:foreground ,rhododendron-bright-orange :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,rhododendron-class (:foreground ,rhododendron-bright-orange :inherit (doom-modeline)))))
    `(doom-modeline-buffer-modified ((,rhododendron-class (:foreground ,rhododendron-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,rhododendron-class (:foreground ,rhododendron-fg :background ,rhododendron-bg))))
-   `(corfu-current ((,rhododendron-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-default ((,rhododendron-class (:foreground ,rhododendron-fg-1 :background ,rhododendron-bg))))
+   `(corfu-current ((,rhododendron-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,rhododendron-class (:background ,rhododendron-shadow))))
    `(corfu-border ((,rhododendron-class (:background ,rhododendron-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,rhododendron-class (:foreground ,rhododendron-orderless-0 :weight bold))))
-   `(orderless-match-face-1 ((,rhododendron-class (:foreground ,rhododendron-orderless-1 :weight bold))))
-   `(orderless-match-face-2 ((,rhododendron-class (:foreground ,rhododendron-orderless-2 :weight bold))))
-   `(orderless-match-face-3 ((,rhododendron-class (:foreground ,rhododendron-orderless-3 :weight bold))))
+   `(orderless-match-face-0 ((,rhododendron-class (:foreground ,rhododendron-square-a-0 :weight bold))))
+   `(orderless-match-face-1 ((,rhododendron-class (:foreground ,rhododendron-square-a-1 :weight bold))))
+   `(orderless-match-face-2 ((,rhododendron-class (:foreground ,rhododendron-square-a-2 :weight bold))))
+   `(orderless-match-face-3 ((,rhododendron-class (:foreground ,rhododendron-square-a-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
-   `(prescient-primary-highlight ((,rhododendron-class (:foreground ,rhododendron-prescient-0 :weight bold))))
-   `(prescient-secondary-highlight ((,rhododendron-class (:foreground ,rhododendron-prescient-1 :underline t :weight bold))))
+   `(prescient-primary-highlight ((,rhododendron-class (:foreground ,rhododendron-complementary-a-0 :weight bold))))
+   `(prescient-secondary-highlight ((,rhododendron-class (:foreground ,rhododendron-complementary-a-1 :underline t :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,rhododendron-class (:inherit error))))
-   `(envrc-mode-line-none-face ((,rhododendron-class (:inherit warning))))
+   `(envrc-mode-line-denied-face ((,rhododendron-class (:inherit warning))))
    `(envrc-mode-line-on-face ((,rhododendron-class (:inherit success))))
+   `(envrc-mode-line-none-face ((,rhododendron-class (:inherit warning))))
+   `(envrc-mode-line-running-face ((,rhododendron-class (:inherit warning))))
 
    ;; devdocs
    `(devdocs-code-block ((,rhododendron-class (:weight bold :background ,rhododendron-highlight :extend t))))
+
+   ;; pdf-tools
+   `(pdf-view-region ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-square-a-3 :inherit region))))
+
+   ;; idle-highlight
+   `(idle-highlight ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-fl-builtin :inherit region))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

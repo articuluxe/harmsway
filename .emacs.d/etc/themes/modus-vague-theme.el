@@ -35,7 +35,7 @@
 (defcustom modus-vague-palette-overrides nil
   "Overrides for `modus-vague-palette'."
   :group 'modus-vague
-  :package-version '(modus-vague . "0.2.0")
+  :package-version '(modus-vague . "0.2.4")
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
@@ -82,14 +82,19 @@
      (green "#7fa563"))
    nil
    nil
-   '((docstring amber)
+   '(;; Code
+     (docstring teal)
      (string amber)
-     (constant cyan)
-     (type lilac)
+     (constant aqua)
+     (type green)
+     (property cyan)
      (warning yellow)
      (keyword blue)
-     (variable magenta)
+     (variable iris)
      (comment fg-dim)
+     (fnname peach)
+     (fnname-call magenta)
+     (variable-use lavender)
 
      ;; Tab bar
      (bg-tab-bar bg-dim)
@@ -131,9 +136,6 @@
      (bg-search-current storm)
      (fg-search-current cyan)
 
-     ;; Code
-     (variable-use iris)
-
      ;; Line numbers
      (fg-line-number-inactive muted)
 
@@ -148,9 +150,8 @@
   '(
     `(git-commit-summary ((,c :inherit bold :foreground ,iris)))
     `(tab-bar-tab-inactive ((,c :foreground ,gray)))
-    `(font-lock-type-face ((,c :weight normal :foreground ,green)))
-    `(font-lock-function-name-face ((,c :foreground ,peach)))
     `(compilation-info ((,c :weight bold :foreground ,gold)))
+    `(elfeed-show-title-face ((,c :weight bold :foreground ,peach)))
     `(org-scheduled-previously ((,c :foreground ,peach))))
   "Custom faces overriding the default faces of Modus themes.")
 

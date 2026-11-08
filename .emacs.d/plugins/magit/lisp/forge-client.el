@@ -44,11 +44,33 @@
      :callback ,callback :errorback ,errorback :noerror ,noerror
      :narrow ,narrow :until ,until))
 
+(cl-defun forge-repo-query ( obj fragments
+                             &key callback errorback noerror narrow until
+                             other-fragments)
+  (declare (indent defun))
+  (forge--query obj
+    (nconc (forge--prepare-repo-query fragments)
+           (and other-fragments (list other-fragments)))
+    `((owner . ,(oref obj owner))
+      (name  . ,(oref obj name)))
+    :callback callback :errorback errorback :noerror noerror
+    :narrow narrow :until until))
+
+(defun forge--prepare-repo-query (fragments)
+  `(query (repository [(owner $owner String!)
+                       (name  $name  String!)]
+                      ,@fragments)))
+
+(defun forge--singularize-fragment (fragment value)
+  (pcase-let* ((`((,_plural ,args . ,fields) . ,rest) fragment)
+               (`(,_ ,singular ,arg) (assq :singular (append args ()))))
+    `((,singular [(,arg ,value)] . ,fields) . ,rest)))
+
 (cl-defmacro forge-mutate ( obj-or-host mutation variables
                             &key callback errorback noerror)
   (declare (indent defun))
   `(forge--query ,obj-or-host
-     ',(ghub--prepare-mutation mutation)
+     ',(forge--prepare-mutation mutation)
      (list (cons 'input ,(forge--prepare-variables variables)))
      :callback ,callback :errorback ,errorback :noerror ,noerror))
 
@@ -56,7 +78,7 @@
   (declare (indent defun))
   `(let ((topic ,topic))
      (forge--query topic
-       ',(ghub--prepare-mutation mutation)
+       ',(forge--prepare-mutation mutation)
        (list (cons 'input ,(forge--prepare-variables variables)))
        :callback (forge--set-field-callback topic))))
 
@@ -99,7 +121,7 @@
                  ('forge-gitlab-repository 'gitlab)
                  (_ 'github)))))
 
-(defun ghub--prepare-mutation (mutation &optional var)
+(defun forge--prepare-mutation (mutation &optional var)
   `(mutation
     (,mutation
      [(input ,(if var (intern (format "$%s" var)) '$input)
@@ -134,16 +156,8 @@
        ;; See comment in `forge--update-status'.
        (let ((status (oref topic status)))
          (lambda (&rest _)
-           (forge--query repo
-             (ghub--graphql-prepare-query
-              forge--github-repository-query
-              `(repository discussions (discussion . ,(oref topic number))))
-             `((owner . ,(oref repo owner))
-               (name  . ,(oref repo name)))
-             :callback (lambda (data)
-                         (forge--update-discussion repo (cdr (cadr (cadr data))))
-                         (oset topic status status)
-                         (forge-refresh-buffer))))))
+           (forge--pull-topic (forge-get-repository topic) topic
+                              (lambda () (oset topic status status))))))
       ((lambda (&rest _)
          (forge--pull-topic (forge-get-repository topic) topic))))))
 

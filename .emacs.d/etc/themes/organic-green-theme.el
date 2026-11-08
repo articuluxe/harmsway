@@ -103,12 +103,16 @@
    `(font-lock-comment-face ((t (:foreground ,organic-gray))))
    `(font-lock-constant-face ((t (:foreground ,organic-blue))))
    `(font-lock-function-name-face ((t (:foreground ,organic-blue))))
+   `(font-lock-function-call-face ((t (:foreground ,organic-fg))))
    `(font-lock-keyword-face ((t (:foreground ,organic-purple))))
    `(font-lock-string-face ((t (:foreground ,organic-green))) t)
    `(font-lock-doc-face ((t (:foreground ,organic-green))) t)
    `(font-lock-type-face ((t (:foreground ,organic-green-black))))
    `(font-lock-variable-name-face ((t (:foreground ,organic-yellow))))
+   `(font-lock-variable-use-face ((t (:foreground ,organic-fg))))
    `(font-lock-warning-face ((t (:foreground ,organic-orange))))
+   `(font-lock-property-name-face ((t (:foreground ,organic-blue))))
+   `(font-lock-property-use-face ((t (:foreground ,organic-blue))))
 
    ;; ui
    `(cursor ((t (:background ,organic-cursor-fg))))
@@ -262,10 +266,11 @@
    `(markdown-header-face-1 ((t (:foreground ,organic-purple))))
    `(markdown-header-face-2 ((t (:foreground ,organic-purple))))
    `(markdown-header-face-3 ((t (:foreground ,organic-purple))))
+   `(markdown-header-face-4 ((t (:foreground ,organic-blue))))
    `(markdown-pre-face ((t (:foreground ,organic-black))))
    `(markdown-markup-face ((t (:foreground ,organic-black))))
    `(markdown-language-keyword-face ((t (:foreground ,organic-green))))
-   `(markdown-code-face ((t (:foreground ,organic-blue))))
+   `(markdown-code-face ((t (:foreground ,organic-green-black))))
    `(markdown-blockquote-face ((t (:foreground ,organic-green))))
    `(markdown-italic-face ((t (:foreground ,organic-yellow))))
    `(markdown-bold-face ((t (:foreground ,organic-orange))))
@@ -357,8 +362,9 @@
    `(diff-hl-change ((t (:foreground ,organic-sign-change :background ,organic-highlight-gray))) t)
 
    ;; Org-Mode
-   `(org-document-title ((t (:foreground ,organic-green-black))) t)
-   `(org-code ((t (:foreground ,organic-blue))) t)
+   `(org-document-title ((t (:foreground ,organic-black))) t)
+   `(org-code ((t (:foreground ,organic-green-black))) t)
+   `(org-verbatim ((t (:inherit org-code))) t)
    `(org-table ((t (:foreground ,organic-fg))) t)
    `(org-level-1 ((t (:foreground ,organic-purple))) t)
    `(org-level-2 ((t (:foreground ,organic-blue))) t)
@@ -373,7 +379,7 @@
    `(org-todo ((t (:inherit warning))) t)
    `(org-done ((t (:foreground ,organic-green))) t)
    `(org-headline-done ((t (:foreground ,organic-teal))) t)
-   `(org-drawer ((t (:foreground ,organic-black))) t)
+   `(org-drawer ((t (:foreground ,organic-green-black))) t)
    `(org-special-keyword ((t (:foreground ,organic-violet))) t)
    `(org-property-value ((t (:foreground ,organic-green))) t)
 
@@ -384,11 +390,20 @@
    ;; asciidoc-mode
    '(asciidoc-code-face ((t (:inherit font-lock-string-face))))
 
+   ;; eglot
+   `(eglot-highlight-symbol-face ((t (:weight bold))))
+   '(eglot-semantic-macro ((t (:inherit font-lock-keyword-face))))
+   '(eglot-semantic-keyword ((t (:inherit font-lock-builtin-face))))
+   '(eglot-semantic-definition ((t (:inherit font-lock-function-name-face))))
+   '(eglot-semantic-function ((t (:inherit default))))
+   '(eglot-semantic-variable ((t (:inherit default))))
+   '(eglot-semantic-type ((t (:inherit font-lock-type-face))))
+   '(eglot-semantic-event ((t (:inherit font-lock-type-face))))
+
    ;; Misc
    `(nxml-element-local-name ((t (:foreground ,organic-blue))) t)
    `(yas-field-highlight-face ((t (:background ,organic-highlight-blue))))
    `(idle-highlight ((t (:background ,organic-highlight-green))) t)
-   `(eglot-highlight-symbol-face ((t (:weight bold))))
    `(comint-highlight-prompt ((t (:foreground ,organic-blue))) t)
    `(flx-highlight-face  ((t (:foreground ,organic-blue :bold t :underline t))) t)
 

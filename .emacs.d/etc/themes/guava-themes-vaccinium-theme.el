@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Mar 22, 2026
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -39,7 +39,7 @@
       (vaccinium-white                     "#FFFFFF")
 
       (vaccinium-red                       "#b92e33")
-      (vaccinium-pink                      "#e986f1")
+      (vaccinium-pink                      "#df7ce7")
       (vaccinium-orange                    "#ffa07a")
 
       (vaccinium-yellow                    "#fde8b9")
@@ -48,7 +48,6 @@
       (vaccinium-green-forest              "#006e41")
 
       (vaccinium-blueberry                 "#5582d7")
-      (vaccinium-alt-blueberry             "#3755a0")
       (vaccinium-blue                      "#0f69b4")
       (vaccinium-alt-blue                  "#1455f1")
       (vaccinium-deep-blue                 "#1c5367")
@@ -58,18 +57,21 @@
 
       (vaccinium-light-purple              "#8282af")
       (vaccinium-purple                    "#6464af")
-      (vaccinium-deep-purple               "#4b378c")
       (vaccinium-purple-pink               "#aa78cf")
 
-      (vaccinium-fg                        "#FFFFFF")
+      (vaccinium-fg-1                      "#FFFFFF")
       (vaccinium-fg-2                      "#c3c3c3")
       (vaccinium-bg                        "#1c1c26")
       (vaccinium-highlight                 "#30303a")
       (vaccinium-shadow                    "#b3b3b3")
+      (vaccinium-tooltip                   "#ffffe0")
+      (vaccinium-region-1                  "#1c5367")
+      (vaccinium-region-2                  "#3755a0")
 
       (vaccinium-error                     "#FF0000")
       (vaccinium-warning                   "#f6d909")
       (vaccinium-success                   "#1ebe1e")
+      (vaccinium-change                    "#1455f1")
 
       (vaccinium-mode-line                 "#5582d7")
       (vaccinium-mode-line-inactive        "#6a7e98")
@@ -101,17 +103,13 @@
       (vaccinium-diff-context              "#828282")
       (vaccinium-smerge-base               "#5A5AA0")
 
-      (vaccinium-orderless-0               "#af50c8")
-      (vaccinium-orderless-1               "#28a03c")
-      (vaccinium-orderless-2               "#ff6400")
-      (vaccinium-orderless-3               "#3c82ff")
+      (vaccinium-square-a-0                "#af50c8")
+      (vaccinium-square-a-1                "#28a03c")
+      (vaccinium-square-a-2                "#ff6400")
+      (vaccinium-square-a-3                "#3c82ff")
 
-      (vaccinium-prescient-0               "#46C8A5")
-      (vaccinium-prescient-1               "#C84669")
-
-      (vaccinium-vc-change                 vaccinium-alt-blue)
-      (vaccinium-vc-insert                 vaccinium-success)
-      (vaccinium-vc-delete                 vaccinium-error))
+      (vaccinium-complementary-a-0         "#46C8A5")
+      (vaccinium-complementary-a-1         "#C84669"))
 
   (custom-theme-set-faces
    'guava-themes-vaccinium
@@ -120,7 +118,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,vaccinium-class (:foreground ,vaccinium-fg :background ,vaccinium-bg))))
+   `(default ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-bg))))
 
    ;; error, warning, success
    `(error ((,vaccinium-class (:foreground ,vaccinium-error :weight bold))))
@@ -133,9 +131,12 @@
    ;; shadow
    `(shadow ((,vaccinium-class (:foreground ,vaccinium-shadow))))
 
+   ;; tooltip
+   `(tooltip ((,vaccinium-class (:weight bold :foreground ,vaccinium-black :background ,vaccinium-tooltip :inherit variable-pitch))))
+
    ;; region
-   `(region ((,vaccinium-class (:background ,vaccinium-deep-blue :extend t))))
-   `(secondary-selection ((,vaccinium-class (:background ,vaccinium-alt-blueberry :extend t))))
+   `(region ((,vaccinium-class (:background ,vaccinium-region-1 :extend t))))
+   `(secondary-selection ((,vaccinium-class (:background ,vaccinium-region-2 :extend t))))
 
    ;; font-lock
    `(font-lock-comment-face ((,vaccinium-class (:foreground ,vaccinium-fl-comment :weight medium))))
@@ -158,40 +159,43 @@
 
    ;; fringe
    `(fringe ((,vaccinium-class (:foreground ,vaccinium-red :background ,vaccinium-bg))))
-   `(diff-hl-change ((,vaccinium-class (:foreground ,vaccinium-vc-change :background ,vaccinium-vc-change))))
-   `(diff-hl-insert ((,vaccinium-class (:foreground ,vaccinium-vc-insert :background ,vaccinium-vc-insert))))
-   `(diff-hl-delete ((,vaccinium-class (:foreground ,vaccinium-vc-delete :background ,vaccinium-vc-delete))))
+   `(diff-hl-change ((,vaccinium-class (:foreground ,vaccinium-change :background ,vaccinium-change))))
+   `(diff-hl-insert ((,vaccinium-class (:foreground ,vaccinium-success :background ,vaccinium-success))))
+   `(diff-hl-delete ((,vaccinium-class (:foreground ,vaccinium-error :background ,vaccinium-error))))
 
    ;; line-number
-   `(line-number ((,vaccinium-class (:foreground ,vaccinium-fg :inherit default))))
+   `(line-number ((,vaccinium-class (:foreground ,vaccinium-fg-1 :inherit default))))
    `(line-number-current-line ((,vaccinium-class (:foreground ,vaccinium-mode-line :weight bold :inherit (highlight line-number)))))
    `(line-number-minor-tick ((,vaccinium-class (:background ,vaccinium-tab-2 :inherit line-number))))
    `(line-number-major-tick ((,vaccinium-class (:background ,vaccinium-tab-3 :inherit line-number))))
 
    ;; mode-line
-   `(mode-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line))))
+   `(mode-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line
+                                               :box ,(if guava-themes-boxed-mode-line
+                                                         '(:line-width -1 :style released-button)
+                                                       'unspecified)))))
    `(mode-line-inactive ((,vaccinium-class (:background ,vaccinium-mode-line-inactive :inherit mode-line))))
    `(mode-line-emphasis ((,vaccinium-class (:weight bold))))
    `(mode-line-highlight ((,vaccinium-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
+   `(minibuffer-prompt ((,vaccinium-class (:weight bold :foreground ,vaccinium-mode-line))))
 
    ;; borders
    `(vertical-border ((,vaccinium-class (:foreground ,vaccinium-mode-line))))
 
    ;; header-line
    `(header-line ((,vaccinium-class (:inherit mode-line))))
-   `(which-func ((,vaccinium-class (:foreground ,vaccinium-white))))
+   `(which-func ((,vaccinium-class (:weight bold :foreground ,vaccinium-mode-line-modified))))
 
    ;; tab-bar
-   `(tab-bar ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :weight bold))))
+   `(tab-bar ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :weight bold :inherit mode-line))))
    `(tab-bar-tab ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :weight bold))))
+   `(tab-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :weight bold :inherit mode-line))))
    `(tab-line-tab ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-2 :inherit tab-line-tab))))
@@ -256,14 +260,15 @@
    `(completions-first-difference ((,vaccinium-class (:foreground ,vaccinium-error :weight bold))))
 
    ;; org-faces
-   `(org-todo ((,vaccinium-class (:foreground ,vaccinium-vc-delete :weight bold))))
-   `(org-done ((,vaccinium-class (:foreground ,vaccinium-vc-insert :weight bold))))
+   `(org-todo ((,vaccinium-class (:foreground ,vaccinium-error :weight bold))))
+   `(org-done ((,vaccinium-class (:foreground ,vaccinium-success :weight bold))))
    `(org-hide ((,vaccinium-class (:foreground ,vaccinium-bg))))
    `(org-table ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
+   `(org-table-header ((,vaccinium-class (:inverse-video t :inherit org-table))))
    `(org-date ((,vaccinium-class (:foreground ,vaccinium-purple-pink))))
    `(org-date-selected ((,vaccinium-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,vaccinium-class (:foreground ,vaccinium-orderless-2))))
-   `(org-headline-done ((,vaccinium-class (:foreground ,vaccinium-orderless-1))))
+   `(org-headline-todo ((,vaccinium-class (:foreground ,vaccinium-square-a-2))))
+   `(org-headline-done ((,vaccinium-class (:foreground ,vaccinium-square-a-1))))
    `(org-document-title ((,vaccinium-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,vaccinium-class (:inherit shadow))))
    `(org-meta-line ((,vaccinium-class (:inherit font-lock-comment-face))))
@@ -274,26 +279,70 @@
    `(window-divider-last-pixel ((,vaccinium-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orderless-2))))
+   `(isearch ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-square-a-2))))
    `(isearch-fail ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-error))))
-   `(lazy-highlight ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orderless-3))))
-   `(isearch-group-1 ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orderless-0))))
-   `(isearch-group-2 ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orderless-1))))
+   `(lazy-highlight ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-square-a-3))))
+   `(isearch-group-1 ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-square-a-0))))
+   `(isearch-group-2 ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-square-a-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,vaccinium-class (:inherit isearch))))
    `(match ((,vaccinium-class (:inherit lazy-highlight))))
 
-   ;; custom-button
+   ;; custom
+   ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
    `(custom-button ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line :box (:line-width 2 :style pressed-button)))))
    `(custom-button-mouse ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-3 :box (:line-width 2 :style released-button)))))
+   `(custom-button-unraised ((,vaccinium-class (:foreground ,vaccinium-mode-line :inherit underline))))
+   `(custom-button-pressed-unraised ((,vaccinium-class (:foreground ,vaccinium-bell :inherit custom-button-unraised))))
+   `(custom-comment ((,vaccinium-class (:background ,vaccinium-tab-3))))
+   `(custom-variable-tag ((,vaccinium-class (:weight bold :foreground ,vaccinium-tab-2))))
+   `(custom-group-tag ((,vaccinium-class (:height 1.2 :inherit (custom-variable-tag variable-pitch)))))
+   `(custom-state ((,vaccinium-class (:foreground ,vaccinium-fl-keyword))))
+
+   ;; widget
+   `(widget-field ((,vaccinium-class (:background ,vaccinium-tab-3 :box (:line-width (1 . -1) :color "gray46") :extend t))))
+   `(widget-single-line-field ((,vaccinium-class (:background ,vaccinium-tab-3))))
+
+   ;; package
+   `(package-status-dependency ((,vaccinium-class (:inherit (font-lock-string-face)))))
+
+   ;; icomplete
+   `(icomplete-selected-match ((,vaccinium-class (:weight bold :foreground ,vaccinium-mode-line :inherit (highlight)))))
+   `(icomplete-first-match ((,vaccinium-class (:weight bold :foreground ,vaccinium-mode-line :inherit (highlight)))))
+
+   ;; bookmark
+   `(bookmark-face ((,vaccinium-class (:foreground ,vaccinium-mode-line :distant-foreground unspecified))))
+   `(bookmark-menu-bookmark ((,vaccinium-class (:weight bold :inherit bookmark-face))))
+
+   ;; flymake
+   `(flymake-note ((,vaccinium-class (:underline (:style wave :color ,vaccinium-success)))))
+   `(flymake-warning ((,vaccinium-class (:underline (:style wave :color ,vaccinium-warning)))))
+   `(flymake-error ((,vaccinium-class (:underline (:style wave :color ,vaccinium-error)))))
+
+   ;; eww
+   `(eww-valid-certificate ((,vaccinium-class (:weight bold :foreground ,vaccinium-success))))
+   `(eww-invalid-certificate ((,vaccinium-class (:weight bold :foreground ,vaccinium-error))))
+   ;; Example of eww-form-text: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-text ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-3 :box (:line-width 1)))))
+   ;; Example of eww-form-file: https://html.com/input-type-file/
+   `(eww-form-file ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-select: http://savannah.gnu.org/projects/emacs/
+   ;; Example of eww-form-select: https://git.kernel.org/pub/scm/editors/uemacs/uemacs.git/
+   `(eww-form-select ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-submit: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-submit ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-checkbox: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-checkbox ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-textarea: https://en.wikipedia.org/w/index.php?title=Main_Page&action=edit
+   `(eww-form-textarea ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-tab-3 :box (:line-width 1 :color ,vaccinium-tab-1)))))
 
 
    ;; external packages
 
    ;; elfeed
-   `(elfeed-search-tag-face ((,vaccinium-class (:foreground ,vaccinium-purple))))
+   `(elfeed-search-tag-face ((,vaccinium-class (:foreground ,vaccinium-light-purple))))
    `(elfeed-search-date-face ((,vaccinium-class (:foreground ,vaccinium-steel-blue))))
    `(elfeed-search-feed-face ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
    `(elfeed-search-title-face ((,vaccinium-class (:foreground ,vaccinium-orange))))
@@ -302,42 +351,53 @@
    `(elfeed-search-last-update-face ((,vaccinium-class (:weight bold :foreground ,vaccinium-deep-blue))))
    `(elfeed-search-unread-count-face ((,vaccinium-class (:weight bold :foreground ,vaccinium-deep-blue))))
 
-   `(elfeed-show-header-face ((,vaccinium-class (:foreground ,vaccinium-light-green))))
-   `(elfeed-show-author-face ((,vaccinium-class (:weight bold :foreground ,vaccinium-blueberry))))
-   `(elfeed-show-title-face ((,vaccinium-class (:weight bold :foreground ,vaccinium-blueberry))))
-   `(elfeed-show-date-face ((,vaccinium-class (:foreground ,vaccinium-steel-blue))))
-   `(elfeed-show-feed-face ((,vaccinium-class (:foreground ,vaccinium-steel-blue))))
-   `(elfeed-show-tags-face ((,vaccinium-class (:foreground ,vaccinium-orange))))
+   `(elfeed-show-header-face ((,vaccinium-class (:inherit elfeed-search-date-face))))
+   `(elfeed-show-author-face ((,vaccinium-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-title-face ((,vaccinium-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-date-face ((,vaccinium-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-feed-face ((,vaccinium-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-tags-face ((,vaccinium-class (:inherit elfeed-search-tag-face))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-deep-purple :inherit italic))))
-   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-deep-purple))))
-   `(doom-modeline-buffer-minor-mode ((,vaccinium-class (:foreground ,vaccinium-yellow))))
+   ;; doom-modeline-buffer-file-name-style
+   `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-deep-blue :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,vaccinium-class (:foreground ,vaccinium-deep-blue :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,vaccinium-class (:foreground ,vaccinium-yellow :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-yellow :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,vaccinium-class (:foreground ,vaccinium-yellow :inherit (doom-modeline)))))
    `(doom-modeline-buffer-modified ((,vaccinium-class (:foreground ,vaccinium-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,vaccinium-class (:foreground ,vaccinium-fg :background ,vaccinium-bg))))
-   `(corfu-current ((,vaccinium-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-default ((,vaccinium-class (:foreground ,vaccinium-fg-1 :background ,vaccinium-bg))))
+   `(corfu-current ((,vaccinium-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,vaccinium-class (:background ,vaccinium-shadow))))
    `(corfu-border ((,vaccinium-class (:background ,vaccinium-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,vaccinium-class (:foreground ,vaccinium-orderless-0 :weight bold))))
-   `(orderless-match-face-1 ((,vaccinium-class (:foreground ,vaccinium-orderless-1 :weight bold))))
-   `(orderless-match-face-2 ((,vaccinium-class (:foreground ,vaccinium-orderless-2 :weight bold))))
-   `(orderless-match-face-3 ((,vaccinium-class (:foreground ,vaccinium-orderless-3 :weight bold))))
+   `(orderless-match-face-0 ((,vaccinium-class (:foreground ,vaccinium-square-a-0 :weight bold))))
+   `(orderless-match-face-1 ((,vaccinium-class (:foreground ,vaccinium-square-a-1 :weight bold))))
+   `(orderless-match-face-2 ((,vaccinium-class (:foreground ,vaccinium-square-a-2 :weight bold))))
+   `(orderless-match-face-3 ((,vaccinium-class (:foreground ,vaccinium-square-a-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
-   `(prescient-primary-highlight ((,vaccinium-class (:foreground ,vaccinium-prescient-0 :weight bold))))
-   `(prescient-secondary-highlight ((,vaccinium-class (:foreground ,vaccinium-prescient-1 :underline t :weight bold))))
+   `(prescient-primary-highlight ((,vaccinium-class (:foreground ,vaccinium-complementary-a-0 :weight bold))))
+   `(prescient-secondary-highlight ((,vaccinium-class (:foreground ,vaccinium-complementary-a-1 :underline t :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,vaccinium-class (:inherit error))))
-   `(envrc-mode-line-none-face ((,vaccinium-class (:inherit warning))))
+   `(envrc-mode-line-denied-face ((,vaccinium-class (:inherit warning))))
    `(envrc-mode-line-on-face ((,vaccinium-class (:inherit success))))
+   `(envrc-mode-line-none-face ((,vaccinium-class (:inherit warning))))
+   `(envrc-mode-line-running-face ((,vaccinium-class (:inherit warning))))
 
    ;; devdocs
    `(devdocs-code-block ((,vaccinium-class (:weight bold :background ,vaccinium-highlight :extend t))))
+
+   ;; pdf-tools
+   `(pdf-view-region ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-square-a-3 :inherit region))))
+
+   ;; idle-highlight
+   `(idle-highlight ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-fl-builtin :inherit region))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

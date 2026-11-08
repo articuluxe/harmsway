@@ -56,8 +56,11 @@
       (bg-shadow-intense "#496278")
       (fg-shadow-intense "#c0ddf2")
 
-      (bg-accent "#403f75")
-      (fg-accent "#adade0")
+      (bg-accent-primary "#403f75")
+      (fg-accent-primary "#adade0")
+
+      (bg-accent-secondary "#6a6c7c")
+      (fg-accent-secondary "#ded6e8")
 
       (fg-red "#eca28f")
       (fg-green "#a0d0ba")
@@ -66,12 +69,12 @@
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#602638")
-      (bg-green "#104c3a")
+      (bg-red "#652638")
+      (bg-green "#10533a")
       (bg-yellow "#54482f")
-      (bg-blue "#323a6b")
-      (bg-magenta "#5a2855")
-      (bg-cyan "#2f495f"))
+      (bg-blue "#32387b")
+      (bg-magenta "#5a2b5f")
+      (bg-cyan "#2f4f6f"))
   "Palette of `doric-water' theme.")
 
   (doric-themes-define-theme doric-water dark "Minimalist theme with dark background and blue+teal hues"))

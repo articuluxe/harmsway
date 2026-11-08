@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Apr 16, 2026
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -38,9 +38,6 @@
       (pyrus-black                     "#000000")
       (pyrus-white                     "#FFFFFF")
 
-      (pyrus-yellow-green              "#e5e73b")
-      (pyrus-alt-yellow-green          "#c8c887")
-
       (pyrus-light-green               "#97ad24")
       (pyrus-green                     "#228b22")
       (pyrus-green-subdued             "#316355")
@@ -60,15 +57,19 @@
       (pyrus-purple                    "#874be1")
       (pyrus-deep-magenta              "#642864")
 
-      (pyrus-fg                        "#780000")
+      (pyrus-fg-1                      "#780000")
       (pyrus-fg-2                      "#b43c3c")
       (pyrus-bg                        "#f9fefd")
       (pyrus-highlight                 "#e5eae9")
       (pyrus-shadow                    "#898989")
+      (pyrus-tooltip                   "#ffffe0")
+      (pyrus-region-1                  "#c8c887")
+      (pyrus-region-2                  "#e5e73b")
 
       (pyrus-error                     "#ff0000")
       (pyrus-warning                   "#ffd200")
       (pyrus-success                   "#228B22")
+      (pyrus-change                    "#2a4ad9")
 
       (pyrus-mode-line                 "#295323")
       (pyrus-mode-line-inactive        "#228b22")
@@ -100,17 +101,13 @@
       (pyrus-diff-context              "#dcdcdc")
       (pyrus-smerge-base               "#C8C8F0")
 
-      (pyrus-orderless-0               "#c846e6")
-      (pyrus-orderless-1               "#28a03c")
-      (pyrus-orderless-2               "#ff6400")
-      (pyrus-orderless-3               "#3c82ff")
+      (pyrus-square-a-0                "#c846e6")
+      (pyrus-square-a-1                "#28a03c")
+      (pyrus-square-a-2                "#ff6400")
+      (pyrus-square-a-3                "#3c82ff")
 
-      (pyrus-prescient-0               "#4680DE")
-      (pyrus-prescient-1               "#DE4680")
-
-      (pyrus-vc-change                 pyrus-blue)
-      (pyrus-vc-insert                 pyrus-success)
-      (pyrus-vc-delete                 pyrus-error))
+      (pyrus-complementary-a-0         "#4680DE")
+      (pyrus-complementary-a-1         "#DE4680"))
 
   (custom-theme-set-faces
    'guava-themes-pyrus
@@ -119,7 +116,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,pyrus-class (:foreground ,pyrus-fg :background ,pyrus-bg))))
+   `(default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg))))
 
    ;; error, warning, success
    `(error ((,pyrus-class (:foreground ,pyrus-error :weight bold))))
@@ -132,9 +129,12 @@
    ;; shadow
    `(shadow ((,pyrus-class (:foreground ,pyrus-shadow))))
 
+   ;; tooltip
+   `(tooltip ((,pyrus-class (:weight bold :foreground ,pyrus-black :background ,pyrus-tooltip :inherit variable-pitch))))
+
    ;; region
-   `(region ((,pyrus-class (:background ,pyrus-alt-yellow-green :extend t))))
-   `(secondary-selection ((,pyrus-class (:background ,pyrus-yellow-green :extend t))))
+   `(region ((,pyrus-class (:background ,pyrus-region-1 :extend t))))
+   `(secondary-selection ((,pyrus-class (:background ,pyrus-region-2 :extend t))))
 
    ;; font-lock
    `(font-lock-comment-face ((,pyrus-class (:foreground ,pyrus-fl-comment :weight medium))))
@@ -157,40 +157,43 @@
 
    ;; fringe
    `(fringe ((,pyrus-class (:foreground ,pyrus-blue :background ,pyrus-bg))))
-   `(diff-hl-change ((,pyrus-class (:foreground ,pyrus-vc-change :background ,pyrus-vc-change))))
-   `(diff-hl-insert ((,pyrus-class (:foreground ,pyrus-vc-insert :background ,pyrus-vc-insert))))
-   `(diff-hl-delete ((,pyrus-class (:foreground ,pyrus-vc-delete :background ,pyrus-vc-delete))))
+   `(diff-hl-change ((,pyrus-class (:foreground ,pyrus-change :background ,pyrus-change))))
+   `(diff-hl-insert ((,pyrus-class (:foreground ,pyrus-success :background ,pyrus-success))))
+   `(diff-hl-delete ((,pyrus-class (:foreground ,pyrus-error :background ,pyrus-error))))
 
    ;; line-number
-   `(line-number ((,pyrus-class (:foreground ,pyrus-fg :inherit default))))
+   `(line-number ((,pyrus-class (:foreground ,pyrus-fg-1 :inherit default))))
    `(line-number-current-line ((,pyrus-class (:foreground ,pyrus-mode-line :weight bold :inherit (highlight line-number)))))
    `(line-number-minor-tick ((,pyrus-class (:background ,pyrus-tab-2 :inherit line-number))))
    `(line-number-major-tick ((,pyrus-class (:background ,pyrus-tab-3 :inherit line-number))))
 
    ;; mode-line
-   `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
+   `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line
+                                           :box ,(if guava-themes-boxed-mode-line
+                                                     '(:line-width -1 :style released-button)
+                                                   'unspecified)))))
    `(mode-line-inactive ((,pyrus-class (:background ,pyrus-mode-line-inactive :inherit mode-line))))
    `(mode-line-emphasis ((,pyrus-class (:weight bold))))
    `(mode-line-highlight ((,pyrus-class (:foreground unspecified :background unspecified :box (:line-width 2 :color "grey40" :style released-button)))))
    `(guava-themes-visible-bell ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,pyrus-class (:foreground ,pyrus-deep-orange))))
+   `(minibuffer-prompt ((,pyrus-class (:weight bold :foreground ,pyrus-mode-line))))
 
    ;; borders
    `(vertical-border ((,pyrus-class (:foreground ,pyrus-mode-line))))
 
    ;; header-line
    `(header-line ((,pyrus-class (:inherit mode-line))))
-   `(which-func ((,pyrus-class (:foreground ,pyrus-white))))
+   `(which-func ((,pyrus-class (:weight bold :foreground ,pyrus-mode-line-modified))))
 
    ;; tab-bar
-   `(tab-bar ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :weight bold))))
+   `(tab-bar ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :weight bold :inherit mode-line))))
    `(tab-bar-tab ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-1 :inherit tab-bar))))
    `(tab-bar-tab-inactive ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :inherit tab-bar-tab))))
 
    ;; tab-line
-   `(tab-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :weight bold))))
+   `(tab-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :weight bold :inherit mode-line))))
    `(tab-line-tab ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :inherit tab-line))))
    `(tab-line-tab-current ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :inherit tab-line-tab))))
@@ -251,18 +254,19 @@
    `(smerge-base ((,pyrus-class (:foreground ,pyrus-black :background ,pyrus-smerge-base :extend t))))
 
    ;; completions
-   `(completions-common-part ((,pyrus-class (:foreground ,pyrus-vc-change :weight bold))))
+   `(completions-common-part ((,pyrus-class (:foreground ,pyrus-change :weight bold))))
    `(completions-first-difference ((,pyrus-class (:foreground ,pyrus-error :weight bold))))
 
    ;; org-faces
-   `(org-todo ((,pyrus-class (:foreground ,pyrus-vc-delete :weight bold))))
-   `(org-done ((,pyrus-class (:foreground ,pyrus-vc-insert :weight bold))))
+   `(org-todo ((,pyrus-class (:foreground ,pyrus-error :weight bold))))
+   `(org-done ((,pyrus-class (:foreground ,pyrus-success :weight bold))))
    `(org-hide ((,pyrus-class (:foreground ,pyrus-bg))))
    `(org-table ((,pyrus-class (:foreground ,pyrus-green))))
+   `(org-table-header ((,pyrus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,pyrus-class (:foreground ,pyrus-orange-subdued))))
    `(org-date-selected ((,pyrus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,pyrus-class (:foreground ,pyrus-orderless-0))))
-   `(org-headline-done ((,pyrus-class (:foreground ,pyrus-orderless-3))))
+   `(org-headline-todo ((,pyrus-class (:foreground ,pyrus-square-a-0))))
+   `(org-headline-done ((,pyrus-class (:foreground ,pyrus-square-a-3))))
    `(org-document-title ((,pyrus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,pyrus-class (:inherit shadow))))
    `(org-meta-line ((,pyrus-class (:inherit font-lock-comment-face))))
@@ -273,70 +277,125 @@
    `(window-divider-last-pixel ((,pyrus-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-orderless-2))))
+   `(isearch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-2))))
    `(isearch-fail ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-error))))
-   `(lazy-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-orderless-3))))
-   `(isearch-group-1 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-orderless-0))))
-   `(isearch-group-2 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-orderless-1))))
+   `(lazy-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-3))))
+   `(isearch-group-1 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-0))))
+   `(isearch-group-2 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,pyrus-class (:inherit isearch))))
    `(match ((,pyrus-class (:inherit lazy-highlight))))
 
-   ;; custom-button
+   ;; custom
+   ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
    `(custom-button ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line :box (:line-width 2 :style released-button)))))
    `(custom-button-pressed ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line :box (:line-width 2 :style pressed-button)))))
    `(custom-button-mouse ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width 2 :style released-button)))))
+   `(custom-button-unraised ((,pyrus-class (:foreground ,pyrus-mode-line :inherit underline))))
+   `(custom-button-pressed-unraised ((,pyrus-class (:foreground ,pyrus-bell :inherit custom-button-unraised))))
+   `(custom-comment ((,pyrus-class (:background ,pyrus-tab-3))))
+   `(custom-variable-tag ((,pyrus-class (:weight bold :foreground ,pyrus-tab-2))))
+   `(custom-group-tag ((,pyrus-class (:height 1.2 :inherit (custom-variable-tag variable-pitch)))))
+   `(custom-state ((,pyrus-class (:foreground ,pyrus-fl-keyword))))
+
+   ;; widget
+   `(widget-field ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width (1 . -1) :color "gray46") :extend t))))
+   `(widget-single-line-field ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3))))
+
+   ;; package
+   `(package-status-dependency ((,pyrus-class (:inherit (font-lock-string-face)))))
+
+   ;; icomplete
+   `(icomplete-selected-match ((,pyrus-class (:weight bold :foreground ,pyrus-mode-line :inherit (highlight)))))
+   `(icomplete-first-match ((,pyrus-class (:weight bold :foreground ,pyrus-mode-line :inherit (highlight)))))
+
+   ;; bookmark
+   `(bookmark-face ((,pyrus-class (:foreground ,pyrus-mode-line :distant-foreground unspecified))))
+   `(bookmark-menu-bookmark ((,pyrus-class (:weight bold :inherit bookmark-face))))
+
+   ;; flymake
+   `(flymake-note ((,pyrus-class (:underline (:style wave :color ,pyrus-success)))))
+   `(flymake-warning ((,pyrus-class (:underline (:style wave :color ,pyrus-warning)))))
+   `(flymake-error ((,pyrus-class (:underline (:style wave :color ,pyrus-error)))))
+
+   ;; eww
+   `(eww-valid-certificate ((,pyrus-class (:weight bold :foreground ,pyrus-success))))
+   `(eww-invalid-certificate ((,pyrus-class (:weight bold :foreground ,pyrus-error))))
+   ;; Example of eww-form-text: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-text ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width 1)))))
+   ;; Example of eww-form-file: https://html.com/input-type-file/
+   `(eww-form-file ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-select: http://savannah.gnu.org/projects/emacs/
+   ;; Example of eww-form-select: https://git.kernel.org/pub/scm/editors/uemacs/uemacs.git/
+   `(eww-form-select ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-submit: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-submit ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-checkbox: https://en.wikipedia.org/wiki/Main_Page
+   `(eww-form-checkbox ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-1 :box (:line-width 2 :style released-button)))))
+   ;; Example of eww-form-textarea: https://en.wikipedia.org/w/index.php?title=Main_Page&action=edit
+   `(eww-form-textarea ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width 1 :color ,pyrus-tab-1)))))
 
 
    ;; external packages
 
    ;; elfeed
-   `(elfeed-search-tag-face ((,pyrus-class (:foreground ,pyrus-deep-orange))))
+   `(elfeed-search-tag-face ((,pyrus-class (:foreground ,pyrus-light-purple))))
    `(elfeed-search-date-face ((,pyrus-class (:foreground ,pyrus-deep-blue))))
-   `(elfeed-search-feed-face ((,pyrus-class (:foreground ,pyrus-green))))
+   `(elfeed-search-feed-face ((,pyrus-class (:foreground ,pyrus-cyan))))
    `(elfeed-search-title-face ((,pyrus-class (:foreground ,pyrus-green-subdued))))
-   `(elfeed-search-unread-title-face ((,pyrus-class (:weight bold :foreground ,pyrus-cyan))))
+   `(elfeed-search-unread-title-face ((,pyrus-class (:weight bold :foreground ,pyrus-green))))
    `(elfeed-search-filter-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
    `(elfeed-search-last-update-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
    `(elfeed-search-unread-count-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
 
-   `(elfeed-show-header-face ((,pyrus-class (:foreground ,pyrus-green))))
-   `(elfeed-show-author-face ((,pyrus-class (:weight bold :foreground ,pyrus-cyan))))
-   `(elfeed-show-title-face ((,pyrus-class (:weight bold :foreground ,pyrus-cyan))))
-   `(elfeed-show-date-face ((,pyrus-class (:foreground ,pyrus-deep-blue))))
-   `(elfeed-show-feed-face ((,pyrus-class (:foreground ,pyrus-deep-blue))))
-   `(elfeed-show-tags-face ((,pyrus-class (:foreground ,pyrus-deep-orange))))
+   `(elfeed-show-header-face ((,pyrus-class (:inherit elfeed-search-date-face))))
+   `(elfeed-show-author-face ((,pyrus-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-title-face ((,pyrus-class (:inherit elfeed-search-unread-title-face))))
+   `(elfeed-show-date-face ((,pyrus-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-feed-face ((,pyrus-class (:inherit elfeed-search-feed-face))))
+   `(elfeed-show-tags-face ((,pyrus-class (:inherit elfeed-search-tag-face))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,pyrus-class (:foreground ,pyrus-light-green :inherit italic))))
-   `(doom-modeline-project-parent-dir ((,pyrus-class (:foreground ,pyrus-light-green))))
-   `(doom-modeline-buffer-minor-mode ((,pyrus-class (:foreground ,pyrus-orange-pink))))
+   ;; doom-modeline-buffer-file-name-style
+   `(doom-modeline-project-name ((,pyrus-class (:foreground ,pyrus-light-green :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,pyrus-class (:foreground ,pyrus-light-green :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline)))))
    `(doom-modeline-buffer-modified ((,pyrus-class (:foreground ,pyrus-mode-line-modified :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,pyrus-class (:foreground ,pyrus-fg :background ,pyrus-bg))))
-   `(corfu-current ((,pyrus-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg))))
+   `(corfu-current ((,pyrus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,pyrus-class (:background ,pyrus-shadow))))
    `(corfu-border ((,pyrus-class (:background ,pyrus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,pyrus-class (:foreground ,pyrus-orderless-0 :weight bold))))
-   `(orderless-match-face-1 ((,pyrus-class (:foreground ,pyrus-orderless-1 :weight bold))))
-   `(orderless-match-face-2 ((,pyrus-class (:foreground ,pyrus-orderless-2 :weight bold))))
-   `(orderless-match-face-3 ((,pyrus-class (:foreground ,pyrus-orderless-3 :weight bold))))
+   `(orderless-match-face-0 ((,pyrus-class (:foreground ,pyrus-square-a-0 :weight bold))))
+   `(orderless-match-face-1 ((,pyrus-class (:foreground ,pyrus-square-a-1 :weight bold))))
+   `(orderless-match-face-2 ((,pyrus-class (:foreground ,pyrus-square-a-2 :weight bold))))
+   `(orderless-match-face-3 ((,pyrus-class (:foreground ,pyrus-square-a-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
-   `(prescient-primary-highlight ((,pyrus-class (:foreground ,pyrus-prescient-0 :weight bold))))
-   `(prescient-secondary-highlight ((,pyrus-class (:foreground ,pyrus-prescient-1 :underline t :weight bold))))
+   `(prescient-primary-highlight ((,pyrus-class (:foreground ,pyrus-complementary-a-0 :weight bold))))
+   `(prescient-secondary-highlight ((,pyrus-class (:foreground ,pyrus-complementary-a-1 :underline t :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,pyrus-class (:inherit error))))
-   `(envrc-mode-line-none-face ((,pyrus-class (:inherit warning))))
+   `(envrc-mode-line-denied-face ((,pyrus-class (:inherit warning))))
    `(envrc-mode-line-on-face ((,pyrus-class (:inherit success))))
+   `(envrc-mode-line-none-face ((,pyrus-class (:inherit warning))))
+   `(envrc-mode-line-running-face ((,pyrus-class (:inherit warning))))
 
    ;; devdocs
    `(devdocs-code-block ((,pyrus-class (:weight bold :background ,pyrus-highlight :extend t))))
+
+   ;; pdf-tools
+   `(pdf-view-region ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-3 :inherit region))))
+
+   ;; idle-highlight
+   `(idle-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-fl-builtin :inherit region))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

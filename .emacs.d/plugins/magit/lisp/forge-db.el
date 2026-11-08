@@ -53,7 +53,7 @@
    (object-class :initform 'forge-repository)
    (file         :initform 'forge-database-file)
    (schemata     :initform 'forge--db-table-schemata)
-   (version      :initform 15)))
+   (version      :initform 16)))
 
 (defvar forge--override-connection-class nil)
 
@@ -133,6 +133,7 @@
       (discussions           :default eieio-unbound)
       discussions-p
       discussions-until
+      (topic-templates       :default eieio-unbound)
       ])
 
     (assignee
@@ -486,6 +487,24 @@
       body]
      (:foreign-key
       [repository] :references repository [id]
+      :on-delete :cascade))
+
+    (topic-template
+     [(repository :not-null)
+      (id :not-null :primary-key)
+      type
+      filename
+      name
+      description
+      title
+      body
+      url
+      draft
+      milestone
+      (assignees    :default eieio-unbound)
+      (labels       :default eieio-unbound)]
+     (:foreign-key
+      [repository] :references repository [id]
       :on-delete :cascade))))
 
 (cl-defmethod closql--db-update-schema ((db forge-database))
@@ -649,6 +668,11 @@
                      :default nil])
         (emacsql db [:alter-table repository :add-column discussions-until
                      :default nil]))
+    (up 16
+        (emacsql db [:create-table topic-template $S1]
+                 (alist-get 'topic-template forge--db-table-schemata))
+        (emacsql db [:alter-table repository :add-column topic-templates
+                     :default nil]))
     ))
 
 (defun forge--backup-database (db)
@@ -656,7 +680,7 @@
                      (format "-v%s" (caar (emacsql (oref db connection)
                                                    [:pragma user-version])))
                      (format-time-string "-%Y%m%d-%H%M")
-                     ".sqlite")))
+                     ".db")))
     (message "Copying Forge database to %s..." dst)
     (copy-file forge-database-file dst)
     (message "Copying Forge database to %s...done" dst)))

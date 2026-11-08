@@ -56,8 +56,11 @@
       (bg-shadow-intense "#0c512c")
       (fg-shadow-intense "#63c789")
 
-      (bg-accent "#42342f")
-      (fg-accent "#aea084")
+      (bg-accent-primary "#42342f")
+      (fg-accent-primary "#aea084")
+
+      (bg-accent-secondary "#606961")
+      (fg-accent-secondary "#cbd3d2")
 
       (fg-red "#e8a27f")
       (fg-green "#82cc7f")
@@ -66,12 +69,12 @@
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#5b3d2c")
+      (bg-red "#623f2c")
       (bg-green "#395c2d")
       (bg-yellow "#595432")
-      (bg-blue "#284060")
+      (bg-blue "#384070")
       (bg-magenta "#52313f")
-      (bg-cyan "#2f495f"))
+      (bg-cyan "#2a496f"))
     "Palette of `doric-walnut' theme.")
 
   (doric-themes-define-theme doric-walnut dark "Minimalist theme with dark background and green+brown hues"))

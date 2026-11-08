@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
 
-;; Package-Version: 2.4.2
+;; Package-Version: 2.5.0
 ;; Package-Requires: (
 ;;     (emacs   "28.1")
 ;;     (compat  "31.1")
@@ -519,6 +519,9 @@
                  (aset vector 0 (eieio--class-name (aref vector 0))))
                vector)
              type))
+
+(cl-defmethod closql--abbrev-class ((obj closql-object))
+  (closql--abbrev-class (eieio-object-class-name obj)))
 
 (cl-defmethod closql--abbrev-class ((class (subclass closql-object)))
   (let ((name (symbol-name class))

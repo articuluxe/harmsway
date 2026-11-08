@@ -56,8 +56,11 @@
       (bg-shadow-intense "#a0bcd0")
       (fg-shadow-intense "#213067")
 
-      (bg-accent "#d8f1f3")
-      (fg-accent "#084092")
+      (bg-accent-primary "#d8f1f3")
+      (fg-accent-primary "#084092")
+
+      (bg-accent-secondary "#bfafa2")
+      (fg-accent-secondary "#4a2218")
 
       (fg-red "#a01010")
       (fg-green "#106710")
@@ -68,9 +71,9 @@
 
       (bg-red "#f0c4c4")
       (bg-green "#c0e8c2")
-      (bg-yellow "#f0f0b0")
+      (bg-yellow "#e9e9a0")
       (bg-blue "#c4cfe8")
-      (bg-magenta "#eec2e6")
+      (bg-magenta "#e0c2ef")
       (bg-cyan "#c1ebe4"))
   "Palette of `doric-light' theme.")
 

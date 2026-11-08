@@ -1,4 +1,4 @@
-;;; indent-tools.el --- Indent, navigate (and more) by blocks of indentation: yaml, python etc.
+;;; indent-tools.el --- Indent, navigate (and more) by blocks of indentation: yaml, python etc. -*-lexical-binding: t; -*-
 
 ;; Copyright (C) 2016-2019  wtf public licence
 
@@ -10,7 +10,8 @@
 
 ;;; Commentary:
 
-;; Indent, move around and act on code based on indentation, by indentation units. Perfect to navigate in a big yaml file or in Python code.
+;; Indent, move around and act on code based on indentation, by indentation
+;; units. Perfect to navigate in a big yaml file or in Python code.
 
 ;;; Code:
 
@@ -20,10 +21,17 @@
 (require 's)
 (require 'yafolding)
 
-(defvar indent-tools-node-regexp "\"?[a-zA-Z0-9(\"'-.{]" "A regexp to match the beginning of a yaml node.  Should skip comments.") ;; Should be mode specific: skip comments, etc
+(declare-function s-repeat "s" (num s))
+(declare-function s-left   "s" (len s))
+(declare-function s-blank? "s" (s))
+
+(defvar indent-tools-node-regexp "\"?[a-zA-Z0-9(\"'-.{]"
+  "A regexp to match the beginning of a yaml node.
+Should skip comments.") ;; Should be mode specific: skip comments, etc
 
 (defun indent-tools-current-line-indentation ()
-  "Return a string containing the spaces that make up the current line's indentation."
+  "Return current line indentation string.
+The string containing the spaces that make up the current line's indentation."
   (save-excursion
     (re-search-backward "^\\(\s*\\)" (line-beginning-position))
     (buffer-substring-no-properties (match-beginning 1) (match-end 1))))
@@ -63,21 +71,22 @@
           (setq last-line-reached t)
         (indent-tools--next-line-same-column)))
     (unless last-line-reached (forward-line -1))
-    (end-of-line)
-    ))
+    (end-of-line)))
 
 (defun indent-tools-goto-parent ()
   "Go to this node's parent, one indentation level up."
   (interactive)
+  (require 's)
   (beginning-of-line-text)
   (if (not (s-blank? (indent-tools-current-line-indentation)))
       (progn
-        (if (search-backward-regexp (concat "^"
-                                            (s-left (- (length (indent-tools-current-line-indentation))
-                                                       (indent-tools-indentation-of-current-mode))
-                                                    (indent-tools-current-line-indentation))
-                                            indent-tools-node-regexp)
-                                    nil t)
+        (if (search-backward-regexp
+             (concat "^"
+                     (s-left (- (length (indent-tools-current-line-indentation))
+                                (indent-tools-indentation-of-current-mode))
+                             (indent-tools-current-line-indentation))
+                     indent-tools-node-regexp)
+             nil t)
             (beginning-of-line-text)
           (message "you don't have more parents")))
     (message "you don't have more parents")))
@@ -85,13 +94,15 @@
 (defun indent-tools-goto-child ()
   "Go down to the first child (line with greater indentation)."
   (interactive)
+  (require 's)
   (beginning-of-line-text)
-  (unless (search-forward-regexp (concat "^"
-                                     (indent-tools-current-line-indentation)
-                                     (s-repeat (indent-tools-indentation-of-current-mode) " ")
-                                     indent-tools-node-regexp)
-                             nil
-                             t)
+  (unless (search-forward-regexp
+           (concat "^"
+                   (indent-tools-current-line-indentation)
+                   (s-repeat (indent-tools-indentation-of-current-mode) " ")
+                   indent-tools-node-regexp)
+           nil
+           t)
     (message "you don't have more children."))
   (beginning-of-line-text))
 
@@ -105,8 +116,11 @@
     (goto-char beg)
     (push-mark)
     (activate-mark)
-    (goto-char end)
-    ))
+    (goto-char end)))
+
+(defsubst it--seot ()
+  "Short name for `indent-tools-select-end-of-tree'."
+  (indent-tools-select-end-of-tree))
 
 (defun indent-tools-end-of-level () ;; OK needs more tests MORE TESTS PLZ
   "Go to the end of this indentation level."
@@ -140,9 +154,14 @@
         (offset (indent-tools-indentation-of-current-mode)))
     (indent-rigidly beg end offset)))
 
+(defsubst it--ieol ()
+  "Short name for `indent-tools-indent-end-of-level'."
+  (indent-tools-indent-end-of-level))
+
 (defun indent-tools-select ()
-  "Select the tree (useful to visualize).  Also useful: highlight-indentation-current-column-mode."
-  ; use a red hydra to cancel effects instead ?
+  "Select the tree (useful to visualize).
+Also useful: `highlight-indentation-current-column-mode'."
+  ;; use a red hydra to cancel effects instead ?
   (interactive)
   (let ((beg (save-excursion
                (beginning-of-line-text) (point)))
@@ -150,8 +169,7 @@
     (goto-char beg)
     (push-mark)
     (activate-mark)
-    (goto-char end)
-    ))
+    (goto-char end)))
 
 (defun indent-tools-indent (&optional select)
   "Indent the current tree.
@@ -171,7 +189,9 @@
       (indent-rigidly beg end indentation-level))))
 
 (defun indent-tools-indent-paragraph ()
-  "Indent the current paragraph, for exple the block of text until a new line.  The paragraph is the one you would jump with `forward-paragraph'."
+  "Indent the current paragraph.
+For example the block of text until a new line.
+The paragraph is the one you would jump with `forward-paragraph'."
   (interactive)
   (let ((beg (line-beginning-position))
         (end (save-excursion
@@ -190,17 +210,22 @@
     (if (equal beg end)
         ;; case we're at the last defun or in __main__, not a defun.
         (setq end (point-max)))
-    (indent-rigidly beg end indentation-level)
-    ))
+    (indent-rigidly beg end indentation-level)))
+
+(defsubst it--ieod ()
+  "Short name of `indent-tools-indent-end-of-defun'."
+  (indent-tools-indent-end-of-defun))
 
 (defun indent-tools-indent-space ()
   "Indent with only a space (specially useful in jade-mode)."
   (interactive)
   (let ((beg (line-beginning-position))
         (end (indent-tools-end-of-tree-point))
-        (indentation-level (indent-tools-indentation-of-current-mode)))
+        ;; (indentation-level (indent-tools-indentation-of-current-mode))
+        )
     (save-excursion
-      (replace-regexp "^" " " nil beg end))))
+      (with-no-warnings
+        (replace-regexp "^" " " nil beg end)))))
 
 (defun indent-tools-demote ()
   "De-indent the current indented tree."
@@ -221,7 +246,8 @@
     (comment-region beg end)))
 
 (defun indent-tools-uncomment ()
-  "Uncomment the paragraph and go to its end, in case we want to carry on un-commeting.
+  "Uncomment the paragraph and go to its end.
+In case we want to carry on un-commeting.
 Simple stuff, since the comments hide us the indentation levels."
   (interactive)
   (let ((beg (line-beginning-position))
@@ -247,6 +273,10 @@ Simple stuff, since the comments hide us the indentation levels."
         (message "We didn't find a next sibling."))
     (beginning-of-line-text)))
 
+(defsubst it--gns ()
+  "Short name for `indent-tools-goto-next-sibling'."
+  (indent-tools-goto-next-sibling))
+
 (defun indent-tools-goto-previous-sibling ()
   "Go to previous sibling."
   (interactive)
@@ -262,27 +292,38 @@ Simple stuff, since the comments hide us the indentation levels."
         (message "We didn't find a previous sibling."))
     (beginning-of-line-text)))
 
+(defsubst it--gps ()
+  "Short name for `indent-tools-goto-previous-sibling'."
+  (indent-tools-goto-previous-sibling))
+
 ;;;;;;; copy
 (defun indent-tools-copy (what)
   "Copy some text in the kill ring.
 
-  WHAT: str of 'paragraph', 'tree' or 'level'."
+  WHAT: str of \"paragraph\", \"tree\" or \"level\"."
   (let ((beg (line-beginning-position))
-          (end (cond
-                 ((equal what "paragraph") (save-excursion
-                                             (forward-paragraph)
-                                             (point)))
-                 ((equal what "tree") (indent-tools-end-of-tree-point))
-                 ((equal what "level") (indent-tools-end-of-level-point))
-                 )))
-     (kill-ring-save beg end)
-     (message (format "Copied %s" what))))
+        (end (cond
+              ((equal what "paragraph") (save-excursion
+                                          (forward-paragraph)
+                                          (point)))
+              ((equal what "tree") (indent-tools-end-of-tree-point))
+              ((equal what "level") (indent-tools-end-of-level-point))
+              )))
+    (kill-ring-save beg end)
+    (message (format "Copied %s" what))))
 
-(defhydra indent-tools-copy-hydra (:color blue :after-exit (indent-tools-hydra/body))
-  "Mini Hydra with the copy options.  Calls the big hydra on exit."
-  (">" (indent-tools-copy "tree") "this indented tree")
-  ("l" (indent-tools-copy "level") "all level")
-  ("p" (indent-tools-copy "paragraph") "paragraph"))
+(defsubst it--cp (type)
+  "Copy text TYPE in kill ring."
+  ;; This exists to keep `indent-tools-copy' available
+  ;; while preventing excessive hydra docstring width that generate warning.
+  (indent-tools-copy type))
+
+(defhydra indent-tools-copy-hydra (:color blue
+                                          :after-exit (indent-tools-hydra/body))
+  "Mini Hydra with the copy options. Calls the big hydra on exit."
+  (">" (it--cp "tree") "this indented tree")
+  ("l" (it--cp "level") "all level")
+  ("p" (it--cp "paragraph") "paragraph"))
 
 ;;;;;;; kill
 (defun indent-tools-kill-tree ()
@@ -297,6 +338,13 @@ Simple stuff, since the comments hide us the indentation levels."
 
 
 ;;;;;; General hydra
+
+;; Prevent byte-compiler warnings by declaring functions from other packages.
+;; [:todo 2026-11-03, by Pierre Rouleau: The code should be improved to
+;;                    prevent providing hydra heads for functions not available.]
+(declare-function undo-tree-undo "undo-tree" (&optional arg))
+
+
 (defhydra indent-tools-hydra (:color red :hint nil)
   "
  ^Indent^         | ^Navigation^        | ^Actions^
@@ -312,20 +360,20 @@ Simple stuff, since the comments hide us the indentation levels."
 
   (">" indent-tools-indent)
   ("<" indent-tools-demote)
-  ("E" indent-tools-indent-end-of-defun)
+  ("E" it--ieod)                        ; `indent-tools-indent-end-of-defun'
   ("c" indent-tools-comment)
   ("U" indent-tools-uncomment)
   ("P" indent-tools-indent-paragraph)
-  ("l" indent-tools-indent-end-of-level)
+  ("l" it--ieol)                        ; `indent-tools-indent-end-of-level'
   ("K" indent-tools-kill-tree)
   ("C" indent-tools-copy-hydra/body :color blue)
   ("s" indent-tools-select)
   ("e" indent-tools-goto-end-of-tree)
   ("u" indent-tools-goto-parent)
   ("d" indent-tools-goto-child)
-  ("S" indent-tools-select-end-of-tree)
-  ("n" indent-tools-goto-next-sibling)
-  ("p" indent-tools-goto-previous-sibling)
+  ("S" it--seot)                        ; `indent-tools-select-end-of-tree'
+  ("n" it--gns)                         ; `indent-tools-goto-next-sibling'
+  ("p" it--gps)                         ; `indent-tools-goto-previous-sibling'
   ("i" helm-imenu)
   ("j" forward-line)
   ("k" previous-line)
@@ -333,8 +381,7 @@ Simple stuff, since the comments hide us the indentation levels."
   ("_" undo-tree-undo)
   ("L" recenter-top-bottom)
   ("f" yafolding-toggle-element)
-  ("q" nil)
-  )
+  ("q" nil))
 (defalias 'hydra-indent-tools 'indent-tools-hydra)
 
 (defcustom indent-tools-keymap-prefix (kbd "C-c >")

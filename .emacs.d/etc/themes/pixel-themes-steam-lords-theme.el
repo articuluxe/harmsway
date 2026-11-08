@@ -1,13 +1,18 @@
-;;; pixel-themes-steam-lords-theme.el --- steam-lords -*- lexical-binding:t -*-
-;; ===============================================================
+;;; pixel-themes-steam-lords-theme.el --- steam-lords palette -*- lexical-binding: t -*-
+
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
+;; URL: https://github.com/lucasobx/pixel-themes
+;; Keywords: faces, theme
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 ;; https://lospec.com/palette-list/steam-lords
+
 ;;; Code:
 
-(require-theme 'modus-themes)
 (require 'pixel-themes)
 
-(defvar pixel-themes-steam-lords-palette
+(defconst pixel-themes-steam-lords-palette
   (modus-themes-generate-palette
    '((cursor "#7c94a1")
 
@@ -98,20 +103,7 @@
    'dark
    nil
 
-   (append
-    '(;; theme-specific mappings
-      (constant  magenta-faint)
-
-      (rainbow-0 magenta)
-      (rainbow-1 blue-cooler)
-      (rainbow-2 yellow-warmer)
-      (rainbow-3 green)
-      (rainbow-4 cyan)
-      (rainbow-5 magenta-cooler)
-      (rainbow-6 red-cooler)
-      (rainbow-7 green-faint)
-      (rainbow-8 yellow))
-    pixel-themes-palette-common)))
+   pixel-themes-palette-common))
 
 (defcustom pixel-themes-steam-lords-palette-overrides nil
   "Overrides for `pixel-themes-steam-lords-palette'."
@@ -119,14 +111,7 @@
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
-(modus-themes-theme
- 'pixel-themes-steam-lords
- 'pixel-themes
- "Dark theme: deep purples, cold blues and greens."
- 'dark
- 'pixel-themes-steam-lords-palette
- nil
- 'pixel-themes-steam-lords-palette-overrides)
+(apply #'modus-themes-theme
+       (assq 'pixel-themes-steam-lords pixel-themes-with-properties))
 
-(provide-theme 'pixel-themes-steam-lords)
 ;;; pixel-themes-steam-lords-theme.el ends here

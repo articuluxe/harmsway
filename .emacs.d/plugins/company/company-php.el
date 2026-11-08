@@ -1,4 +1,4 @@
-;;; company-php.el --- A company back-end for PHP.
+;;; company-php.el --- A company back-end for PHP.  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014-2019 jim <xcwenn@qq.com>
 
@@ -176,25 +176,8 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
     (nreverse ac-php-company-list)))
 
 (defun company-ac-php-document (item)
-  "D ITEM."
-  (if (stringp item)
-      (let (doc tag-type return-type access from-class)
-        (setq doc (ac-php-clean-document (get-text-property 0 'ac-php-help item)))
-        (setq tag-type (get-text-property 0 'ac-php-tag-type item))
-        (setq return-type (get-text-property 0 'ac-php-return-type item))
-        (setq access (get-text-property 0 'ac-php-access item))
-        (setq from-class (get-text-property 0 'ac-php-from item))
-        (if (ac-php--tag-name-is-function item)
-            (setq doc (concat item doc ")"))
-          (setq doc item))
-
-        (cond
-         ((or (string= tag-type "p") (string= tag-type "m") (string= tag-type "d"))
-          (format "%s\n\t[  type]:%s\n\t[access]:%s\n\t[  from]:%s" doc return-type access from-class))
-         (return-type
-          (format "%s %s" return-type doc))
-         (t
-          doc)))))
+  "Return the signature and source PHPDoc for completion ITEM."
+  (ac-php--candidate-documentation item))
 
 (defun company-ac-php--doc-buffer (candidate)
   "D CANDIDATE."
@@ -239,11 +222,12 @@ matches IDLE-BEGIN-AFTER-RE, MAX-LEN return it wrapped in a cons."
 
 (defun company-ac-php-backend-post-completion (arg)
   "D ARG."
-  (let ((doc))
-    (when (ac-php--tag-name-is-function arg)
-      (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
-      (insert (concat doc ")"))
-      (company-template-c-like-templatify (concat arg doc ")")))))
+  (unless (ac-php--array-key-post-completion arg)
+    (let ((doc))
+      (when (ac-php--tag-name-is-function arg)
+        (setq doc (s-replace "&" "" (ac-php-clean-document (get-text-property 0 'ac-php-help arg))))
+        (insert (concat doc ")"))
+        (company-template-c-like-templatify (concat arg doc ")"))))))
 
 ;; Local Variables:
 ;;  flycheck-disabled-checkers: (emacs-lisp-package)

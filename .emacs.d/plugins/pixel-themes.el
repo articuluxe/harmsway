@@ -1,38 +1,24 @@
-;;; pixel-themes.el --- pixel-themes -*- lexical-binding: t -*-
+;;; pixel-themes.el --- Themes inspired by pixel art palettes -*- lexical-binding: t -*-
 
-;; Copyright (C) 2026 Free Software Foundation, Inc.
-;; Author: Lucas
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
 ;; URL: https://github.com/lucasobx/pixel-themes
-;; Package-Requires: ((emacs "28.1") (modus-themes "5.0.0"))
+;; Version: 0.1.0
+;; Package-Requires: ((emacs "28.1") (modus-themes "5.3.0"))
 ;; Keywords: faces, theme
-
-;; This file is NOT part of GNU Emacs.
-
-;; GNU Emacs is free software: you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-;;
-;; GNU Emacs is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-;;
-;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;;; Commentary:
 ;; Emacs themes inspired by pixel art palettes.
 
 ;;; Code:
 
-(require 'modus-themes)
+(eval-and-compile
+  (unless (require 'modus-themes nil t)
+    (require-theme 'modus-themes)))
 
 ;;;###autoload
 (when load-file-name
-  (let ((dir (file-name-directory load-file-name)))
-    (unless (file-equal-p dir (expand-file-name "themes/" data-directory))
-      (add-to-list 'custom-theme-load-path dir))))
+  (add-to-list 'custom-theme-load-path (file-name-directory load-file-name)))
 
 ;;;; Group
 
@@ -43,54 +29,36 @@
   :prefix "pixel-themes-"
   :tag "Pixel Themes")
 
-;;;; Items
-
-(defconst pixel-themes-dark-themes
-  '(pixel-themes-exquisite-corpse
-    pixel-themes-fallen-leaves
-    pixel-themes-gray-weather
-    pixel-themes-steam-lords
-    pixel-themes-psygnosia
-    pixel-themes-miri16
-    pixel-themes-alia16)
-  "List of dark Pixel themes.")
-
-(defconst pixel-themes-light-themes
-  '(pixel-themes-gothic-temple)
-  "List of light Pixel themes.")
-
-(defconst pixel-themes-items
-  (append pixel-themes-dark-themes pixel-themes-light-themes)
-  "List of all Pixel themes.")
-
 ;;;; Declaration
 
 (defconst pixel-themes-with-properties
-  '((pixel-themes-exquisite-corpse
-     pixel-themes "Dark theme: faded parchment and dreamlike blues on black."
-     dark pixel-themes-exquisite-corpse-palette nil pixel-themes-exquisite-corpse-palette-overrides)
-    (pixel-themes-fallen-leaves
-     pixel-themes "Dark theme: muted autumn tones."
+  '((pixel-themes-fallen-leaves
+     pixel-themes "Muted autumn tones."
      dark pixel-themes-fallen-leaves-palette nil pixel-themes-fallen-leaves-palette-overrides)
     (pixel-themes-gray-weather
-     pixel-themes "Dark theme: cold and sad, with a quiet beauty."
+     pixel-themes "Cold and sad, with a quiet beauty."
      dark pixel-themes-gray-weather-palette nil pixel-themes-gray-weather-palette-overrides)
     (pixel-themes-steam-lords
-     pixel-themes "Dark theme: deep purples, cold blues and greens."
+     pixel-themes "Deep purples, cold blues and greens."
      dark pixel-themes-steam-lords-palette nil pixel-themes-steam-lords-palette-overrides)
     (pixel-themes-psygnosia
-     pixel-themes "Dark theme: copper skies over a muddy range."
+     pixel-themes "Copper skies over a muddy range."
      dark pixel-themes-psygnosia-palette nil pixel-themes-psygnosia-palette-overrides)
     (pixel-themes-miri16
-     pixel-themes "Dark theme: indigo, olive, dusty mauve and harvest gold."
+     pixel-themes "Indigo, olive, dusty mauve and harvest gold."
      dark pixel-themes-miri16-palette nil pixel-themes-miri16-palette-overrides)
     (pixel-themes-alia16
-     pixel-themes "Dark theme: pink, indigo, warm gold and earthy greens."
+     pixel-themes "Pink, indigo, warm gold and earthy greens."
      dark pixel-themes-alia16-palette nil pixel-themes-alia16-palette-overrides)
-    (pixel-themes-gothic-temple
-     pixel-themes "Light theme: weathered palette of stone, ash, and faded gold"
-     light pixel-themes-gothic-temple-palette nil pixel-themes-gothic-temple-palette-overrides))
-  "Properties for each Pixel theme.")
+    (pixel-themes-dust-jacket
+     pixel-themes "Old book covers in plum, tan and sage."
+     dark pixel-themes-dust-jacket-palette nil pixel-themes-dust-jacket-palette-overrides))
+  "Properties of each Pixel theme.
+Each element is the list of arguments that `modus-themes-theme' takes.")
+
+(defconst pixel-themes-items
+  (mapcar #'car pixel-themes-with-properties)
+  "List of all Pixel themes.")
 
 (defvar pixel-themes--declared-p nil
   "Non-nil if Pixel themes have been declared.")
@@ -115,32 +83,24 @@
 
 (cl-defmethod modus-themes-get-themes (&context (pixel-themes-mode (eql t)))
   "Return Pixel themes when `pixel-themes-mode' is enabled."
-  (if-let* ((themes (modus-themes-get-all-known-themes 'pixel-themes))
-            (sorted (modus-themes-sort themes 'light)))
-      sorted
-    pixel-themes-items))
+  (or (modus-themes-get-all-known-themes 'pixel-themes)
+      pixel-themes-items))
 
 ;;;; Commands
 
-;;;###autoload (autoload 'pixel-themes-select "pixel-themes")
+;;;###autoload (autoload 'pixel-themes-select "pixel-themes" nil t)
 (modus-themes-define-derivative-command pixel-themes select)
 
-;;;###autoload (autoload 'pixel-themes-rotate "pixel-themes")
+;;;###autoload (autoload 'pixel-themes-rotate "pixel-themes" nil t)
 (modus-themes-define-derivative-command pixel-themes rotate)
 
-;;;###autoload (autoload 'pixel-themes-load-random "pixel-themes")
+;;;###autoload (autoload 'pixel-themes-load-random "pixel-themes" nil t)
 (modus-themes-define-derivative-command pixel-themes load-random)
 
-;;;###autoload (autoload 'pixel-themes-load-random-dark "pixel-themes")
-(modus-themes-define-derivative-command pixel-themes load-random-dark)
-
-;;;###autoload (autoload 'pixel-themes-load-random-light "pixel-themes")
-(modus-themes-define-derivative-command pixel-themes load-random-light)
-
-;;;###autoload (autoload 'pixel-themes-list-colors "pixel-themes")
+;;;###autoload (autoload 'pixel-themes-list-colors "pixel-themes" nil t)
 (modus-themes-define-derivative-command pixel-themes list-colors)
 
-;;;###autoload (autoload 'pixel-themes-list-colors-current "pixel-themes")
+;;;###autoload (autoload 'pixel-themes-list-colors-current "pixel-themes" nil t)
 (modus-themes-define-derivative-command pixel-themes list-colors-current)
 
 (defalias 'pixel-themes-load-theme #'modus-themes-load-theme)
@@ -166,6 +126,7 @@
     ;; syntax
     (builtin      fg-main)
     (comment      yellow-faint)
+    (constant     magenta-faint)
     (fnname       fg-main)
     (fnname-call  fg-dim)
     (keyword      blue-cooler)
@@ -183,6 +144,17 @@
     (accent-1 magenta)
     (accent-2 green)
     (accent-3 red)
+
+    ;; rainbow
+    (rainbow-0 magenta)
+    (rainbow-1 blue-cooler)
+    (rainbow-2 yellow-warmer)
+    (rainbow-3 green)
+    (rainbow-4 cyan)
+    (rainbow-5 magenta-cooler)
+    (rainbow-6 red-cooler)
+    (rainbow-7 green-faint)
+    (rainbow-8 yellow)
 
     ;; dates
     (date-common           green-cooler)
@@ -259,10 +231,10 @@
     (underline-link-visited  border)
     (underline-link-symbolic border)
 
-    (border-mode-line-active   border)
+    (border-mode-line-active   bg-mode-line-active)
     (bg-mode-line-inactive     bg-alt)
     (fg-mode-line-inactive     fg-dim)
-    (border-mode-line-inactive border)
+    (border-mode-line-inactive bg-mode-line-inactive)
 
     (bg-line-number-active   unspecified)
     (fg-line-number-active   accent-0)

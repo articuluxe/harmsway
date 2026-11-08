@@ -56,8 +56,11 @@
       (bg-shadow-intense "#424381")
       (fg-shadow-intense "#c4abfe")
 
-      (bg-accent "#573f5d")
-      (fg-accent "#e8add2")
+      (bg-accent-primary "#573f5d")
+      (fg-accent-primary "#e8add2")
+
+      (bg-accent-secondary "#6c6e85")
+      (fg-accent-secondary "#ded7f3")
 
       (fg-red "#eca28f")
       (fg-green "#a0d0ba")
@@ -66,12 +69,12 @@
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#59323f")
-      (bg-green "#304848")
-      (bg-yellow "#50442f")
-      (bg-blue "#323a6b")
-      (bg-magenta "#5a2855")
-      (bg-cyan "#2f495f"))
+      (bg-red "#693247")
+      (bg-green "#215a46")
+      (bg-yellow "#57442f")
+      (bg-blue "#3f4089")
+      (bg-magenta "#5a2e65")
+      (bg-cyan "#2f4f84"))
   "Palette of `doric-mermaid' theme.")
 
   (doric-themes-define-theme doric-mermaid dark "Minimalist theme with dark background and blue-grey hues"))

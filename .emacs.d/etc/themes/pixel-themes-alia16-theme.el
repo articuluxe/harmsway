@@ -1,13 +1,18 @@
-;;; pixel-themes-alia16-theme.el --- alia16 -*- lexical-binding:t -*-
-;; ===============================================================
+;;; pixel-themes-alia16-theme.el --- alia16 palette -*- lexical-binding: t -*-
+
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
+;; URL: https://github.com/lucasobx/pixel-themes
+;; Keywords: faces, theme
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 ;; https://lospec.com/palette-list/alia16
+
 ;;; Code:
 
-(require-theme 'modus-themes)
 (require 'pixel-themes)
 
-(defvar pixel-themes-alia16-palette
+(defconst pixel-themes-alia16-palette
   (modus-themes-generate-palette
    '((cursor "#a7a8dd")
 
@@ -99,19 +104,7 @@
    nil
 
    (append
-    '(;; theme-specific mappings
-      (constant  red-faint)
-
-      ;; rainbow
-      (rainbow-0 magenta)
-      (rainbow-1 blue-cooler)
-      (rainbow-2 yellow-warmer)
-      (rainbow-3 green)
-      (rainbow-4 cyan)
-      (rainbow-5 magenta-cooler)
-      (rainbow-6 red-cooler)
-      (rainbow-7 green-faint)
-      (rainbow-8 yellow))
+    '((constant red-faint))
     pixel-themes-palette-common)))
 
 (defcustom pixel-themes-alia16-palette-overrides nil
@@ -120,14 +113,7 @@
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
-(modus-themes-theme
- 'pixel-themes-alia16
- 'pixel-themes
- "Dark theme: pink, indigo, warm gold and earthy greens."
- 'dark
- 'pixel-themes-alia16-palette
- nil
- 'pixel-themes-alia16-palette-overrides)
+(apply #'modus-themes-theme
+       (assq 'pixel-themes-alia16 pixel-themes-with-properties))
 
-(provide-theme 'pixel-themes-alia16)
 ;;; pixel-themes-alia16-theme.el ends here

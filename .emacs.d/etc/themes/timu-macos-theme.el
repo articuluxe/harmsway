@@ -1113,6 +1113,16 @@ Sourced other themes to get information about font faces for packages.")
      `(forge-pullreq-open ((,class (:foreground ,green))))
      `(forge-pullreq-rejected ((,class (:foreground ,red :strike-through t))))
 
+;;;; ghostel - dark
+     `(ghostel-color-black ((,class (:background ,black :foreground ,black))))
+     `(ghostel-color-blue ((,class (:background ,blue :foreground ,blue))))
+     `(ghostel-color-cyan ((,class (:background ,cyan :foreground ,cyan))))
+     `(ghostel-color-green ((,class (:background ,green :foreground ,green))))
+     `(ghostel-color-magenta ((,class (:background ,magenta :foreground ,magenta))))
+     `(ghostel-color-red ((,class (:background ,red :foreground ,red))))
+     `(ghostel-color-white ((,class (:background ,white :foreground ,white))))
+     `(ghostel-color-yellow ((,class (:background ,yellow :foreground ,yellow))))
+
 ;;;; git-commit - dark
      `(git-commit-comment-branch-local ((,class (:foreground ,teal))))
      `(git-commit-comment-branch-remote ((,class (:foreground ,green))))
@@ -1992,6 +2002,12 @@ Sourced other themes to get information about font faces for packages.")
      `(term-color-bright-white ((,class (:foreground ,macos8))))
      `(term-color-bright-yellow ((,class (:foreground ,yellow))))
 
+;;;; timu-imessage - dark
+     `(timu-imessage-face-chatlist-name ((,class (:foreground ,blue))))
+     `(timu-imessage-face-chatlist-unread ((,class (:foreground ,magenta))))
+     `(timu-imessage-face-chatlist-time ((,class (:foreground ,yellow))))
+     `(timu-imessage-face-chatlist-preview ((,class (:foreground ,grey))))
+
 ;;;; tldr - dark
      `(tldr-code-block ((,class (:foreground ,green :weight bold))))
      `(tldr-command-argument ((,class (:foreground ,fg))))
@@ -2831,6 +2847,16 @@ Sourced other themes to get information about font faces for packages.")
      `(forge-pullreq-merged ((,class (:foreground ,purple))))
      `(forge-pullreq-open ((,class (:foreground ,green))))
      `(forge-pullreq-rejected ((,class (:foreground ,red :strike-through t))))
+
+;;;; ghostel - light
+     `(ghostel-color-black ((,class (:background ,black :foreground ,black))))
+     `(ghostel-color-blue ((,class (:background ,blue :foreground ,blue))))
+     `(ghostel-color-cyan ((,class (:background ,cyan :foreground ,cyan))))
+     `(ghostel-color-green ((,class (:background ,green :foreground ,green))))
+     `(ghostel-color-magenta ((,class (:background ,magenta :foreground ,magenta))))
+     `(ghostel-color-red ((,class (:background ,red :foreground ,red))))
+     `(ghostel-color-white ((,class (:background ,white :foreground ,white))))
+     `(ghostel-color-yellow ((,class (:background ,yellow :foreground ,yellow))))
 
 ;;;; git-commit - light
      `(git-commit-comment-branch-local ((,class (:foreground ,teal))))
@@ -3710,6 +3736,12 @@ Sourced other themes to get information about font faces for packages.")
      `(term-color-bright-red ((,class (:foreground ,red))))
      `(term-color-bright-white ((,class (:foreground ,macos8))))
      `(term-color-bright-yellow ((,class (:foreground ,yellow))))
+
+;;;; timu-imessage - light
+     `(timu-imessage-face-chatlist-name ((,class (:foreground ,blue))))
+     `(timu-imessage-face-chatlist-unread ((,class (:foreground ,magenta))))
+     `(timu-imessage-face-chatlist-time ((,class (:foreground ,orange))))
+     `(timu-imessage-face-chatlist-preview ((,class (:foreground ,grey))))
 
 ;;;; tldr - light
      `(tldr-code-block ((,class (:foreground ,green :weight bold))))

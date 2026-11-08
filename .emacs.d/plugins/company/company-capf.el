@@ -63,6 +63,9 @@ so we can't just use the preceding variable instead.")
 (defvar-local company-capf--current-completion-metadata nil
   "Metadata computed with the current prefix and data above.")
 
+(defvar-local company-capf--current-completion-hilit-fn nil
+  "`completion-lazy-hilit-fn' for the current completions.")
+
 (defun company--capf-data ()
   (let ((cache company--capf-cache))
     (if (and (equal (current-buffer) (car cache))
@@ -97,15 +100,17 @@ so we can't just use the preceding variable instead.")
 
 (declare-function python-shell-get-process "python")
 
-(defun company-capf--save-current-data (data metadata)
+(defun company-capf--save-current-data (data metadata hilit-fn)
   (setq company-capf--current-completion-data data
-        company-capf--current-completion-metadata metadata)
+        company-capf--current-completion-metadata metadata
+        company-capf--current-completion-hilit-fn hilit-fn)
   (add-hook 'company-after-completion-hook
             #'company-capf--clear-current-data nil t))
 
 (defun company-capf--clear-current-data (_ignored)
   (setq company-capf--current-completion-data nil
-        company-capf--current-completion-metadata nil))
+        company-capf--current-completion-metadata nil
+        company-capf--current-completion-hilit-fn nil))
 
 (defvar-local company-capf--sorted nil)
 (defvar-local company-capf--current-boundaries nil)
@@ -127,7 +132,9 @@ so we can't just use the preceding variable instead.")
      (let ((f (or (plist-get (nthcdr 4 company-capf--current-completion-data)
                              :company-match)
                   #'company--match-from-capf-face)))
-       (funcall f arg)))
+       (funcall f (company--lazy-hilit
+                   arg
+                   company-capf--current-completion-hilit-fn))))
     (`duplicates t)
     (`no-cache t)   ;Not much can be done here, as long as we handle
                     ;non-prefix matches.
@@ -136,8 +143,10 @@ so we can't just use the preceding variable instead.")
                          :company-docsig)))
        (when f (funcall f arg))))
     (`doc-buffer
-     (let ((f (plist-get (nthcdr 4 company-capf--current-completion-data)
-                         :company-doc-buffer)))
+     (cl-letf ((f (plist-get (nthcdr 4 company-capf--current-completion-data)
+                             :company-doc-buffer))
+               ((symbol-function #'help-buffer) ;; Work around bug#79792
+                (lambda () (get-buffer-create " *company-capf-doc*"))))
        (when f (funcall f arg))))
     (`location
      (let ((f (plist-get (nthcdr 4 company-capf--current-completion-data)
@@ -213,10 +222,11 @@ so we can't just use the preceding variable instead.")
                                                      (and non-essential
                                                           (eq interrupt t))))
              (sortfun (cdr (assq 'display-sort-function meta)))
-             (candidates (assoc-default :completions all-result)))
+             (candidates (assoc-default :completions all-result))
+             (hilit-fn (assoc-default :hilit-fn all-result)))
         (setq company-capf--sorted (functionp sortfun))
         (when candidates
-          (company-capf--save-current-data res meta)
+          (company-capf--save-current-data res meta hilit-fn)
           (setq company-capf--current-boundaries
                 (company--capf-boundaries-markers
                  (assoc-default :boundaries all-result)

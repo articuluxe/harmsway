@@ -5,8 +5,8 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.12.0
-;; Package-Requires: ((emacs "29")(modus-themes "5.3.0")
+;; Version: 0.12.1
+;; Package-Requires: ((emacs "29")(modus-themes "5.3.0"))
 ;; Keywords: faces, theme
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy

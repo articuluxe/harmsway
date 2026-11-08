@@ -61,6 +61,8 @@ If t, use ptys: this enables Magit to prompt for passphrases when needed."
 (defcustom magit-need-cygwin-noglob
   (and (eq system-type 'windows-nt)
        (with-temp-buffer
+         ;; `magit-process-environment' isn't defined yet
+         ;; and uses this variable, so it cannot be used here.
          (let ((process-environment
                 (append magit-git-environment process-environment)))
            (condition-case e
@@ -476,7 +478,15 @@ Process output goes into a new section in the buffer returned by
         (setq magit--refresh-cache nil))
       (magit-refresh))))
 
-(defvar magit-pre-call-git-hook (list #'magit-maybe-save-repository-buffers))
+(defvar magit-pre-call-git-hook (list #'magit-maybe-save-repository-buffers)
+  "Hook run by `magit-call-git' before calling \"git\".")
+
+(defvar magit-post-call-git-functions nil
+  "Hook run by `magit-call-git' after calling \"git\".
+Called with two arguments, the exit-status and the list of argument.
+The argument list is flattened but is otherwise identical to the
+arguments to `magit-call-git'.  Hook functions cannot change the
+return value and errors are demoted.")
 
 (defun magit-call-git (&rest args)
   "Call Git synchronously in a separate process.
@@ -489,10 +499,14 @@ before use.
 Process output goes into a new section in the buffer returned by
 `magit-process-buffer'.  Return the exit code."
   (run-hooks 'magit-pre-call-git-hook)
-  (let ((default-process-coding-system (magit--process-coding-system)))
-    (apply #'magit-call-process
-           (magit-git-executable)
-           (magit-process-git-arguments args))))
+  (let* ((args (flatten-tree args))
+         (default-process-coding-system (magit--process-coding-system))
+         (status (apply #'magit-call-process
+                        (magit-git-executable)
+                        (magit-process-git-arguments args))))
+    (with-demoted-errors "Error running magit-post-call-git-functions: %S"
+      (run-hook-with-args 'magit-post-call-git-functions status args))
+    status))
 
 (defun magit-call-process (program &rest args)
   "Call PROGRAM synchronously in a separate process.
@@ -534,19 +548,33 @@ eol conversion."
     (apply #'process-file process infile buffer display args)))
 
 (defun magit-process-environment ()
+  "Prepend `magit-git-environment' to `process-environment'.
+
+This is intended to be used in bindings directly around calls
+to git.  No copy of `process-environment' is created, because
+there is no expectation that the binding is further modified.
+
+On Windows (except on a remote system), prepend additional
+variables (whose values are calculated here), addressing path
+and glob incompatibilities."
   (cond
     ((file-remote-p default-directory)
      `(,@magit-git-environment
        ,@process-environment))
+    ;; The various w32 hacks are only applicable when running on the local
+    ;; machine.  A local binding of process-environment different from the
+    ;; top-level value affects the environment used by Tramp.
     (`(,@magit-git-environment
        ,@(and magit-githook-directory
-              (not (file-remote-p default-directory))
-              (list (format "PATH=%s:%s"
-                            magit-githook-directory
-                            (getenv "PATH"))))
-       ;; The various w32 hacks are only applicable when running on the
-       ;; local machine.  A local binding of process-environment different
-       ;; from the top-level value affects the environment used by Tramp.
+              (list
+               (concat "PATH="
+                       ;; Inspired by code setting magit-git-executable.
+                       (or (and (eq system-type 'windows-nt)
+                                (car (magit--early-process-lines
+                                      "cygpath" "-w" magit-githook-directory)))
+                           magit-githook-directory)
+                       path-separator
+                       (getenv "PATH"))))
        ,@(cdr (assoc magit-git-executable magit--git-w32-path-hack))
        ,@(and magit-need-cygwin-noglob
               (mapcar (lambda (var)
@@ -612,8 +640,12 @@ See `magit-start-process' for more information."
              (let ((m (string-join (flatten-tree args) " ")))
                (remove-list-of-text-properties 0 (length m) '(face) m)
                m))
-  (with-editor* "MAGIT_HOOK_EDITOR"
-    (magit-start-git nil args)))
+  (if (or (not magit-run-hooks-from-githooks)
+          (not with-editor-emacsclient-executable)
+          (file-remote-p default-directory))
+      (magit-start-git nil args)
+    (with-editor* "MAGIT_HOOK_EDITOR"
+      (magit-start-git nil args))))
 
 (defun magit-run-git-with-editor (&rest args)
   "Export GIT_EDITOR and start Git.
@@ -632,11 +664,13 @@ See `magit-start-process' and `with-editor' for more information."
                (remove-list-of-text-properties 0 (length m) '(face) m)
                m))
   (magit--record-separated-gitdir)
-  (with-editor* "MAGIT_HOOK_EDITOR"
-    (with-environment-variables
-        ((magit-with-editor-envvar (getenv "MAGIT_HOOK_EDITOR")))
-      (let ((magit-process-popup-time -1))
-        (magit-start-git nil args)))))
+  (magit-with-editor
+    (if (or (not magit-run-hooks-from-githooks)
+            (not with-editor-emacsclient-executable)
+            (file-remote-p default-directory))
+        (magit-start-git nil args)
+      (setenv "MAGIT_HOOK_EDITOR" (getenv magit-with-editor-envvar))
+      (magit-start-git nil args))))
 
 (defun magit-run-git-sequencer (&rest args)
   "Export GIT_EDITOR and start Git.
@@ -907,7 +941,7 @@ Magit status buffer."
       ;; everything before it and delete the current line.
       (when-let ((ret-pos (cl-position ?\r string :from-end t)))
         (setq string (substring string (1+ ret-pos)))
-        (delete-region (line-beginning-position) (point)))
+        (delete-region (pos-bol) (point)))
       (setq string (magit-process-remove-bogus-errors string))
       (when (eq magit-process-apply-ansi-colors 'filter)
         (setq string (ansi-color-apply string)))
@@ -1315,9 +1349,9 @@ return.  If that is nil, or PROCESS-BUF is no longer alive, return nil."
       (ansi-color-apply-on-region (oref section content)
                                   (oref section end)))
     (cond ((= (oref section end)
-              (+ (line-end-position) 2))
+              (+ (pos-eol) 2))
            (save-excursion
-             (goto-char (1+ (line-end-position)))
+             (goto-char (1+ (pos-eol)))
              (delete-char -1)
              (oset section content nil)))
           ((and (= exit-code 0)

@@ -92,8 +92,13 @@ Users of HiDPI screens might like to set it to 2."
   (let* ((parent-window (plist-get info :parent-window))
          (point (- (plist-get info :position)
                    (plist-get info :company-prefix-length)))
+         (ls nil)
          (after-string-width
           (with-current-buffer (window-buffer parent-window)
+            (setq ls
+                  (company-childframe--line-spacing
+                   (or line-spacing 0)
+                   (plist-get info :font-height)))
             (thread-last
               (and (= point (point-max))
                    (overlays-in point point))
@@ -108,8 +113,7 @@ Users of HiDPI screens might like to set it to 2."
                            company-childframe-border-width
                          0))
          (min-bottom-distance (+ (* company-tooltip-minimum
-                                    (+ (or (default-value 'line-spacing) 0)
-                                       (plist-get info :font-height)))
+                                    (+ ls (plist-get info :font-height)))
                                  (* 2 border-width)))
          (xy (posn-x-y posn))
          handler-res)
@@ -118,6 +122,7 @@ Users of HiDPI screens might like to set it to 2."
                   ;; Might bite us if the posn-at-point behavior changes
                   ;; someday, but the odds seem low.
                   after-string-width))
+    (setcdr xy (- (cdr xy) border-width))
     (when (< (plist-get info :posframe-height) min-bottom-distance)
       (cl-decf (cadr (plist-member info :parent-frame-height))
                (- min-bottom-distance (plist-get info :posframe-height))))
@@ -129,7 +134,18 @@ Users of HiDPI screens might like to set it to 2."
               (nth 1 (window-body-pixel-edges parent-window))
               (cdr (posn-x-y posn)))
              (cdr handler-res)))
+    (unless company-childframe--shown-above
+      (setcdr handler-res (+ (cdr handler-res) ls)))
     handler-res))
+
+(defun company-childframe--line-spacing (spacing font-height)
+  (let ((total
+         (pcase spacing
+           ((pred numberp) spacing)
+           (`(,above . ,below) (+ above below)))))
+    (if (floatp total)
+        (truncate (* total font-height))
+      total)))
 
 (defun company-childframe-show ()
   "Show company-childframe candidate menu."

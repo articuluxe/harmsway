@@ -56,8 +56,11 @@
       (bg-shadow-intense "#7e462c")
       (fg-shadow-intense "#e2a077")
 
-      (bg-accent "#634047")
-      (fg-accent "#d29cb7")
+      (bg-accent-primary "#634047")
+      (fg-accent-primary "#d29cb7")
+
+      (bg-accent-secondary "#887070")
+      (fg-accent-secondary "#cad3df")
 
       (fg-red "#eca28f")
       (fg-green "#b9d0aa")
@@ -66,11 +69,11 @@
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#6e2e27")
-      (bg-green "#355029")
+      (bg-red "#6e3417")
+      (bg-green "#445029")
       (bg-yellow "#624e2f")
       (bg-blue "#304061")
-      (bg-magenta "#643870")
+      (bg-magenta "#583661")
       (bg-cyan "#35526f"))
   "Palette of `doric-copper' theme.")
 

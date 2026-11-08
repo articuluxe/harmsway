@@ -110,13 +110,15 @@
 (aio-defun docker-generic-action-with-buffer (action args)
   "Run \"`docker-command' ACTION ARGS\", wait, then display the output.
 
-All output is collected before it is displayed, which suits the commands that
-are not interactive."
+All output is collected before it is displayed, standard error included, which
+suits the commands that are not interactive."
   (interactive (list (docker-get-transient-action)
                      (transient-args transient-current-command)))
   (--each (docker-utils-get-marked-items-ids)
     (let* ((id it)
-           (output (aio-await (docker-run-docker-async (s-split " " action) args id))))
+           ;; The shell merges the streams, which keeps the lines in the order
+           ;; the command wrote them.
+           (output (aio-await (docker-run-docker-async (s-split " " action) args id "2>&1"))))
       (docker-utils-with-buffer (format "%s %s" action id)
         ;; Strip carriage returns (Docker outputs CRLF line endings)
         (insert (ansi-color-apply (replace-regexp-in-string "\r" "" output)))

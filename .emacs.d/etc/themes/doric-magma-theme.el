@@ -56,8 +56,11 @@
       (bg-shadow-intense "#7c301c")
       (fg-shadow-intense "#ff9d7e")
 
-      (bg-accent "#5a2914")
-      (fg-accent "#f65f47")
+      (bg-accent-primary "#5a2914")
+      (fg-accent-primary "#f65f47")
+
+      (bg-accent-secondary "#60635b")
+      (fg-accent-secondary "#d0d1c6")
 
       (fg-red "#fc826f")
       (fg-green "#b9c06a")
@@ -66,12 +69,12 @@
       (fg-magenta "#df70af")
       (fg-cyan "#70a0c0")
 
-      (bg-red "#5f240f")
-      (bg-green "#3f440f")
+      (bg-red "#69290f")
+      (bg-green "#384b0f")
       (bg-yellow "#554600")
       (bg-blue "#3f2457")
       (bg-magenta "#5a2f40")
-      (bg-cyan "#2f4954"))
+      (bg-cyan "#334750"))
   "Palette of `doric-magma' theme.")
 
   (doric-themes-define-theme doric-magma dark "Minimalist theme with dark background and red hues"))

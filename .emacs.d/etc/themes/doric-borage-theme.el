@@ -56,8 +56,11 @@
       (bg-shadow-intense "#425639")
       (fg-shadow-intense "#afc487")
 
-      (bg-accent "#583d49")
-      (fg-accent "#dfa487")
+      (bg-accent-primary "#583d49")
+      (fg-accent-primary "#dfa487")
+
+      (bg-accent-secondary "#72697c")
+      (fg-accent-secondary "#d6c0f9")
 
       (fg-red "#ffabaf")
       (fg-green "#a1cb96")
@@ -66,12 +69,12 @@
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#613229")
-      (bg-green "#324a31")
+      (bg-red "#61332f")
+      (bg-green "#3a5130")
       (bg-yellow "#614a2f")
-      (bg-blue "#2a3f5d")
-      (bg-magenta "#5a2f40")
-      (bg-cyan "#2f4e4f"))
+      (bg-blue "#373f5d")
+      (bg-magenta "#5a2f4f")
+      (bg-cyan "#1f475f"))
   "Palette of `doric-borage' theme.")
 
   (doric-themes-define-theme doric-borage dark "Minimalist theme with dark background and orange+green hues"))

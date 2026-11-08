@@ -42,7 +42,7 @@
     (require 'doric-themes))
 
   (defvar doric-mountain-palette
-    '((cursor "#b7b0cb")
+    '((cursor "#b7b0eb")
       (bg-main "#383025")
       (fg-main "#e5daa0")
       (border "#7e7479")
@@ -56,12 +56,15 @@
       (bg-shadow-intense "#6c5a49")
       (fg-shadow-intense "#f0d080")
 
-      (bg-accent "#4c553a")
-      (fg-accent "#bdd487")
+      (bg-accent-primary "#4c553a")
+      (fg-accent-primary "#add48f")
+
+      (bg-accent-secondary "#456b84")
+      (fg-accent-secondary "#c8e9ff")
 
       (fg-red "#e0a47f")
-      (fg-green "#a0c080")
-      (fg-yellow "#b9b56f")
+      (fg-green "#90c08f")
+      (fg-yellow "#d9a55f")
       (fg-blue "#a0b0eb")
       (fg-magenta "#d2a2c0")
       (fg-cyan "#9bc3c3")
@@ -69,7 +72,7 @@
       (bg-red "#79473f")
       (bg-green "#4b6441")
       (bg-yellow "#685730")
-      (bg-blue "#3a4f6f")
+      (bg-blue "#3e497f")
       (bg-magenta "#673f55")
       (bg-cyan "#3f5b62"))
     "Palette of `doric-mountain' theme.")

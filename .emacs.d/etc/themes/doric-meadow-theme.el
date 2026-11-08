@@ -43,7 +43,7 @@
 
   (defvar doric-meadow-palette
     '((cursor "#705060")
-      (bg-main "#eaf0c0")
+      (bg-main "#eaf0cd")
       (fg-main "#023f2d")
       (border "#8f9373")
 
@@ -56,8 +56,11 @@
       (bg-shadow-intense "#b8e0a7")
       (fg-shadow-intense "#206502")
 
-      (bg-accent "#ecdb9f")
-      (fg-accent "#753100")
+      (bg-accent-primary "#ecdb9f")
+      (fg-accent-primary "#753100")
+
+      (bg-accent-secondary "#b0b28e")
+      (fg-accent-secondary "#30201a")
 
       (fg-red "#982500")
       (fg-green "#226700")
@@ -66,9 +69,9 @@
       (fg-magenta "#700054")
       (fg-cyan "#005460")
 
-      (bg-red "#d0af90")
-      (bg-green "#b3d39c")
-      (bg-yellow "#d0c085")
+      (bg-red "#d9b590")
+      (bg-green "#b3d69c")
+      (bg-yellow "#d0c780")
       (bg-blue "#c0c2d0")
       (bg-magenta "#cdbad0")
       (bg-cyan "#bedad0"))

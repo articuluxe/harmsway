@@ -1074,20 +1074,12 @@ fi"
 
 ;;;###autoload
 (defun dwim-shell-commands-resize-video ()
-  "Resize marked images."
+  "Resize marked videos."
   (interactive)
   (dwim-shell-command-on-marked-files
    "Resize video"
-   "
-eval $(ffprobe -v quiet -show_format -of flat=s=_ -show_entries stream=width '<<f>>');
-width=${streams_stream_0_width};
-zmodload zsh/mathfunc
-width=$((rint($width * <<Scaling factor:0.5>>)));
-# Make it even or face 'not divisible by 2' errors.
-if [[ $((width%2)) -ne 0 ]] then
-  width=$(($width - 1))
-fi
-ffmpeg -n -i '<<f>>' -vf \"scale=$width:-2\" '<<fne>>_x<<Scaling factor:0.5>>.<<e>>'"
+   ;; Round width down to even or face 'not divisible by 2' errors.
+   "ffmpeg -n -i '<<f>>' -vf \"scale=trunc(iw*<<Scaling factor:0.5>>/2)*2:-2\" '<<fne>>_x<<Scaling factor:0.5>>.<<e>>'"
    :utils "ffmpeg"))
 
 ;;;###autoload
@@ -1577,6 +1569,21 @@ echo \"<<fne>>.svg\"
    "magick convert -fuzz 3% -define trim:percent-background=0% -trim +repage '<<f>>' '<<fne>>_trimmed.<<e>>'"
    :utils "magick"))
 
+(defun dwim-shell-command-round-corners-and-shadow ()
+  "Add rounded corners and shadow to image."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Round corners and shadow"
+   "f=<<f>>; fne=<<fne>>; e=<<e>>; \
+    width=$(magick identify -format %w \"$f\"); \
+    height=$(magick identify -format %h \"$f\"); \
+    magick \"$f\" -background white -flatten tmp_flat.png; \
+    magick -size ${width}x${height} xc:none -fill white -draw \"roundRectangle 0,0 $((width-1)),$((height-1)) 24,24\" tmp_mask.png; \
+    magick tmp_flat.png tmp_mask.png -compose DstIn -composite tmp_round.png; \
+    magick tmp_round.png -bordercolor none -border 30 \\( +clone -background black -shadow 50x10+0+8 \\) +swap -background none -layers merge +repage \"${fne}_styled.${e}\"; \
+    rm tmp_flat.png tmp_mask.png tmp_round.png"
+   :utils "magick"))
+
 ;;;###autoload
 (defun dwim-shell-commands-http-serve-dir ()
   "HTTP serve current directory."
@@ -1584,7 +1591,7 @@ echo \"<<fne>>.svg\"
   (cond ((executable-find "python3")
          (dwim-shell-command-on-marked-files
           "HTTP serve current dir"
-          "python3 -m http.server"
+          "echo \"Serving at http://$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}'):8000\" && python3 -m http.server"
           :utils "python3"
           :focus-now t
           :no-progress t))

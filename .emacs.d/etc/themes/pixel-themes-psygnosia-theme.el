@@ -1,13 +1,18 @@
-;;; pixel-themes-psygnosia-theme.el --- psygnosia -*- lexical-binding:t -*-
-;; ===============================================================
+;;; pixel-themes-psygnosia-theme.el --- psygnosia palette -*- lexical-binding: t -*-
+
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
+;; URL: https://github.com/lucasobx/pixel-themes
+;; Keywords: faces, theme
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 ;; https://lospec.com/palette-list/psygnosia
+
 ;;; Code:
 
-(require-theme 'modus-themes)
 (require 'pixel-themes)
 
-(defvar pixel-themes-psygnosia-palette
+(defconst pixel-themes-psygnosia-palette
   (modus-themes-generate-palette
    '((cursor "#516cbf")
 
@@ -100,17 +105,12 @@
 
    (append
     '(;; theme-specific mappings
-      (builtin      blue-warmer) ; blue
-      (keyword      blue-warmer) ; blue
-      (fnname       fg-main)
-      (type         green)
+      (builtin      blue-warmer)
+      (keyword      blue-warmer)
       (string       fg-dim)
-      (comment      yellow-faint)
-      (docstring    green-faint)
       (variable     fg-main)
       (constant     red-warmer)
       (preprocessor blue-cooler)
-      (rx-construct red)
       (rx-backslash red-faint)
 
       (rainbow-0 blue)
@@ -130,14 +130,7 @@
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
-(modus-themes-theme
- 'pixel-themes-psygnosia
- 'pixel-themes
- "Dark theme: copper skies over a muddy range."
- 'dark
- 'pixel-themes-psygnosia-palette
- nil
- 'pixel-themes-psygnosia-palette-overrides)
+(apply #'modus-themes-theme
+       (assq 'pixel-themes-psygnosia pixel-themes-with-properties))
 
-(provide-theme 'pixel-themes-psygnosia)
 ;;; pixel-themes-psygnosia-theme.el ends here

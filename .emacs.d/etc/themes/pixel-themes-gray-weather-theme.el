@@ -1,13 +1,18 @@
-;;; pixel-themes-gray-weather-theme.el --- gray-weather -*- lexical-binding:t -*-
-;; ===============================================================
+;;; pixel-themes-gray-weather-theme.el --- gray-weather palette -*- lexical-binding: t -*-
+
+;; Author: Lucas Oliveira <obxlucas@gmail.com>
+;; URL: https://github.com/lucasobx/pixel-themes
+;; Keywords: faces, theme
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 ;;; Commentary:
 ;; https://lospec.com/palette-list/gray-weather
+
 ;;; Code:
 
-(require-theme 'modus-themes)
 (require 'pixel-themes)
 
-(defvar pixel-themes-gray-weather-palette
+(defconst pixel-themes-gray-weather-palette
   (modus-themes-generate-palette
    '((cursor "#989ea1")
 
@@ -98,20 +103,7 @@
    'dark
    nil
 
-   (append
-    '(;; theme-specific mappings
-      (constant  magenta-faint)
-
-      (rainbow-0 magenta)
-      (rainbow-1 blue-cooler)
-      (rainbow-2 yellow-warmer)
-      (rainbow-3 green)
-      (rainbow-4 cyan)
-      (rainbow-5 magenta-cooler)
-      (rainbow-6 red-cooler)
-      (rainbow-7 green-faint)
-      (rainbow-8 yellow))
-    pixel-themes-palette-common)))
+   pixel-themes-palette-common))
 
 (defcustom pixel-themes-gray-weather-palette-overrides nil
   "Overrides for `pixel-themes-gray-weather-palette'."
@@ -119,14 +111,7 @@
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
-(modus-themes-theme
- 'pixel-themes-gray-weather
- 'pixel-themes
- "Dark theme: cold and sad, with a quiet beauty."
- 'dark
- 'pixel-themes-gray-weather-palette
- nil
- 'pixel-themes-gray-weather-palette-overrides)
+(apply #'modus-themes-theme
+       (assq 'pixel-themes-gray-weather pixel-themes-with-properties))
 
-(provide-theme 'pixel-themes-gray-weather)
 ;;; pixel-themes-gray-weather-theme.el ends here
