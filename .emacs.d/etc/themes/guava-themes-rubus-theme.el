@@ -39,7 +39,7 @@
       (rubus-white                     "#FFFFFF")
 
       (rubus-raspberry                 "#aa3232")
-      (rubus-red                       "#c23f39")
+      (rubus-red-pink                  "#c83c64")
       (rubus-pink-cream                "#c87873")
       (rubus-alt-pink-cream            "#aa5550")
       (rubus-orange                    "#ffa07a")
@@ -85,8 +85,8 @@
 
       (rubus-fl-comment                rubus-green-forest)
       (rubus-fl-string                 rubus-orange)
-      (rubus-fl-keyword                rubus-red)
-      (rubus-fl-builtin                rubus-pink-cream)
+      (rubus-fl-keyword                rubus-red-pink)
+      (rubus-fl-builtin                rubus-raspberry)
       (rubus-fl-type                   rubus-blue-subdued)
       (rubus-fl-function-name          rubus-purple-pink)
       (rubus-fl-variable-name          rubus-yellow)
@@ -399,6 +399,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,rubus-class (:foreground ,rubus-white :background ,rubus-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,rubus-class (:weight bold))))
+   `(keycast-key ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

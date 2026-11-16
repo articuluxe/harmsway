@@ -402,6 +402,10 @@
    ;; idle-highlight
    `(idle-highlight ((,prunus-class (:foreground ,prunus-white :background ,prunus-fl-builtin :inherit region))))
 
+   ;; keycast
+   `(keycast-command ((,prunus-class (:weight bold))))
+   `(keycast-key ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
+
    ;; nerd-icons
    ;; nerd-icons-completion
    `(nerd-icons-completion-dir-face ((,prunus-class (:foreground unspecified :inherit font-lock-function-name-face))))))

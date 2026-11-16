@@ -48,7 +48,7 @@
       (vaccinium-green-forest              "#006e41")
 
       (vaccinium-blueberry                 "#5582d7")
-      (vaccinium-blue                      "#0f69b4")
+      (vaccinium-blue                      "#0f5fb4")
       (vaccinium-alt-blue                  "#1455f1")
       (vaccinium-deep-blue                 "#1c5367")
       (vaccinium-steel-blue                "#6a7e98")
@@ -85,7 +85,7 @@
       (vaccinium-fl-comment                vaccinium-green-forest)
       (vaccinium-fl-string                 vaccinium-orange)
       (vaccinium-fl-keyword                vaccinium-light-green)
-      (vaccinium-fl-builtin                vaccinium-steel-blue)
+      (vaccinium-fl-builtin                vaccinium-blueberry)
       (vaccinium-fl-type                   vaccinium-purple)
       (vaccinium-fl-function-name          vaccinium-blue)
       (vaccinium-fl-variable-name          vaccinium-red)
@@ -398,6 +398,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,vaccinium-class (:weight bold))))
+   `(keycast-key ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

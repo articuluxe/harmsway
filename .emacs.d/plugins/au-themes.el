@@ -4,8 +4,8 @@
 
 ;; Author: Szymon Wilczek <swilczek.lx@gmail.com>
 ;; URL: https://github.com/szymonwilczek/au-themes
-;; Version: 0.2.0
-;; Package-Requires: ((emacs "29.1") (ef-themes "2.0.0") (modus-themes "5.2.0"))
+;; Version: 0.4.0
+;; Package-Requires: ((emacs "29.1") (modus-themes "5.2.0"))
 ;; Keywords: faces, themes, accessibility, autism, neurodivergence
 
 ;; This file is not part of GNU Emacs.
@@ -51,6 +51,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'color)
 (require 'subr-x)
 
 (defgroup au-themes ()
@@ -58,7 +59,87 @@
   :group 'faces
   :prefix "au-themes-")
 
-;;;###autoload
+(defconst au-themes-palette-common
+  '((fringe unspecified)
+    (property variable)
+    (fg-region unspecified)
+
+    (bg-diff-context bg-dim)
+
+    (bg-tab-bar bg-alt)
+    (bg-tab-current bg-main)
+    (bg-tab-other bg-active)
+
+    (fg-link-symbolic fg-alt)
+    (underline-link border)
+    (underline-link-visited border)
+    (underline-link-symbolic border)
+
+    (border-mode-line-active border)
+    (bg-mode-line-inactive bg-alt)
+    (fg-mode-line-inactive fg-dim)
+    (border-mode-line-inactive border)
+
+    (bg-line-number-active unspecified)
+    (fg-line-number-active accent-0)
+    (bg-line-number-inactive unspecified)
+
+    (bg-prominent-err bg-err)
+    (bg-prominent-warning bg-warning)
+    (bg-prominent-note bg-info)
+    (fg-prominent-err err)
+    (fg-prominent-warning warning)
+    (fg-prominent-note info)
+
+    (bg-added-fringe bg-info)
+    (bg-changed-fringe bg-warning)
+    (bg-removed-fringe bg-err)
+
+    (bg-space unspecified)
+    (fg-space border)
+
+    (bg-active-argument bg-warning)
+    (fg-active-argument warning)
+    (bg-active-value bg-info)
+    (fg-active-value info)
+
+    (bg-mark-delete bg-err)
+    (fg-mark-delete err)
+    (bg-mark-select bg-info)
+    (fg-mark-select info)
+    (bg-mark-other bg-warning)
+    (fg-mark-other warning)
+
+    (fg-search-current fg-main)
+    (fg-search-lazy fg-main)
+    (fg-search-static fg-main)
+    (fg-search-replace fg-main)
+
+    (fg-search-rx-group-0 fg-main)
+    (fg-search-rx-group-1 fg-main)
+    (fg-search-rx-group-2 fg-main)
+    (fg-search-rx-group-3 fg-main)
+
+    (fg-completion-match-0 accent-0)
+    (fg-completion-match-1 accent-1)
+    (fg-completion-match-2 accent-2)
+    (fg-completion-match-3 accent-3)
+
+    (fg-heading-0 rainbow-0)
+    (fg-heading-1 rainbow-1)
+    (fg-heading-2 rainbow-2)
+    (fg-heading-3 rainbow-3)
+    (fg-heading-4 rainbow-4)
+    (fg-heading-5 rainbow-5)
+    (fg-heading-6 rainbow-6)
+    (fg-heading-7 rainbow-7)
+    (fg-heading-8 rainbow-8))
+  "Semantic palette mappings shared by all au-themes.
+Each theme appends these to its own mappings before passing them to
+`modus-themes-generate-palette'.  They are the mappings of
+`ef-themes-palette-common' from ef-themes 2.2.1 by Protesilaos
+Stavrou, kept here so that the themes need only modus-themes.")
+
 (defvar au-themes--dir
   (file-name-directory
    (or load-file-name
@@ -69,67 +150,56 @@
   "Directory where `au-themes' library resides.")
 
 ;;;###autoload
-(when (and (boundp 'custom-theme-load-path)
-           au-themes--dir)
-  (add-to-list 'custom-theme-load-path
-               (file-name-as-directory (expand-file-name au-themes--dir))))
+(when load-file-name
+  (let ((dir (file-name-directory load-file-name)))
+    (unless (file-equal-p dir (expand-file-name "themes/" data-directory))
+      (add-to-list 'custom-theme-load-path dir))))
 
-(defun au-themes--get-theme-dirs ()
-  "Return list of directory paths where au-themes may reside."
-  (let ((dirs nil))
-    (when (and au-themes--dir (file-directory-p au-themes--dir))
-      (push (file-name-as-directory (expand-file-name au-themes--dir)) dirs))
-    (dolist (d custom-theme-load-path)
-      (when (and (stringp d) (file-directory-p d))
-        (push (file-name-as-directory (expand-file-name d)) dirs)))
-    (dolist (p load-path)
-      (when (and (stringp p)
-                 (file-directory-p p)
-                 (directory-files p nil "\\`au-[-a-z0-9]+-theme\\.el\\'"))
-        (push (file-name-as-directory (expand-file-name p)) dirs)))
-    (delete-dups (nreverse dirs))))
+;;;###autoload
+(with-eval-after-load 'modus-themes
+  (let ((dir (file-name-directory
+              (or load-file-name
+                  (locate-library "au-themes")))))
+    (when dir
+      (dolist (file (directory-files dir t "\\`au-[-a-z0-9]+-theme\\.el\\'"))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (when (search-forward "(modus-themes-theme" nil t)
+            (goto-char (match-beginning 0))
+            (ignore-errors
+              (let* ((form (read (current-buffer)))
+                     (name (cadr (nth 1 form)))
+                     (desc (nth 3 form))
+                     (mode (cadr (nth 4 form)))
+                     (palette (cadr (nth 5 form))))
+                (modus-themes-declare name 'au-themes desc mode palette nil nil)
+                (modus-themes-register name)))))))))
 
 (defun au-themes--discover-themes ()
-  "Dynamically discover all available au-themes across load paths.
-Finds all theme files matching `au-*-theme.el'"
+  "Return the sorted list of au-themes found on disk.
+A theme is a file named `au-NAME-theme.el' in `au-themes--dir', in
+`custom-theme-load-path' or in `load-path'."
   (let ((themes nil))
-    (dolist (dir (au-themes--get-theme-dirs))
-      (when (file-directory-p dir)
+    (dolist (dir (cons au-themes--dir (append custom-theme-load-path load-path)))
+      (when (and (stringp dir) (file-directory-p dir))
         (dolist (file (directory-files dir nil "\\`au-[-a-z0-9]+-theme\\.el\\'"))
-          (when (string-match "\\`\\(au-[-a-z0-9]+\\)-theme\\.el\\'" file)
-            (let ((theme-sym (intern (match-string 1 file))))
-              (push theme-sym themes))))))
-    (sort (delete-dups themes)
-          (lambda (a b) (string< (symbol-name a) (symbol-name b))))))
+          (push (intern (string-remove-suffix "-theme.el" file)) themes))))
+    (sort (delete-dups themes) #'string<)))
 
 (defcustom au-themes-collection nil
   "List of themes included in the `au-themes' collection.
 When nil (the default), themes are dynamically discovered from
 `custom-theme-load-path' and library directories."
   :type '(choice (const :tag "Dynamic autodiscovery" nil)
-                 (repeat :tag "Explicit theme list" symbol))
-  :group 'au-themes)
-
-(defun au-themes--hex-to-rgb (hex)
-  "Convert HEX string #rrggbb to list of normalized (R G B) [0.0..1.0]."
-  (let ((h (string-remove-prefix "#" hex)))
-    (list (/ (string-to-number (substring h 0 2) 16) 255.0)
-          (/ (string-to-number (substring h 2 4) 16) 255.0)
-          (/ (string-to-number (substring h 4 6) 16) 255.0))))
-
-(defun au-themes--srgb-to-linear (c)
-  "Convert sRGB channel C [0.0..1.0] to linear light."
-  (if (<= c 0.04045)
-      (/ c 12.92)
-    (expt (/ (+ c 0.055) 1.055) 2.4)))
+                 (repeat :tag "Explicit theme list" symbol)))
 
 (defun au-themes--luminance-y (hex)
-  "Compute relative biophysical luminance Y [0.0..1.0] from HEX color code."
-  (let* ((rgb (au-themes--hex-to-rgb hex))
-         (lr (au-themes--srgb-to-linear (nth 0 rgb)))
-         (lg (au-themes--srgb-to-linear (nth 1 rgb)))
-         (lb (au-themes--srgb-to-linear (nth 2 rgb))))
-    (+ (* 0.2126729 lr) (* 0.7151522 lg) (* 0.0721750 lb))))
+  "Return the relative luminance Y [0.0..1.0] of colour HEX.
+HEX is parsed with `color-values-from-color-spec' rather than
+`color-name-to-rgb', which approximates colours on a tty frame."
+  (let ((rgb (mapcar (lambda (v) (/ v 65535.0))
+                     (color-values-from-color-spec hex))))
+    (nth 1 (apply #'color-srgb-to-xyz rgb))))
 
 (defun au-themes--theme-palette (theme)
   "Extract palette alist for THEME, requiring theme library if needed."
@@ -172,13 +242,11 @@ POLARITY should be `light' or `dark'."
 
 (defcustom au-themes-post-load-hook nil
   "Hook run after an au-theme is loaded and enabled."
-  :type 'hook
-  :group 'au-themes)
+  :type 'hook)
 
 (defcustom au-themes-toggle-themes '(au-salina-day au-salina-night)
   "Default pair of themes to toggle between when no history exists."
-  :type '(list symbol symbol)
-  :group 'au-themes)
+  :type '(list symbol symbol))
 
 (defvar au-themes--last-light-theme nil
   "Last enabled light theme in au-themes.")
@@ -208,10 +276,13 @@ If FORCE is non-nil, reload THEME even if it is already active."
   (unless (memq theme (au-themes-get-themes))
     (user-error "`%s' is not a recognized au-theme" theme))
   (au-themes--apply-theme theme t)
-  (let ((polarity (au-themes--theme-polarity theme)))
-    (if (eq polarity 'light)
-        (setq au-themes--last-light-theme theme)
-      (setq au-themes--last-dark-theme theme)))
+  (au-themes--note-loaded theme))
+
+(defun au-themes--note-loaded (theme)
+  "Record THEME as the last light or dark au-theme and run the hook."
+  (if (eq (au-themes--theme-polarity theme) 'light)
+      (setq au-themes--last-light-theme theme)
+    (setq au-themes--last-dark-theme theme))
   (run-hooks 'au-themes-post-load-hook)
   (message "Loaded theme: `%s' [%s]"
            theme (upcase (symbol-name (or (au-themes--theme-polarity theme) 'unknown)))))
@@ -224,21 +295,20 @@ to `au-themes-toggle-themes'."
   (interactive)
   (let* ((current (au-themes-get-current-theme))
          (curr-polarity (and current (au-themes--theme-polarity current)))
-         (target (cond
-                  ((eq curr-polarity 'light)
-                   (or au-themes--last-dark-theme
-                       (cadr au-themes-toggle-themes)
-                       (car (au-themes-get-themes 'dark))))
-                  ((eq curr-polarity 'dark)
-                   (or au-themes--last-light-theme
-                       (car au-themes-toggle-themes)
-                       (car (au-themes-get-themes 'light))))
-                  (t
-                   (or (car au-themes-toggle-themes)
-                       (car (au-themes-get-themes 'dark)))))))
-    (if target
-        (au-themes-load-theme target)
-      (user-error "No valid au-theme available to toggle"))))
+         (target (or (cond
+                      ((eq curr-polarity 'light)
+                       (or au-themes--last-dark-theme
+                           (cadr au-themes-toggle-themes)
+                           (car (au-themes-get-themes 'dark))))
+                      ((eq curr-polarity 'dark)
+                       (or au-themes--last-light-theme
+                           (car au-themes-toggle-themes)
+                           (car (au-themes-get-themes 'light))))
+                      (t
+                       (or (car au-themes-toggle-themes)
+                           (car (au-themes-get-themes 'dark)))))
+                     (user-error "No valid au-theme available to toggle"))))
+    (au-themes-load-theme target)))
 
 (defvar au-themes--picker-initial-theme nil
   "Theme that was active when the picker was initiated.")
@@ -283,107 +353,80 @@ If TRANSFORM is non-nil, return CAND unchanged."
           (display-sort-function . au-themes--display-sort))
       (complete-with-action action (mapcar #'symbol-name themes) string pred))))
 
-(defun au-themes--prompt-with-preview (themes prompt)
-  "Prompt with PROMPT to select a theme from THEMES with live preview.
-Restores previous theme if aborted."
-  (let* ((saved-theme (au-themes-get-current-theme))
-         (au-themes--picker-initial-theme saved-theme)
-         (default-theme (or saved-theme (car themes)))
-         (cand-names (mapcar #'symbol-name themes)))
-    (if (fboundp 'consult--read)
-        ;; Consult
-        (let ((selected
-               (consult--read
-                cand-names
-                :prompt prompt
-                :require-match t
-                :category 'theme
-                :history 'au-themes--select-history
-                :group #'au-themes--group-themes
-                :annotate #'au-themes--annotate-theme
-                :sort nil
-                :default (and default-theme (symbol-name default-theme))
-                :lookup (lambda (sel &rest _)
-                          (and sel (intern-soft sel)))
-                :state (lambda (action cand)
-                         (pcase action
-                           ('preview
-                            (when cand
-                              (let ((th (if (symbolp cand) cand (intern-soft cand))))
-                                (when (memq th themes)
-                                  (au-themes--apply-theme th)))))
-                           ('return
-                            (let ((final-th (or (and cand (if (symbolp cand) cand (intern-soft cand)))
-                                                saved-theme)))
-                              (when final-th
-                                (au-themes--apply-theme final-th)))))))))
-          (or selected saved-theme))
-      ;; completing-read
-      (let ((completed nil)
-            (preview-cand nil))
-        (unwind-protect
-            (minibuffer-with-setup-hook
-                (lambda ()
-                  (add-hook
-                   'post-command-hook
-                   (lambda ()
-                     (when-let* ((cand-str (or (and (bound-and-true-p vertico-mode)
-                                                    (fboundp 'vertico--candidate)
-                                                    (vertico--candidate))
-                                               (minibuffer-contents)))
-                                 (cand-sym (intern-soft cand-str)))
-                       (when (and (memq cand-sym themes)
-                                  (not (eq cand-sym preview-cand)))
-                         (setq preview-cand cand-sym)
-                         (au-themes--apply-theme cand-sym))))
-                   nil t))
-              (let* ((choice (completing-read
-                              (format "%s (default %s): " prompt default-theme)
-                              (au-themes--completion-table themes)
-                              nil t nil
-                              'au-themes--select-history
-                              (symbol-name default-theme)))
-                     (chosen-sym (intern-soft choice)))
-                (setq completed t)
-                (or chosen-sym saved-theme)))
-          ;; Aborted -> restore original theme
-          (unless completed
-            (when saved-theme
-              (au-themes--apply-theme saved-theme))))))))
+(defun au-themes--preview-input (themes fallback)
+  "Show the theme the minibuffer names exactly, else FALLBACK.
+THEMES is the list of themes that may be previewed.  FALLBACK is the
+theme that was enabled before the prompt, or nil for none."
+  (let ((cand (intern-soft (minibuffer-contents))))
+    (au-themes--apply-theme (if (memq cand themes) cand fallback))))
+
+(defun au-themes--read-theme (themes prompt)
+  "Read one of THEMES in the minibuffer with PROMPT and return it.
+While the input names a theme exactly, that theme is shown; otherwise
+the theme enabled before the prompt is shown.  That theme is also
+restored when the prompt is aborted."
+  (let* ((saved (car custom-enabled-themes))
+         (au-themes--picker-initial-theme (au-themes-get-current-theme))
+         (default (or au-themes--picker-initial-theme (car themes)))
+         (done nil))
+    (unwind-protect
+        (prog1
+            (intern
+             (minibuffer-with-setup-hook
+                 (lambda ()
+                   (add-hook 'post-command-hook
+                             (lambda () (au-themes--preview-input themes saved))
+                             nil t))
+               (completing-read (format-prompt prompt default)
+                                (au-themes--completion-table themes)
+                                nil t nil 'au-themes--select-history
+                                (symbol-name default))))
+          (setq done t))
+      (unless done
+        (au-themes--apply-theme saved)))))
+
+(defvar consult-themes)
+(declare-function consult-theme "consult" (theme))
+
+(defun au-themes--select (themes prompt)
+  "Prompt with PROMPT for one of THEMES, previewing it, and enable it.
+With consult installed, use `consult-theme' limited to THEMES, which
+previews the candidate at point and restores the previous theme on
+abort.  Otherwise use `au-themes--read-theme'."
+  (if (fboundp 'consult-theme)
+      (let ((consult-themes themes))
+        (call-interactively #'consult-theme)
+        (let ((theme (car custom-enabled-themes)))
+          (when (memq theme themes)
+            (au-themes--note-loaded theme))))
+    (au-themes-load-theme (au-themes--read-theme themes prompt))))
 
 ;;;###autoload
 (defun au-themes-select (&optional theme)
   "Select and enable a theme from `au-themes' collection with live preview.
-Themes are grouped into Light and Dark categories.
 With optional THEME symbol, load it directly without prompting."
   (interactive)
-  (let* ((themes (au-themes-get-themes))
-         (chosen (or theme
-                     (au-themes--prompt-with-preview themes "Select au-theme: "))))
-    (when chosen
-      (au-themes-load-theme chosen))))
+  (if theme
+      (au-themes-load-theme theme)
+    (au-themes--select (au-themes-get-themes) "Select au-theme")))
 
 ;;;###autoload
 (defun au-themes-select-light (&optional theme)
   "Select and enable a light theme from `au-themes' collection with live preview.
 With optional THEME symbol, load it directly without prompting."
   (interactive)
-  (let* ((themes (au-themes-get-themes 'light))
-         (chosen (or theme
-                     (au-themes--prompt-with-preview themes "Select light au-theme: "))))
-    (when chosen
-      (au-themes-load-theme chosen))))
+  (if theme
+      (au-themes-load-theme theme)
+    (au-themes--select (au-themes-get-themes 'light) "Select light au-theme")))
 
 ;;;###autoload
 (defun au-themes-select-dark (&optional theme)
   "Select and enable a dark theme from `au-themes' collection with live preview.
 With optional THEME symbol, load it directly without prompting."
   (interactive)
-  (let* ((themes (au-themes-get-themes 'dark))
-         (chosen (or theme
-                     (au-themes--prompt-with-preview themes "Select dark au-theme: "))))
-    (when chosen
-      (au-themes-load-theme chosen))))
+  (if theme
+      (au-themes-load-theme theme)
+    (au-themes--select (au-themes-get-themes 'dark) "Select dark au-theme")))
 
 (provide 'au-themes)
 ;;; au-themes.el ends here

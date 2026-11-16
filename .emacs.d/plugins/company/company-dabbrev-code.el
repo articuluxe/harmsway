@@ -87,7 +87,7 @@ parameter and returns a list of major modes to search.  See also
   (let ((prefix-re
          (cond
           ((string-empty-p prefix)
-           "\\([a-zA-Z]\\|\\s_\\)")
+           "\\(?:[a-zA-Z]\\|\\s_\\)")
           ((not company-dabbrev-code-completion-styles)
            (regexp-quote prefix))
           (t
@@ -97,11 +97,11 @@ parameter and returns a list of major modes to search.  See also
                              (substring prefix 0 2)
                            prefix)))
              (concat
-              "\\(\\sw\\|\\s_\\)*"
+              "\\(?:\\sw\\|\\s_\\)*?"
               (mapconcat #'regexp-quote
                          (mapcar #'string prefix)
-                         "\\(\\sw\\|\\s_\\)*")))))))
-    (concat "\\_<" prefix-re "\\(\\sw\\|\\s_\\)*\\_>")))
+                         "\\(?:\\sw\\|\\s_\\)*?")))))))
+    (concat "\\_<" prefix-re "\\(?:\\sw\\|\\s_\\)*\\_>")))
 
 ;;;###autoload
 (defun company-dabbrev-code (command &optional arg &rest rest)
@@ -116,7 +116,7 @@ comments or strings."
                  (or company-dabbrev-code-everywhere
                      (not (company-in-string-or-comment)))
                  (company-grab-symbol-parts)))
-    (candidates (company-dabbrev--candidates arg (car rest)))
+    (candidates (company-dabbrev-code--candidates arg (car rest)))
     (adjust-boundaries (and company-dabbrev-code-completion-styles
                             (company--capf-boundaries
                              company-dabbrev--boundaries)))
@@ -140,7 +140,7 @@ comments or strings."
       (company--capf-expand-common prefix suffix
                                    (company-dabbrev-code--table prefix)))))
 
-(defun company-dabbrev--candidates (prefix suffix)
+(defun company-dabbrev-code--candidates (prefix suffix)
   (let* ((case-fold-search company-dabbrev-code-ignore-case))
     (company-dabbrev-code--filter
      prefix suffix
@@ -169,14 +169,13 @@ comments or strings."
         (completion-styles (if (listp company-dabbrev-code-completion-styles)
                                company-dabbrev-code-completion-styles
                              completion-styles))
-        (metadata (completion-metadata prefix table nil))
-        res)
+        res metadata)
     (if (not company-dabbrev-code-completion-styles)
         (all-completions prefix table)
       (setq res (company--capf-completions
                  prefix suffix
                  table nil
-                 metadata))
+                 (setq metadata (completion-metadata prefix table nil))))
       (when-let* ((sort-fn (completion-metadata-get metadata 'display-sort-function)))
         (setq company-dabbrev-code--sorted t)
         (setf (alist-get :completions res)

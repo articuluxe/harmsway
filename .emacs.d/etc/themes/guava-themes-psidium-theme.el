@@ -81,14 +81,14 @@
       (psidium-fl-comment                psidium-green)
       (psidium-fl-string                 psidium-brown)
       (psidium-fl-keyword                psidium-red)
-      (psidium-fl-builtin                psidium-deep-blue)
+      (psidium-fl-builtin                psidium-pink)
       (psidium-fl-type                   psidium-deep-green)
       (psidium-fl-function-name          psidium-light-green)
       (psidium-fl-variable-name          psidium-purple)
       (psidium-fl-constant               psidium-blue)
       (psidium-fl-warning                psidium-warning)
       (psidium-fl-punctuation            psidium-fg-2)
-      (psidium-fl-negation-char          psidium-pink)
+      (psidium-fl-negation-char          psidium-deep-blue)
 
       (psidium-diff-added                "#c8f0c8")
       (psidium-diff-removed              "#f0c8c8")
@@ -394,6 +394,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,psidium-class (:foreground ,psidium-white :background ,psidium-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,psidium-class (:weight bold))))
+   `(keycast-key ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

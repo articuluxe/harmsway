@@ -1,10 +1,10 @@
 ;;; company-statistics.el --- Sort candidates using completion history  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2017  Free Software Foundation, Inc.
+;; Copyright (C) 2014-2017, 2025-2026  Free Software Foundation, Inc.
 
 ;; Author: Ingo Lohmar <i.lohmar@gmail.com>
 ;; URL: https://github.com/company-mode/company-statistics
-;; Version: 0.2.3
+;; Version: 0.3.0
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "24.3") (company "0.8.5"))
 
@@ -142,6 +142,7 @@ number)."
   "Save statistics."
   (with-temp-buffer
     (set-buffer-multibyte nil)
+    (insert ";;; -*- lexical-binding: t -*-\n")
     (let (print-level print-length)
       (encode-coding-string
        (format

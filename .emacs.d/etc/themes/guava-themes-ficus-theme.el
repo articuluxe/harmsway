@@ -45,7 +45,7 @@
       (ficus-green                     "#3c7328")
       (ficus-alt-green                 "#44695a")
 
-      (ficus-light-red                 "#af5050")
+      (ficus-light-red                 "#b05051")
       (ficus-red                       "#82322d")
       ;; (ficus-deep-red                  "#693c50")
 
@@ -401,6 +401,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,ficus-class (:foreground ,ficus-white :background ,ficus-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,ficus-class (:weight bold))))
+   `(keycast-key ((,ficus-class (:foreground ,ficus-white :background ,ficus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

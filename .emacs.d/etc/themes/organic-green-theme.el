@@ -91,7 +91,7 @@
    `(error ((t (:foreground ,organic-red))))
    `(escape-glyph ((t (:foreground ,organic-sun))))
    `(warning ((t (:foreground ,organic-orange))))
-   `(success ((t (:foreground ,organic-sun))))
+   `(success ((t (:foreground ,organic-green))))
    `(compilation-info ((t (:foreground ,organic-green))))
    `(shadow ((t (:foreground ,organic-gray))))
    `(match ((t (:foreground ,organic-yellow))))
@@ -342,6 +342,10 @@
    `(magit-filename ((t (:inherit default))) t)
    `(git-commit-summary ((t (:foreground ,organic-teal))) t)
 
+   ;; Multi-Magit
+   `(multi-magit-branch-heading ((t (:foreground ,organic-yellow :box nil))) t)
+   `(multi-magit-repo-heading ((t (:foreground ,organic-black :box nil))) t)
+
    ;; Transient
    `(transient-heading ((t (:foreground ,organic-purple))) t)
    `(transient-key-exit ((t (:foreground ,organic-blue))) t)
@@ -380,7 +384,7 @@
    `(org-done ((t (:foreground ,organic-green))) t)
    `(org-headline-done ((t (:foreground ,organic-teal))) t)
    `(org-drawer ((t (:foreground ,organic-green-black))) t)
-   `(org-special-keyword ((t (:foreground ,organic-violet))) t)
+   `(org-special-keyword ((t (:foreground ,organic-blue))) t)
    `(org-property-value ((t (:foreground ,organic-green))) t)
 
    ;; Verb
@@ -473,9 +477,6 @@
    `(rainbow-delimiters-base-error-face ((t (:foreground ,organic-red)))))
 
   (custom-set-faces
-   ;; Multi-Magit
-   `(multi-magit-repo-heading ((t (:inherit magit-section-heading :box nil))))
-
    ;; Speedbar
    `(speedbar-selected-face ((t (:foreground ,organic-green :underline t))))
 

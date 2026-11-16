@@ -51,6 +51,8 @@
 (declare-function elfeed-entry-title "elfeed-show")
 (declare-function elfeed-entry-tags "elfeed-show")
 (declare-function elfeed-db-last-update "elfeed-db")
+(declare-function elfeed-search--unread-count "elfeed-search")
+(declare-function elfeed-search--count-unread "elfeed-search")
 (declare-function org-capture-get "org-capture")
 (declare-function doc-view-current-page "doc-view")
 (declare-function pdf-cache-number-of-pages "pdf-cache")
@@ -374,6 +376,16 @@ Time info is only shown `display-time-mode' is non-nil"
   "`format-mode-line'."
   :type 'string
   :group 'lambda-line)
+
+(defun lambda-line--position ()
+  "Return `lambda-line-position-format', expanded and with `%' escaped.
+The status-line is itself read as a mode-line construct, so the expanded
+text passes through `%'-processing a second time.  Unescaped, the `%'
+that `%o' or `%p' produce (\"21%\") combines with the next character
+into an unknown construct and both are dropped: the sign and the
+trailing space vanish, and the right segment runs to the window edge."
+  (replace-regexp-in-string
+   "%" "%%" (format-mode-line lambda-line-position-format) t t))
 
 (defcustom lambda-line-time-day-and-date-format "  %H:%M %Y-%m-%e "
   "`format-time-string'."
@@ -1626,6 +1638,26 @@ no-op when Evil is not loaded (the hooks do not yet exist)."
         (remove-hook hook #'force-mode-line-update)))))
 
 ;;;;; Compose Status-Line
+(defun lambda-line--right-width (right)
+  "Return the width of RIGHT as a term for an `:align-to' space.
+On a graphical frame, measure the expanded RIGHT in pixels with the
+face of the line it is drawn in appended, and return (PIXELS), the
+form `:align-to' reads as a pixel count; this is how Emacs's own
+`mode-line-format-right-align' measures.  Elsewhere, or before Emacs
+29, return its width in columns.  A count of characters treats every
+glyph as one column, so a symbol drawn by a wider fallback font
+pushed the end of the segment past the window edge."
+  (let ((text (copy-sequence (format-mode-line right))))
+    (if (and (display-graphic-p) (fboundp 'string-pixel-width))
+        (progn
+          (add-face-text-property 0 (length text)
+                                  (if (eq lambda-line-position 'top)
+                                      'header-line
+                                    'mode-line)
+                                  t text)
+          (list (string-pixel-width text)))
+      (string-width text))))
+
 (defun lambda-line-compose (status name primary tertiary secondary &optional prefix)
   "Compose a string with provided information.
 Each section is first defined, along with a measure of the width of the status-line.
@@ -1781,7 +1813,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                      secondary)
                    (propertize lambda-line-hspace 'face face-modeline)))
 
-          (right-len (length (format-mode-line right))))
+          (right-len (lambda-line--right-width right)))
     (concat
      left
      (propertize " " 'face face-modeline 'display
@@ -1797,7 +1829,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                                          "%b")))
         (mode-name   (lambda-line-mode-name))
         (vc-info     (lambda-line--vc-info))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
     (lambda-line-compose (lambda-line-status)
                          (lambda-line-truncate buffer-name lambda-line-truncate-value)
                          (concat lambda-line-display-group-start
@@ -1823,7 +1855,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
         (vc-info     (lambda-line--vc-info))
         (prog-info   (lambda-line--prog-mode-info))
         (lsp-info    (lambda-line--lsp-status))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
     (lambda-line-compose (lambda-line-status)
                          (lambda-line-truncate buffer-name lambda-line-truncate-value)
                          (concat lambda-line-display-group-start mode-name
@@ -1888,7 +1920,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
         (mode-name   (lambda-line-mode-name))
         (vc-info     (lambda-line--vc-info))
         (word-count  (lambda-line-word-count))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
     (lambda-line-compose (lambda-line-status)
                          (lambda-line-truncate buffer-name lambda-line-truncate-value)
                          (concat lambda-line-display-group-start
@@ -1921,7 +1953,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                        (format-mode-line "%b")
                        ""
                        ""
-                       (format-mode-line lambda-line-position-format)))
+                       (lambda-line--position)))
 
 
 ;;;;; Info Display
@@ -2127,7 +2159,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-buffer-menu-mode ()
   (let ((buffer-name "Buffer list")
         (mode-name   (lambda-line-mode-name))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
 
     (lambda-line-compose (lambda-line-status)
                          buffer-name "" nil (concat position lambda-line-hspace (lambda-line-time)))))
@@ -2155,7 +2187,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-completion-list-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
 
     (lambda-line-compose (lambda-line-status)
                          buffer-name "" nil (concat position lambda-line-hspace))))
@@ -2260,7 +2292,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
         (vc-info     (lambda-line--vc-info))
-        (position    (format-mode-line lambda-line-position-format)))
+        (position    (lambda-line--position)))
     (lambda-line-compose (lambda-line-status)
                          buffer-name
                          (concat lambda-line-display-group-start
@@ -2315,16 +2347,18 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                                 (in-process (elfeed-queue-count-active)))
                             (format "%d jobs pending, %d active"
                                     (- total in-process) in-process)))
-                         (t  (let* ((db-time (seconds-to-time (elfeed-db-last-update)))
-                                    (unread))
-                               (cond (elfeed-search-filter-active "")
-                                     ((string-match-p "[^ ]" elfeed-search-filter)
-                                      elfeed-search-filter)
-                                     (""))))))
+                         (t  (cond ((or (bound-and-true-p elfeed-search--filter-active)
+                                        (bound-and-true-p elfeed-search-filter-active))
+                                    "")
+                                   ((string-match-p "[^ ]" elfeed-search-filter)
+                                    elfeed-search-filter)
+                                   ("")))))
          (secondary (concat
                      (cond
                       ((zerop (elfeed-db-last-update)) "")
                       ((> (elfeed-queue-count-total) 0) "")
+                      ((fboundp 'elfeed-search--unread-count)
+                       (elfeed-search--unread-count))
                       (t (elfeed-search--count-unread)))
                      (lambda-line-time))))
 

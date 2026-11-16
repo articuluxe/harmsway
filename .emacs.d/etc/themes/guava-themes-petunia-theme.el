@@ -81,12 +81,12 @@
 
       (petunia-fl-comment                petunia-light-green)
       (petunia-fl-string                 petunia-orange)
-      (petunia-fl-keyword                petunia-purple)
-      (petunia-fl-builtin                petunia-light-blue)
+      (petunia-fl-keyword                petunia-green-forest)
+      (petunia-fl-builtin                petunia-purple)
       (petunia-fl-type                   petunia-yellow)
       (petunia-fl-function-name          petunia-red)
       (petunia-fl-variable-name          petunia-pink)
-      (petunia-fl-constant               petunia-green-forest)
+      (petunia-fl-constant               petunia-light-blue)
       (petunia-fl-warning                petunia-warning)
       (petunia-fl-punctuation            petunia-fg-2)
       (petunia-fl-negation-char          petunia-light-orange)
@@ -395,6 +395,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,petunia-class (:foreground ,petunia-black :background ,petunia-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,petunia-class (:weight bold))))
+   `(keycast-key ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

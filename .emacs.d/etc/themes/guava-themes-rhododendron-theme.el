@@ -86,12 +86,12 @@
 
       (rhododendron-fl-comment                rhododendron-deep-green)
       (rhododendron-fl-string                 rhododendron-purple-red)
-      (rhododendron-fl-keyword                rhododendron-bright-pink)
-      (rhododendron-fl-builtin                rhododendron-deep-blue)
+      (rhododendron-fl-keyword                rhododendron-deep-blue)
+      (rhododendron-fl-builtin                rhododendron-red)
       (rhododendron-fl-type                   rhododendron-forest-green)
       (rhododendron-fl-function-name          rhododendron-deep-pink)
       (rhododendron-fl-variable-name          rhododendron-bright-orange)
-      (rhododendron-fl-constant               rhododendron-purple-blue)
+      (rhododendron-fl-constant               rhododendron-bright-pink)
       (rhododendron-fl-warning                rhododendron-warning)
       (rhododendron-fl-punctuation            rhododendron-fg-2)
       (rhododendron-fl-negation-char          rhododendron-red-orange)
@@ -400,6 +400,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,rhododendron-class (:weight bold))))
+   `(keycast-key ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

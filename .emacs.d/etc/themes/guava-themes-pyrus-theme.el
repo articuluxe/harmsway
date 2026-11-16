@@ -40,6 +40,7 @@
 
       (pyrus-light-green               "#97ad24")
       (pyrus-green                     "#228b22")
+      (pyrus-alt-green                 "#295323")
       (pyrus-green-subdued             "#316355")
 
       (pyrus-deep-orange               "#eb4b37")
@@ -83,11 +84,11 @@
       (pyrus-fl-comment                pyrus-light-green)
       (pyrus-fl-string                 pyrus-deep-orange)
       (pyrus-fl-keyword                pyrus-green-subdued)
-      (pyrus-fl-builtin                pyrus-deep-blue)
+      (pyrus-fl-builtin                pyrus-alt-green)
       (pyrus-fl-type                   pyrus-green)
       (pyrus-fl-function-name          pyrus-red-pink)
       (pyrus-fl-variable-name          pyrus-orange-pink)
-      (pyrus-fl-constant               pyrus-light-purple)
+      (pyrus-fl-constant               pyrus-deep-blue)
       (pyrus-fl-warning                pyrus-warning)
       (pyrus-fl-punctuation            pyrus-fg-2)
       (pyrus-fl-negation-char          pyrus-orange-subdued)
@@ -396,6 +397,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,pyrus-class (:weight bold))))
+   `(keycast-key ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

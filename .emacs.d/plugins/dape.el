@@ -3328,10 +3328,15 @@ If DISPLAY-P is non-nil, display buffer."
              'dape--disassemble-instruction instruction)))
           (setq-local revert-buffer-function
                       (lambda (&rest _) (dape-disassemble address)))
-          (when (or display-p (marker-position dape--disassemble-overlay-arrow))
-            (select-window (dape--display-buffer (current-buffer))))
           (goto-char (or (marker-position dape--disassemble-overlay-arrow)
                          (point-min)))
+          (when-let* (((or display-p
+                           (marker-position dape--disassemble-overlay-arrow)))
+                      (window (dape--display-buffer (current-buffer))))
+            (set-window-point window (point))
+            ;; steal focus on explicit display, not on revert
+            (when display-p
+              (select-window window)))
           (when (marker-position dape--disassemble-overlay-arrow)
             (run-hooks 'dape-display-source-hook)))))))
 
@@ -4432,7 +4437,7 @@ See `dape-request' for expected CB signature."
   (dape-info-stack--mode)
   "View disassemble of stack frame at current line."
   (if-let* ((address (plist-get dape--frame :instructionPointerReference)))
-      (dape-disassemble address)
+      (dape-disassemble address t)
     (user-error "No address for frame")))
 
 (dape--buffer-map dape-info-stack-mode-line-map dape-info-stack-select

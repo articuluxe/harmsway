@@ -54,7 +54,7 @@
       (solanum-light-purple              "#bec8ff")
       (solanum-purple                    "#786ed7")
       (solanum-purple-pink               "#915d93")
-      (solanum-dark-purple               "#693c64")
+      (solanum-dark-purple               "#73466e")
       (solanum-alt-dark-purple           "#59536e")
 
       (solanum-fg-1                      "#FFFFFF")
@@ -71,7 +71,7 @@
       (solanum-success                   "#23a334")
       (solanum-change                    "#0d62b2")
 
-      (solanum-mode-line                 "#693c64")
+      (solanum-mode-line                 "#73466e")
       (solanum-mode-line-inactive        "#3b3550")
       (solanum-mode-line-modified        "#3C8CA0")
       (solanum-bell                      "#4b7337")
@@ -83,11 +83,11 @@
       (solanum-fl-comment                solanum-red-tomato)
       (solanum-fl-string                 solanum-yellow-potato)
       (solanum-fl-keyword                solanum-deep-green)
-      (solanum-fl-builtin                solanum-light-blue)
+      (solanum-fl-builtin                solanum-dark-purple)
       (solanum-fl-type                   solanum-orange)
       (solanum-fl-function-name          solanum-purple)
       (solanum-fl-variable-name          solanum-light-green)
-      (solanum-fl-constant               solanum-light-purple)
+      (solanum-fl-constant               solanum-light-blue)
       (solanum-fl-warning                solanum-warning)
       (solanum-fl-punctuation            solanum-fg-2)
       (solanum-fl-negation-char          solanum-alt-light-green)
@@ -396,6 +396,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,solanum-class (:foreground ,solanum-black :background ,solanum-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,solanum-class (:weight bold))))
+   `(keycast-key ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

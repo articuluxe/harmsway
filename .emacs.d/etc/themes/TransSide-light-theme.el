@@ -1,6 +1,12 @@
 ;;; TransSide-light-theme.el --- High contrast theme based off of the trans flag colors -*- lexical-binding: t -*-
-;
-;; URL: https://github.com/skye-repos/TransSide-theme
+;;
+;; Authors: Kaushik Skye Harith
+;;
+;; Copyright 2022-2023 Kaushik S Harith
+;;
+;; Maintainer: Kaushik Harith <kaushik.harith@gmail.com>
+;;
+;; URL: https://github.com/Harith163/TransSide-theme
 ;; Version: 0.9.0
 ;; Package-Requires: ((autothemer "0.2.14") (emacs "24.1"))
 ;;

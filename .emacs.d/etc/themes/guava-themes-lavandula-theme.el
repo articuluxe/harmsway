@@ -56,7 +56,7 @@
       (lavandula-light-cyan                "#00cfcf")
 
       (lavandula-purple                    "#7d509b")
-      (lavandula-lavender                  "#8264b9")
+      (lavandula-lavender                  "#8061b8")
 
       (lavandula-fg-1                      "#505050")
       (lavandula-fg-2                      "#a5a5a5")
@@ -397,6 +397,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,lavandula-class (:weight bold))))
+   `(keycast-key ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

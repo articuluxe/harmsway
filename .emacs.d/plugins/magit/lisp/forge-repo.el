@@ -20,6 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; This library implements support for identifying repositories, i.e.,
+;; for linking Git repositories to projects on a Forge.
+
 ;;; Code:
 
 (require 'forge)
@@ -221,9 +226,8 @@ See `forge-alist' for valid Git hosts."
        (pcase (list demand (and obj (eq (oref obj condition) :tracked)))
          (`(:tracked? nil) (setq obj nil))
          (`(:tracked  nil)
-          (error "Cannot use `%s' in %S yet.\n%s"
-                 this-command (magit-toplevel)
-                 "Use `M-x forge-add-repository' before trying again.")))
+          (error "Forge doesn't track %s yet.\n%s" (magit-toplevel)
+                 "Use `M-x forge-add-repository' to start tracking.")))
        ;; No repository found using OWNER/NAME.  Maybe it was renamed so
        ;; maybe look it up using its ID, which we have to retrieve from
        ;; the forge first.

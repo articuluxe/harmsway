@@ -97,7 +97,7 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
   :package-version '(company . "0.9.0"))
 
 (defmacro company-dabbrev--time-limit-while (test start limit freq &rest body)
-  (declare (indent 3) (debug t))
+  (declare (indent 4) (debug t))
   `(let ((company-time-limit-while-counter 0))
      (catch 'done
        (while ,test
@@ -108,20 +108,53 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
               (> (float-time (time-since ,start)) ,limit)
               (throw 'done 'company-time-out))))))
 
-(defun company-dabbrev--make-regexp ()
-  (concat "\\(?:" company-dabbrev-char-regexp "\\)+"))
+(defun company-dabbrev--make-regexp (prefix)
+  (concat
+   (when (equal company-dabbrev-char-regexp "\\sw")
+     "\\<")
+   (regexp-quote
+    (if (>= (length prefix) 2)
+        (substring prefix 0 2)
+      prefix))
+   "\\(?:" company-dabbrev-char-regexp "\\)+"))
 
-(defun company-dabbrev--search-buffer (regexp pos symbols start limit
-                                       ignore-comments)
+(defun company-dabbrev--ppss (last-pos last-state)
+  "Compute PPSS based on the last position and state.
+More efficient than `syntax-ppss' for the straightforward case of only
+scanning forward."
+  (save-match-data
+    (if (not last-state)
+        (syntax-ppss)
+      (syntax-propertize (point))
+      (with-syntax-table (or syntax-ppss-table (syntax-table))
+        (parse-partial-sexp last-pos (point) nil nil last-state)))))
+
+(defun company-dabbrev--search-buffer ( regexp pos symbols start limit
+                                        ignore-comments
+                                        &optional not-regexp-before)
   (save-excursion
-    (cl-labels ((maybe-collect-match
-                 ()
-                 (let ((match (match-string-no-properties 0)))
-                   (when (and (>= (length match) company-dabbrev-minimum-length)
-                              (<= (length match) company-dabbrev-maximum-length)
-                              (not (and company-dabbrev-ignore-invisible
-                                        (invisible-p (match-beginning 0)))))
-                     (puthash match t symbols)))))
+    (let* (last-pos
+           last-state
+           (maybe-collect-match
+            (lambda (tmp-end)
+              (when (and (<= company-dabbrev-minimum-length
+                             (- (match-end 0)
+                                (match-beginning 0))
+                             company-dabbrev-maximum-length)
+                         (or (not not-regexp-before)
+                             (= (match-beginning 0) (point-min))
+                             (save-excursion
+                               (goto-char (1- (match-beginning 0)))
+                               (not (looking-at-p not-regexp-before))))
+                         (not (and company-dabbrev-ignore-invisible
+                                   (invisible-p (match-beginning 0)))))
+                (if (and ignore-comments
+                         (progn
+                           (setq last-state (company-dabbrev--ppss last-pos last-state)
+                                 last-pos (point))
+                           (nth 8 last-state)))
+                    (re-search-forward "\\s>\\|\\s!\\|\\s\"" tmp-end t)
+                  (puthash (match-string-no-properties 0) t symbols))))))
       (goto-char (if pos (1- pos) (point-min)))
       ;; Search before pos.
       (let ((tmp-end (point)))
@@ -129,35 +162,38 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
                                                 (> tmp-end (point-min)))
             start limit 1
           (ignore-errors
-            (forward-char -10000))
+            (forward-char -20000))
           (forward-line 0)
+          (when ignore-comments
+            (setq last-pos (point)
+                  last-state nil))
           (save-excursion
             ;; Before, we used backward search, but it matches non-greedily, and
             ;; that forced us to use the "beginning/end of word" anchors in
             ;; `company-dabbrev--make-regexp'.  It's also about 2x slower.
             (while (and (not (input-pending-p))
                         (re-search-forward regexp tmp-end t))
-              (if (and ignore-comments (save-match-data (company-in-string-or-comment)))
-                  (re-search-forward "\\s>\\|\\s!\\|\\s\"" tmp-end t)
-                (maybe-collect-match))))
+              (funcall maybe-collect-match tmp-end)))
           (setq tmp-end (point))))
       (goto-char (or pos (point-min)))
+      (when ignore-comments
+        (setq last-pos (point)
+              last-state nil))
       ;; Search after pos.
       (company-dabbrev--time-limit-while (and (not (input-pending-p))
                                               (re-search-forward regexp nil t))
           start limit 25
-        (if (and ignore-comments (save-match-data (company-in-string-or-comment)))
-            (re-search-forward "\\s>\\|\\s!\\|\\s\"" nil t)
-          (maybe-collect-match)))
+        (funcall maybe-collect-match nil))
       symbols)))
 
-(defun company-dabbrev--search (regexp &optional limit other-buffer-modes
-                                ignore-comments)
+(defun company-dabbrev--search ( regexp &optional limit other-buffer-modes
+                                 ignore-comments not-regexp-before)
   (let* ((start (current-time))
          (symbols (company-dabbrev--search-buffer regexp (point)
                                                   (make-hash-table :test 'equal)
                                                   start limit
-                                                  ignore-comments)))
+                                                  ignore-comments
+                                                  not-regexp-before)))
     (when other-buffer-modes
       (cl-dolist (buffer (delq (current-buffer) (buffer-list)))
         (unless (if (stringp company-dabbrev-ignore-buffers)
@@ -169,7 +205,8 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
                       (cl-some #'derived-mode-p other-buffer-modes))
               (setq symbols
                     (company-dabbrev--search-buffer regexp nil symbols start
-                                                    limit ignore-comments)))))
+                                                    limit ignore-comments
+                                                    not-regexp-before)))))
         (and limit
              (> (float-time (time-since start)) limit)
              (cl-return))))
@@ -201,15 +238,32 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
         (company-substitute-prefix prefix filtered)
       filtered)))
 
-(defun company-dabbrev--fetch ()
-  (company-dabbrev--search (company-dabbrev--make-regexp)
+(defun company-dabbrev--fetch (regexp)
+  (company-dabbrev--search regexp
                            company-dabbrev-time-limit
                            (pcase company-dabbrev-other-buffers
                              ('t (list major-mode))
                              ;; `all' is a function starting with Emacs 31.
                              ('all 'all)
-                             ((pred functionp) (funcall company-dabbrev-other-buffers (current-buffer)))
-                             )))
+                             ((pred functionp)
+                              (funcall company-dabbrev-other-buffers
+                                       (current-buffer)))
+                             )
+                           nil
+                           (when (not (equal "\\sw" company-dabbrev-char-regexp))
+                             company-dabbrev-char-regexp)))
+
+(defun company-dabbrev--candidates (prefix)
+  (let ((regexp (company-dabbrev--make-regexp prefix)))
+    (company-dabbrev--filter
+     prefix
+     (company-cache-fetch
+      'dabbrev-candidates
+      (lambda ()
+        (let ((case-fold-search company-dabbrev-ignore-case))
+          (company-dabbrev--fetch regexp)))
+      :expire t
+      :check-tag regexp))))
 
 ;;;###autoload
 (defun company-dabbrev (command &optional arg &rest _ignored)
@@ -219,11 +273,7 @@ This variable affects both `company-dabbrev' and `company-dabbrev-code'."
     (interactive (company-begin-backend 'company-dabbrev))
     (prefix (company-dabbrev--prefix))
     (candidates
-     (company-dabbrev--filter
-      arg
-      ;; FIXME: Only cache the result of non-interrupted scans?
-      (company-cache-fetch 'dabbrev-candidates #'company-dabbrev--fetch
-                           :expire t)))
+     (company-dabbrev--candidates arg))
     (kind 'text)
     (no-cache t)
     (ignore-case (and company-dabbrev-ignore-case t))

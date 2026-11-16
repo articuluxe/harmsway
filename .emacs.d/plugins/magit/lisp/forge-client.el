@@ -20,6 +20,14 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; This library implements support for the REST and GraphQL APIs of
+;; supported forges.  The functions defined here wrap functions defined
+;; in the Ghub package.  They provide more convenient interfaces, and
+;; could be moved to Ghub, but because breaking changes are still likely
+;; and Ghub is used by third-party packages, they are kept here for now.
+
 ;;; Code:
 
 (require 'forge)
@@ -144,22 +152,6 @@
                                  (`(and ,cond (,var ,val))
                                   `(and ,cond (cons ',var ,val)))))
                              variables))))
-
-(defun forge--set-field-callback (topic)
-  (let ((repo (forge-get-repository topic)))
-    (cond
-      ((forge-gitlab-repository--eieio-childp repo)
-       ;; TODO Fetch single topic for Gitlab as well.
-       (lambda (&rest _)
-         (forge--pull repo (lambda (_) (forge-refresh-buffer)))))
-      ((forge-discussion--eieio-childp topic)
-       ;; See comment in `forge--update-status'.
-       (let ((status (oref topic status)))
-         (lambda (&rest _)
-           (forge--pull-topic (forge-get-repository topic) topic
-                              (lambda () (oset topic status status))))))
-      ((lambda (&rest _)
-         (forge--pull-topic (forge-get-repository topic) topic))))))
 
 ;;; _
 ;; Local Variables:

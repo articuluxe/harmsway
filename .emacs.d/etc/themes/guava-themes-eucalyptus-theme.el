@@ -51,6 +51,7 @@
       (eucalyptus-light-blue                "#2d8296")
       (eucalyptus-blue                      "#2327dc")
       (eucalyptus-deep-blue                 "#46466e")
+      (eucalyptus-alt-deep-blue             "#373c4b")
       (eucalyptus-cyan                      "#00ffff")
       (eucalyptus-alt-cyan                  "#008cd2")
 
@@ -82,7 +83,7 @@
       (eucalyptus-fl-comment                eucalyptus-green)
       (eucalyptus-fl-string                 eucalyptus-purple-red)
       (eucalyptus-fl-keyword                eucalyptus-red)
-      (eucalyptus-fl-builtin                eucalyptus-deep-blue)
+      (eucalyptus-fl-builtin                eucalyptus-alt-deep-blue)
       (eucalyptus-fl-type                   eucalyptus-alt-green)
       (eucalyptus-fl-function-name          eucalyptus-gray)
       (eucalyptus-fl-variable-name          eucalyptus-gray-green)
@@ -260,7 +261,7 @@
    `(org-todo ((,eucalyptus-class (:foreground ,eucalyptus-error :weight bold))))
    `(org-done ((,eucalyptus-class (:foreground ,eucalyptus-success :weight bold))))
    `(org-hide ((,eucalyptus-class (:foreground ,eucalyptus-bg))))
-   `(org-table ((,eucalyptus-class (:foreground ,eucalyptus-deep-blue))))
+   `(org-table ((,eucalyptus-class (:foreground ,eucalyptus-alt-deep-blue))))
    `(org-table-header ((,eucalyptus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,eucalyptus-class (:foreground ,eucalyptus-purple-red))))
    `(org-date-selected ((,eucalyptus-class (:foreground unspecified :inverse-video t :inherit org-date))))
@@ -395,6 +396,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,eucalyptus-class (:weight bold))))
+   `(keycast-key ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

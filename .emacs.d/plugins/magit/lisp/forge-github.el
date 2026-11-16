@@ -20,12 +20,20 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Support for Github instances, including https://github.com and private
+;; instances.  Not all Github features are supported, but Github is the
+;; best supported forge.
+
 ;;; Code:
 
 (require 'forge-client)
 (require 'forge-discussion)
 (require 'forge-issue)
 (require 'forge-pullreq)
+
+(defvar forge--initial-batch-pull)
 
 ;;; Class
 
@@ -288,9 +296,9 @@
             (forge--update-labels      repo .labels)
             (forge--update-milestones  repo .milestones)
             (forge--update-discussion-categories repo .discussionCategories)
-            (forge--update-discussions repo .discussions t)
-            (forge--update-issues      repo .issues t)
-            (forge--update-pullreqs    repo .pullRequests t)
+            (forge--update-discussions repo .discussions)
+            (forge--update-issues      repo .issues)
+            (forge--update-pullreqs    repo .pullRequests)
             (forge--update-revnotes    repo .commitComments)
             (forge--update-templates   repo data))
           (oset repo condition :tracked))
@@ -317,6 +325,9 @@
       :until
       ;; Keys have the form `FIELD-until', where FIELD is the name of a
       ;; field of Repository objects.  See `ghub--graphql-walk-response'.
+      ;; We cannot just use `forge--topics-until' directly because then
+      ;; we could not know whether there are gaps (because topics were
+      ;; pulled individually).
       `((discussions-until  . ,(or since (oref repo discussions-until)))
         (issues-until       . ,(or since (oref repo issues-until)))
         (pullRequests-until . ,(or since (oref repo pullreqs-until)))))))
@@ -424,9 +435,8 @@
 ;;;; Topics
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (id string)
-                                 &optional callback)
-  (forge--pull-topic repo (forge-get-topic id) callback))
+                                 (id string))
+  (forge--pull-topic repo (forge-get-topic id)))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (number number)
@@ -450,97 +460,99 @@
                   (forge-refresh-buffer)))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-discussion)
-                                 &optional callback)
+                                 (topic forge-discussion))
   (forge-repo-query repo
     (forge--singularize-fragment forge--github-discussions-fragment
                                  (oref topic number))
-    :callback (forge--pull-topic-callback repo #'forge--update-discussion
-                                          callback)))
+    :callback (forge--pull-topic-callback repo #'forge--update-discussion)))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-issue)
-                                 &optional _)
+                                 (topic forge-issue))
   (forge-repo-query repo
     (forge--singularize-fragment forge--github-issues-fragment
                                  (oref topic number))
     :callback (forge--pull-topic-callback repo #'forge--update-issue)))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-pullreq)
-                                 &optional _)
+                                 (topic forge-pullreq))
   (forge-repo-query repo
     (forge--singularize-fragment forge--github-pullreqs-fragment
                                  (oref topic number))
     :callback (forge--pull-topic-callback repo #'forge--update-pullreq)))
 
-(defun forge--pull-topic-callback (repo update &optional callback)
-  (lambda (data)
-    (funcall update repo (cdr (cadr (cadr data))))
-    (when callback
-      (funcall callback))
-    (forge-refresh-buffer)))
+(defvar forge--initial-topic-pull nil)
+(defvar forge--inhibit-unread-discussion-status nil)
 
-(cl-defmethod forge--update-status ((repo forge-github-repository)
-                                    topic data bump initial-pull)
+(defun forge--pull-topic-callback (repo update)
+  (let ((inhibit-unread forge--inhibit-unread-discussion-status))
+    (lambda (data)
+      (let ((forge--inhibit-unread-discussion-status inhibit-unread))
+        (funcall update repo (cdr (cadr (cadr data)))))
+      (forge-refresh-buffer))))
+
+(defun forge--set-field-callback (topic)
+  (lambda (&rest _)
+    (let ((forge--inhibit-unread-discussion-status t))
+      (forge--pull-topic (forge-get-repository topic) topic))))
+
+(cl-defmethod forge--update-topic-status ((_repo forge-github-repository)
+                                          topic data)
   (let-alist data
-    (let ((updated (or .updatedAt .createdAt))
-          (current-status (oref topic status)))
+    (let ((previous (oref topic status))
+          (updated
+           (string< (or (oref topic updated) "0")
+                    ;; Set this here, so that the previous date is
+                    ;; still available to be used in this comparison.
+                    (oset topic updated (or .updatedAt .createdAt)))))
       (if (forge-discussion-p topic)
           ;; Discussions lack `isReadByViewer', so we have to use a
           ;; heuristic, which is even worse than what we use for other
           ;; topic types.  Except during the repository's initial pull,
           ;; all new discussions start out as `unread'.
           ;;
-          ;; If we pull a discussion after the user mutated it, setting
-          ;; the status to `unread' is highly undesirable (since they made
-          ;; the mutation, they have already "read" it), yet that is what
-          ;; we do here.  However, the callback used by the discussion
-          ;; method of `forge--pull-topic', afterwards resets the status
-          ;; to the previous value.
+          ;; When pulling a discussion after the user mutated
+          ;; it, the status should not be changed/set to `unread'; while
+          ;; doing it, the user also read it.  In this situation
+          ;; `forge--inhibit-unread-discussion-status' is non-nil.
           ;;
           ;; Of course it is possible that we pull other changes by other
           ;; people at the same time, but we have no (reasonable) way of
-          ;; knowing that.  So in that case too the status sadly doesn't
+          ;; knowing that.  So in that case too, the status sadly doesn't
           ;; end up as `unread'.
-          ;;
-          ;; The callback kludge is not needed for all mutations.  Some
-          ;; mutations (e.g., setting labels) do not cause `updated_at'
-          ;; to be bumped; this second defect cancels out the first.
-          (cond (initial-pull
+          (cond (forge--inhibit-unread-discussion-status
+                 )
+                (forge--initial-topic-pull
                  (oset topic status 'done))
-                ((null current-status)
+                ((null previous)
                  (oset topic status 'unread))
-                ((string> updated (oref topic updated))
+                (updated
                  (oset topic status 'unread)))
         (cond ((not .isReadByViewer)
                (oset topic status 'unread))
-              (initial-pull
+              (forge--initial-topic-pull
                (oset topic status 'done))
-              ((null current-status)
+              ((null previous)
                (oset topic status 'pending))
-              ((string> updated (oref topic updated))
-               (oset topic status 'pending))))
-      (oset topic updated updated)
-      (when bump
-        (let* ((slot (cl-typecase topic
-                       (forge-discussion 'discussions-until)
-                       (forge-issue      'issues-until)
-                       (forge-pullreq    'pullreqs-until)))
-               (until (eieio-oref repo slot)))
-          (when (or (not until) (string> updated until))
-            (eieio-oset repo slot updated)))))))
+              (updated
+               (oset topic status 'pending)))))))
+
+(defun forge--topics-until (repo table)
+  (forge-sql1 [:select [t:updated t:updated] :from (as $i1 t)
+               :join repository :on (= t:repository repository:id)
+               :where (= repository:id $s2)
+               :order-by [(desc t:updated)]
+               :limit 1]
+              table (oref repo id)))
 
 ;;;; Discussions
 
-(cl-defmethod forge--update-discussions ((repo forge-github-repository) data bump)
+(cl-defmethod forge--update-discussions ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
-    (let ((initial-pull (not (oref repo discussions-until))))
-      (dolist (elt data)
-        (forge--update-discussion repo elt bump initial-pull)))))
+    (let ((forge--initial-topic-pull (not (oref repo discussions-until))))
+      (mapc (##forge--update-discussion repo %) data))
+    (oset repo discussions-until (forge--topics-until repo 'discussion))))
 
-(cl-defmethod forge--update-discussion ((repo forge-github-repository) data
-                                        &optional bump initial-pull)
+(cl-defmethod forge--update-discussion ((repo forge-github-repository) data)
   (let ((repo-id (oref repo id))
         discussion-id discussion)
     (let-alist data
@@ -601,21 +613,19 @@
                     :updated    .updatedAt
                     :body       (forge--sanitize-string .body))
                    t))))))
-        (forge--update-status repo discussion data bump initial-pull))
+        (forge--update-topic-status repo discussion data))
       (forge--set-connections repo discussion 'labels .labels)
       discussion)))
 
 ;;;; Issues
 
-(cl-defmethod forge--update-issues ((repo forge-github-repository) data
-                                    &optional bump)
+(cl-defmethod forge--update-issues ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
-    (let ((initial-pull (not (oref repo issues-until))))
-      (dolist (elt data)
-        (forge--update-issue repo elt bump initial-pull)))))
+    (let ((forge--initial-topic-pull (not (oref repo issues-until))))
+      (mapc (##forge--update-issue repo %) data))
+    (oset repo issues-until (forge--topics-until repo 'issue))))
 
-(cl-defmethod forge--update-issue ((repo forge-github-repository) data
-                                   &optional bump initial-pull)
+(cl-defmethod forge--update-issue ((repo forge-github-repository) data)
   (let ((repo-id (oref repo id))
         issue-id issue)
     (let-alist data
@@ -656,22 +666,20 @@
               :updated .updatedAt
               :body    (forge--sanitize-string .body))
              t)))
-        (forge--update-status repo issue data bump initial-pull))
+        (forge--update-topic-status repo issue data))
       (forge--set-connections repo issue 'assignees .assignees)
       (forge--set-connections repo issue 'labels .labels))
     issue))
 
 ;;;; Pullreqs
 
-(cl-defmethod forge--update-pullreqs ((repo forge-github-repository) data
-                                      &optional bump)
+(cl-defmethod forge--update-pullreqs ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
-    (let ((initial-pull (not (oref repo pullreqs-until))))
-      (dolist (elt data)
-        (forge--update-pullreq repo elt bump initial-pull)))))
+    (let ((forge--initial-topic-pull (not (oref repo pullreqs-until))))
+      (mapc (##forge--update-pullreq repo %) data))
+    (oset repo pullreqs-until (forge--topics-until repo 'pullreq))))
 
-(cl-defmethod forge--update-pullreq ((repo forge-github-repository) data
-                                     &optional bump initial-pull)
+(cl-defmethod forge--update-pullreq ((repo forge-github-repository) data)
   (let ((repo-id (oref repo id))
         pullreq-id pullreq)
     (let-alist data
@@ -720,7 +728,7 @@
               :updated .updatedAt
               :body    (forge--sanitize-string .body))
              t)))
-        (forge--update-status repo pullreq data bump initial-pull))
+        (forge--update-topic-status repo pullreq data))
       (forge--set-connections repo pullreq 'assignees .assignees)
       (forge--set-connections repo pullreq 'review-requests
                               (mapcar (##alist-get 'requestedReviewer %)
@@ -804,11 +812,11 @@
         (cb)))))
 
 (defun forge--ghub-notifications-since (forge)
-  (forge-sql1 [:select :distinct [notification:updated]
-               :from [notification repository]
-               :where (and (= repository:forge $s1)
-                           (= repository:id notification:repository))
-               :order-by [(desc notification:updated)]]
+  (forge-sql1 [:select n:updated :from (as notification n)
+               :join repository :on (= n:repository repository:id)
+               :where (= repository:forge $s1)
+               :order-by [(desc n:updated)]
+               :limit 1]
               forge))
 
 (defun forge--ghub-massage-notification (data githost)
@@ -852,11 +860,12 @@
       (let-alist data
         (when-let*
             ((topic-data (cdr (cadr (assq alias topics))))
-             (topic (funcall (pcase-exhaustive type
-                               ('discussion #'forge--update-discussion)
-                               ('issue      #'forge--update-issue)
-                               ('pullreq    #'forge--update-pullreq))
-                             repo topic-data nil initial-pull))
+             (topic (let ((forge--initial-batch-pull initial-pull))
+                      (funcall (pcase-exhaustive type
+                                 ('discussion #'forge--update-discussion)
+                                 ('issue      #'forge--update-issue)
+                                 ('pullreq    #'forge--update-pullreq))
+                               repo topic-data)))
              (notif (or (forge-get-notification id)
                         (closql-insert (forge-db)
                                        (forge-notification

@@ -20,6 +20,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Support for Gitlab instances, including https://gitlab.com and other
+;; instances.  Gitlab is less well supported than Github.  I no longer
+;; strive for feature parity.
+
 ;;; Code:
 
 (require 'forge-client)
@@ -215,7 +221,7 @@
   (closql-with-transaction (forge-db)
     (let-alist data
       (let* ((issue-id (forge--object-id 'forge-issue repo .iid))
-             (saved-p (and$ (forge-get-issue .iid)
+             (saved-p (and$ (forge-get-issue issue-id)
                             (oref $ saved-p)))
              (issue
               (forge-issue

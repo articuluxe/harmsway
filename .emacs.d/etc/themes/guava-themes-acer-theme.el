@@ -399,6 +399,10 @@
    ;; idle-highlight
    `(idle-highlight ((,acer-class (:foreground ,acer-white :background ,acer-fl-builtin :inherit region))))
 
+   ;; keycast
+   `(keycast-command ((,acer-class (:weight bold))))
+   `(keycast-key ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
+
    ;; nerd-icons
    ;; nerd-icons-completion
    `(nerd-icons-completion-dir-face ((,acer-class (:foreground unspecified :inherit font-lock-function-name-face))))))

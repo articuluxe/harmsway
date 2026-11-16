@@ -20,6 +20,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Discussion methods and other discussion-specific functions are
+;; defined here.  Funtionality shared with other topic types is defined
+;; in "forge-topic.el", "forge-topics.el" and elsewhere.
+
 ;;; Code:
 
 (require 'forge)
@@ -42,7 +48,7 @@
    (author               :initarg :author)
    (title                :initarg :title)
    (created              :initarg :created)
-   (updated              :initarg :updated)
+   (updated              :initarg :updated :initform nil)
    (closed               :initarg :closed)
    (status               :initarg :status :initform nil)
    (locked-p             :initarg :locked-p :initform nil)

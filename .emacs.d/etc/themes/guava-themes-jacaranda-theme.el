@@ -398,6 +398,10 @@
    ;; idle-highlight
    `(idle-highlight ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-fl-builtin :inherit region))))
 
+   ;; keycast
+   `(keycast-command ((,jacaranda-class (:weight bold))))
+   `(keycast-key ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
+
    ;; nerd-icons
    ;; nerd-icons-completion
    `(nerd-icons-completion-dir-face ((,jacaranda-class (:foreground unspecified :inherit font-lock-function-name-face))))))

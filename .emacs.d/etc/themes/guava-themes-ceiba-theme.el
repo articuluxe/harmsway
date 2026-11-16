@@ -41,7 +41,7 @@
       (ceiba-light-gray                "#bab49e")
 
       (ceiba-light-green               "#64786e")
-      (ceiba-green                     "#5a6450")
+      (ceiba-green                     "#5b6452")
       (ceiba-deep-green                "#2b5535")
       (ceiba-green-forest              "#006441")
       (ceiba-green-blue                "#11645a")
@@ -88,10 +88,10 @@
       (ceiba-fl-comment                ceiba-deep-green)
       (ceiba-fl-string                 ceiba-brown)
       (ceiba-fl-keyword                ceiba-purple)
-      (ceiba-fl-builtin                ceiba-alt-blue)
+      (ceiba-fl-builtin                ceiba-green)
       (ceiba-fl-type                   ceiba-green-blue)
       (ceiba-fl-function-name          ceiba-brown-wood)
-      (ceiba-fl-variable-name          ceiba-green)
+      (ceiba-fl-variable-name          ceiba-alt-blue)
       (ceiba-fl-constant               ceiba-deep-orange)
       (ceiba-fl-warning                ceiba-warning)
       (ceiba-fl-punctuation            ceiba-fg-2)
@@ -401,6 +401,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,ceiba-class (:weight bold))))
+   `(keycast-key ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion

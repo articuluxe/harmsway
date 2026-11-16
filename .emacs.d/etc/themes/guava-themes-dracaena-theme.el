@@ -398,6 +398,10 @@
    ;; idle-highlight
    `(idle-highlight ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-fl-builtin :inherit region))))
 
+   ;; keycast
+   `(keycast-command ((,dracaena-class (:weight bold))))
+   `(keycast-key ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
+
    ;; nerd-icons
    ;; nerd-icons-completion
    `(nerd-icons-completion-dir-face ((,dracaena-class (:foreground unspecified :inherit font-lock-function-name-face))))))

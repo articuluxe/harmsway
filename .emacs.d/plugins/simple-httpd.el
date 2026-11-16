@@ -5,7 +5,7 @@
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
 ;; Maintainer: Philip Kaludercic <philipk@posteo.net>, Daniel Mendler <mail@daniel-mendler.de>
 ;; URL: https://github.com/skeeto/emacs-http-server
-;; Version: 1.7
+;; Version: 1.8
 ;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; Keywords: network, comm
 

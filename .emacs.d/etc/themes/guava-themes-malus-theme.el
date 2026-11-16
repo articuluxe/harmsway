@@ -46,9 +46,10 @@
       (malus-green-granny              "#96dc50")
       (malus-green-forest              "#27ab50")
 
-      (malus-red-sweetango             "#d76469")
+      (malus-red-sweetango             "#cd5a5f")
       (malus-alt-red-sweetango         "#7d5a5f")
-      (malus-deep-red                  "#aa3c32")
+      (malus-deep-red                  "#aa4628")
+      (malus-alt-deep-red              "#aa2846")
 
       (malus-light-blue                "#50bebe")
       (malus-blue                      "#4548e3")
@@ -82,10 +83,10 @@
       (malus-tab-3                     malus-deep-red)
 
       (malus-fl-comment                malus-green-granny)
-      (malus-fl-string                 malus-red-sweetango)
+      (malus-fl-string                 malus-light-blue)
       (malus-fl-keyword                malus-green-forest)
-      (malus-fl-builtin                malus-light-blue)
-      (malus-fl-type                   malus-blue-subdued)
+      (malus-fl-builtin                malus-red-sweetango)
+      (malus-fl-type                   malus-alt-deep-red)
       (malus-fl-function-name          malus-deep-red)
       (malus-fl-variable-name          malus-yellow-subdued)
       (malus-fl-constant               malus-purple)
@@ -346,9 +347,9 @@
    `(elfeed-search-feed-face ((,malus-class (:foreground ,malus-green-forest))))
    `(elfeed-search-title-face ((,malus-class (:foreground ,malus-alt-red-sweetango))))
    `(elfeed-search-unread-title-face ((,malus-class (:weight bold :foreground ,malus-red-sweetango))))
-   `(elfeed-search-filter-face ((,malus-class (:weight bold :foreground ,malus-blue))))
-   `(elfeed-search-last-update-face ((,malus-class (:weight bold :foreground ,malus-blue))))
-   `(elfeed-search-unread-count-face ((,malus-class (:weight bold :foreground ,malus-blue))))
+   `(elfeed-search-filter-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
+   `(elfeed-search-last-update-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
+   `(elfeed-search-unread-count-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
 
    `(elfeed-show-header-face ((,malus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,malus-class (:inherit elfeed-search-unread-title-face))))
@@ -397,6 +398,10 @@
 
    ;; idle-highlight
    `(idle-highlight ((,malus-class (:foreground ,malus-black :background ,malus-fl-builtin :inherit region))))
+
+   ;; keycast
+   `(keycast-command ((,malus-class (:weight bold))))
+   `(keycast-key ((,malus-class (:foreground ,malus-white :background ,malus-tab-3 :box (:line-width -3 :style released-button) :inherit fixed-pitch))))
 
    ;; nerd-icons
    ;; nerd-icons-completion
