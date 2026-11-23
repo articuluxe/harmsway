@@ -51,17 +51,18 @@
       (malus-deep-red                  "#aa4628")
       (malus-alt-deep-red              "#aa2846")
 
-      (malus-light-blue                "#50bebe")
+      (malus-light-blue                "#5096be")
       (malus-blue                      "#4548e3")
       (malus-blue-subdued              "#9cc4de")
       (malus-oceanic-blue              "#49835f")
-      (malus-cyan                      "#00ffff")
+      (malus-cyan                      "#00cdcd")
+      (malus-dark-cyan                 "#007d7d")
 
       (malus-purple                    "#8468ed")
 
       (malus-fg-1                      "#fafbb7")
       (malus-fg-2                      "#bebf7b")
-      (malus-bg                        "#1e0910")
+      (malus-bg-1                      "#1e0910")
       (malus-highlight                 "#321d24")
       (malus-shadow                    "#b3b3b3")
       (malus-tooltip                   "#ffffe0")
@@ -75,7 +76,7 @@
 
       (malus-mode-line                 "#cd5a5f")
       (malus-mode-line-inactive        "#49835f")
-      (malus-mode-line-modified        "#60CD5A")
+      (malus-mode-line-modified        "#D2DCA0")
       (malus-bell                      "#5A99CD")
 
       (malus-tab-1                     malus-mode-line)
@@ -103,13 +104,18 @@
       (malus-diff-context              "#828282")
       (malus-smerge-base               "#5A5AA0")
 
-      (malus-square-a-0                "#af50c8")
-      (malus-square-a-1                "#28a03c")
-      (malus-square-a-2                "#ff6400")
-      (malus-square-a-3                "#3c82ff")
-
       (malus-complementary-a-0         "#46C8A5")
-      (malus-complementary-a-1         "#C84669"))
+      (malus-complementary-a-1         "#C84669")
+
+      (malus-tetradic-a-0              malus-mode-line-modified)
+      (malus-tetradic-a-1              "#A0DCC8")
+      (malus-tetradic-a-2              "#AAA0DC")
+      (malus-tetradic-a-3              "#DCA0B4")
+
+      (malus-tetradic-b-0              "#BA5ACD")
+      (malus-tetradic-b-1              "#6DCD5A")
+      (malus-tetradic-b-2              "#CD805A")
+      (malus-tetradic-b-3              "#5AA7CD"))
 
   (custom-theme-set-faces
    'guava-themes-malus
@@ -118,7 +124,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,malus-class (:foreground ,malus-fg-1 :background ,malus-bg))))
+   `(default ((,malus-class (:foreground ,malus-fg-1 :background ,malus-bg-1))))
 
    ;; error, warning, success
    `(error ((,malus-class (:foreground ,malus-error :weight bold))))
@@ -158,7 +164,7 @@
    `(cursor ((,malus-class (:foreground ,malus-white :background ,malus-mode-line))))
 
    ;; fringe
-   `(fringe ((,malus-class (:foreground ,malus-cyan :background ,malus-bg))))
+   `(fringe ((,malus-class (:foreground ,malus-fl-builtin :background ,malus-bg-1))))
    `(diff-hl-change ((,malus-class (:foreground ,malus-change :background ,malus-change))))
    `(diff-hl-insert ((,malus-class (:foreground ,malus-success :background ,malus-success))))
    `(diff-hl-delete ((,malus-class (:foreground ,malus-error :background ,malus-error))))
@@ -166,8 +172,8 @@
    ;; line-number
    `(line-number ((,malus-class (:foreground ,malus-fg-1 :inherit default))))
    `(line-number-current-line ((,malus-class (:foreground ,malus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,malus-class (:background ,malus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,malus-class (:background ,malus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,malus-class (:foreground ,malus-white :background ,malus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,malus-class (:foreground ,malus-white :background ,malus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,malus-class (:foreground ,malus-white :background ,malus-mode-line
@@ -186,7 +192,7 @@
    `(vertical-border ((,malus-class (:foreground ,malus-mode-line))))
 
    ;; header-line
-   `(header-line ((,malus-class (:inherit mode-line))))
+   `(header-line ((,malus-class (:background ,malus-tab-1 :inherit mode-line))))
    `(which-func ((,malus-class (:weight bold :foreground ,malus-mode-line-modified))))
 
    ;; tab-bar
@@ -212,8 +218,8 @@
    `(trailing-whitespace ((,malus-class (:background ,malus-error))))
 
    ;; links
-   `(link ((,malus-class (:foreground ,malus-light-blue :underline t :weight bold))))
-   `(link-visited ((,malus-class (:foreground ,malus-oceanic-blue :underline t :weight bold))))
+   `(link ((,malus-class (:foreground ,malus-cyan :underline t :weight bold))))
+   `(link-visited ((,malus-class (:foreground ,malus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,malus-class (:foreground ,malus-deep-red :weight medium))))
@@ -262,13 +268,13 @@
    ;; org-faces
    `(org-todo ((,malus-class (:foreground ,malus-error :weight bold))))
    `(org-done ((,malus-class (:foreground ,malus-success :weight bold))))
-   `(org-hide ((,malus-class (:foreground ,malus-bg))))
+   `(org-hide ((,malus-class (:foreground ,malus-bg-1))))
    `(org-table ((,malus-class (:foreground ,malus-red-sweetango))))
    `(org-table-header ((,malus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,malus-class (:foreground ,malus-oceanic-blue))))
    `(org-date-selected ((,malus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,malus-class (:foreground ,malus-square-a-2))))
-   `(org-headline-done ((,malus-class (:foreground ,malus-square-a-1))))
+   `(org-headline-todo ((,malus-class (:foreground ,malus-tetradic-b-2))))
+   `(org-headline-done ((,malus-class (:foreground ,malus-tetradic-b-1))))
    `(org-document-title ((,malus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,malus-class (:inherit shadow))))
    `(org-meta-line ((,malus-class (:inherit font-lock-comment-face))))
@@ -278,16 +284,22 @@
    `(window-divider-first-pixel ((,malus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,malus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,malus-class (:foreground ,malus-white :background ,malus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,malus-class (:foreground ,malus-white :background ,malus-tetradic-b-2))))
    `(isearch-fail ((,malus-class (:foreground ,malus-white :background ,malus-error))))
-   `(lazy-highlight ((,malus-class (:foreground ,malus-white :background ,malus-square-a-3))))
-   `(isearch-group-1 ((,malus-class (:foreground ,malus-white :background ,malus-square-a-0))))
-   `(isearch-group-2 ((,malus-class (:foreground ,malus-white :background ,malus-square-a-1))))
+   `(lazy-highlight ((,malus-class (:foreground ,malus-white :background ,malus-tetradic-b-3))))
+   `(isearch-group-1 ((,malus-class (:foreground ,malus-white :background ,malus-tetradic-b-0))))
+   `(isearch-group-2 ((,malus-class (:foreground ,malus-white :background ,malus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,malus-class (:inherit isearch))))
    `(match ((,malus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,malus-class (:background ,malus-tetradic-b-0 :foreground ,malus-white))))
+   `(reb-match-1 ((,malus-class (:background ,malus-tetradic-b-1 :foreground ,malus-white))))
+   `(reb-match-2 ((,malus-class (:background ,malus-tetradic-b-2 :foreground ,malus-white))))
+   `(reb-match-3 ((,malus-class (:background ,malus-tetradic-b-3 :foreground ,malus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -347,9 +359,9 @@
    `(elfeed-search-feed-face ((,malus-class (:foreground ,malus-green-forest))))
    `(elfeed-search-title-face ((,malus-class (:foreground ,malus-alt-red-sweetango))))
    `(elfeed-search-unread-title-face ((,malus-class (:weight bold :foreground ,malus-red-sweetango))))
-   `(elfeed-search-filter-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
-   `(elfeed-search-last-update-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
-   `(elfeed-search-unread-count-face ((,malus-class (:weight bold :foreground ,malus-blue-subdued))))
+   `(elfeed-search-filter-face ((,malus-class (:weight bold :foreground ,malus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,malus-class (:weight bold :foreground ,malus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,malus-class (:weight bold :foreground ,malus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,malus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,malus-class (:inherit elfeed-search-unread-title-face))))
@@ -358,26 +370,31 @@
    `(elfeed-show-feed-face ((,malus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,malus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,malus-class (:foreground ,malus-success))))
+   `(elfeed-log-debug-level-face ((,malus-class (:foreground ,malus-change))))
+   `(elfeed-log-warn-level-face ((,malus-class (:foreground ,malus-warning))))
+   `(elfeed-log-error-level-face ((,malus-class (:foreground ,malus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,malus-class (:foreground ,malus-green-granny :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,malus-class (:foreground ,malus-green-granny :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,malus-class (:foreground ,malus-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,malus-class (:foreground ,malus-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,malus-class (:foreground ,malus-shadow :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,malus-class (:foreground ,malus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,malus-class (:foreground ,malus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,malus-class (:foreground ,malus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,malus-class (:foreground ,malus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,malus-class (:foreground ,malus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,malus-class (:foreground ,malus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,malus-class (:foreground ,malus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,malus-class (:foreground ,malus-fg-1 :background ,malus-bg))))
+   `(corfu-default ((,malus-class (:foreground ,malus-fg-1 :background ,malus-bg-1))))
    `(corfu-current ((,malus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,malus-class (:background ,malus-shadow))))
    `(corfu-border ((,malus-class (:background ,malus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,malus-class (:foreground ,malus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,malus-class (:foreground ,malus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,malus-class (:foreground ,malus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,malus-class (:foreground ,malus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,malus-class (:foreground ,malus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,malus-class (:foreground ,malus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,malus-class (:foreground ,malus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,malus-class (:foreground ,malus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,malus-class (:foreground ,malus-complementary-a-0 :weight bold))))
@@ -394,10 +411,10 @@
    `(devdocs-code-block ((,malus-class (:weight bold :background ,malus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,malus-class (:foreground ,malus-white :background ,malus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,malus-class (:foreground ,malus-white :background ,malus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
-   `(idle-highlight ((,malus-class (:foreground ,malus-black :background ,malus-fl-builtin :inherit region))))
+   `(idle-highlight ((,malus-class (:foreground ,malus-white :background ,malus-fl-builtin :inherit region))))
 
    ;; keycast
    `(keycast-command ((,malus-class (:weight bold))))

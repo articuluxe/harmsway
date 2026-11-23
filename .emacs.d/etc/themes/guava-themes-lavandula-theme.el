@@ -41,7 +41,7 @@
       (lavandula-gray-black                "#626262")
 
       (lavandula-light-green               "#64a464")
-      (lavandula-alt-light-green           "#78c278")
+      ;; (lavandula-alt-light-green           "#78c278")
       (lavandula-green                     "#1e8246")
       (lavandula-deep-green                "#0a6432")
 
@@ -50,17 +50,18 @@
       (lavandula-red                       "#e01e50")
       (lavandula-deep-red                  "#ae1e50")
 
-      (lavandula-alt-light-blue            "#b1c6c0")
+      ;; (lavandula-alt-light-blue            "#b1c6c0")
       (lavandula-blue                      "#1e9be0")
       (lavandula-deep-blue                 "#2862b0")
-      (lavandula-light-cyan                "#00cfcf")
+      (lavandula-cyan                      "#00afaf")
+      (lavandula-dark-cyan                 "#005f5f")
 
       (lavandula-purple                    "#7d509b")
       (lavandula-lavender                  "#8061b8")
 
       (lavandula-fg-1                      "#505050")
       (lavandula-fg-2                      "#a5a5a5")
-      (lavandula-bg                        "#eee8d9")
+      (lavandula-bg-1                      "#eee8d9")
       (lavandula-highlight                 "#dad4c5")
       (lavandula-shadow                    "#898989")
       (lavandula-tooltip                   "#ffffe0")
@@ -74,7 +75,7 @@
 
       (lavandula-mode-line                 "#8061b8")
       (lavandula-mode-line-inactive        "#3a3a3a")
-      (lavandula-mode-line-modified        "#ff9f79")
+      (lavandula-mode-line-modified        "#FFAE97")
       (lavandula-bell                      "#6EB861")
 
       (lavandula-tab-1                     lavandula-mode-line)
@@ -102,13 +103,18 @@
       (lavandula-diff-context              "#dcdcdc")
       (lavandula-smerge-base               "#C8C8F0")
 
-      (lavandula-square-a-0                "#af50b9")
-      (lavandula-square-a-1                "#28a03c")
-      (lavandula-square-a-2                "#f55a00")
-      (lavandula-square-a-3                "#3c82ff")
-
       (lavandula-complementary-a-0         "#4680DE")
-      (lavandula-complementary-a-1         "#DE4680"))
+      (lavandula-complementary-a-1         "#DE4680")
+
+      (lavandula-tetradic-a-0              lavandula-mode-line-modified)
+      (lavandula-tetradic-a-1              "#E297FF")
+      (lavandula-tetradic-a-2              "#B4FF97")
+      (lavandula-tetradic-a-3              "#97E8FF")
+
+      (lavandula-tetradic-b-0              "#9D50B4")
+      (lavandula-tetradic-b-1              "#67B450")
+      (lavandula-tetradic-b-2              "#B46B50")
+      (lavandula-tetradic-b-3              "#5099B4"))
 
   (custom-theme-set-faces
    'guava-themes-lavandula
@@ -117,7 +123,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,lavandula-class (:foreground ,lavandula-fg-1 :background ,lavandula-bg))))
+   `(default ((,lavandula-class (:foreground ,lavandula-fg-1 :background ,lavandula-bg-1))))
 
    ;; error, warning, success
    `(error ((,lavandula-class (:foreground ,lavandula-error :weight bold))))
@@ -157,7 +163,7 @@
    `(cursor ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-mode-line))))
 
    ;; fringe
-   `(fringe ((,lavandula-class (:foreground ,lavandula-deep-blue :background ,lavandula-bg))))
+   `(fringe ((,lavandula-class (:foreground ,lavandula-fl-builtin :background ,lavandula-bg-1))))
    `(diff-hl-change ((,lavandula-class (:foreground ,lavandula-change :background ,lavandula-change))))
    `(diff-hl-insert ((,lavandula-class (:foreground ,lavandula-success :background ,lavandula-success))))
    `(diff-hl-delete ((,lavandula-class (:foreground ,lavandula-error :background ,lavandula-error))))
@@ -165,8 +171,8 @@
    ;; line-number
    `(line-number ((,lavandula-class (:foreground ,lavandula-fg-1 :inherit default))))
    `(line-number-current-line ((,lavandula-class (:foreground ,lavandula-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tab-3 :inherit line-number))))
-   `(line-number-major-tick ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tab-2 :inherit line-number))))
+   `(line-number-minor-tick ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-mode-line
@@ -185,7 +191,7 @@
    `(vertical-border ((,lavandula-class (:foreground ,lavandula-mode-line))))
 
    ;; header-line
-   `(header-line ((,lavandula-class (:inherit mode-line))))
+   `(header-line ((,lavandula-class (:background ,lavandula-tab-1 :inherit mode-line))))
    `(which-func ((,lavandula-class (:weight bold :foreground ,lavandula-mode-line-modified))))
 
    ;; tab-bar
@@ -211,8 +217,8 @@
    `(trailing-whitespace ((,lavandula-class (:background ,lavandula-error))))
 
    ;; links
-   `(link ((,lavandula-class (:foreground ,lavandula-blue :underline t :weight bold))))
-   `(link-visited ((,lavandula-class (:foreground ,lavandula-deep-blue :underline t :weight bold))))
+   `(link ((,lavandula-class (:foreground ,lavandula-cyan :underline t :weight bold))))
+   `(link-visited ((,lavandula-class (:foreground ,lavandula-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,lavandula-class (:foreground ,lavandula-purple :weight medium))))
@@ -225,14 +231,14 @@
    `(outline-8 ((,lavandula-class (:inherit outline-4))))
 
    ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
-   `(homoglyph ((,lavandula-class (:foreground ,lavandula-light-cyan))))
+   `(homoglyph ((,lavandula-class (:foreground ,lavandula-cyan))))
    `(escape-glyph ((,lavandula-class (:inherit homoglyph))))
    `(nobreak-space ((,lavandula-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
    `(nobreak-hyphen ((,lavandula-class (:inherit homoglyph))))
 
    ;; pulse-highlight-start-face
    ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
-   `(pulse-highlight-start-face ((,lavandula-class (:background ,lavandula-light-cyan))))
+   `(pulse-highlight-start-face ((,lavandula-class (:background ,lavandula-cyan))))
 
    ;; help-key-binding
    `(help-key-binding ((,lavandula-class (:foreground ,lavandula-deep-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
@@ -261,13 +267,13 @@
    ;; org-faces
    `(org-todo ((,lavandula-class (:foreground ,lavandula-error :weight bold))))
    `(org-done ((,lavandula-class (:foreground ,lavandula-success :weight bold))))
-   `(org-hide ((,lavandula-class (:foreground ,lavandula-bg))))
+   `(org-hide ((,lavandula-class (:foreground ,lavandula-bg-1))))
    `(org-table ((,lavandula-class (:foreground ,lavandula-lavender))))
    `(org-table-header ((,lavandula-class (:inverse-video t :inherit org-table))))
    `(org-date ((,lavandula-class (:foreground ,lavandula-red))))
    `(org-date-selected ((,lavandula-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,lavandula-class (:foreground ,lavandula-square-a-2))))
-   `(org-headline-done ((,lavandula-class (:foreground ,lavandula-square-a-1))))
+   `(org-headline-todo ((,lavandula-class (:foreground ,lavandula-tetradic-b-2))))
+   `(org-headline-done ((,lavandula-class (:foreground ,lavandula-tetradic-b-1))))
    `(org-document-title ((,lavandula-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,lavandula-class (:inherit shadow))))
    `(org-meta-line ((,lavandula-class (:inherit font-lock-comment-face))))
@@ -277,16 +283,22 @@
    `(window-divider-first-pixel ((,lavandula-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,lavandula-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tetradic-b-2))))
    `(isearch-fail ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-error))))
-   `(lazy-highlight ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-square-a-3))))
-   `(isearch-group-1 ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-square-a-0))))
-   `(isearch-group-2 ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-square-a-1))))
+   `(lazy-highlight ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tetradic-b-3))))
+   `(isearch-group-1 ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tetradic-b-0))))
+   `(isearch-group-2 ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,lavandula-class (:inherit isearch))))
    `(match ((,lavandula-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,lavandula-class (:background ,lavandula-tetradic-b-0 :foreground ,lavandula-white))))
+   `(reb-match-1 ((,lavandula-class (:background ,lavandula-tetradic-b-1 :foreground ,lavandula-white))))
+   `(reb-match-2 ((,lavandula-class (:background ,lavandula-tetradic-b-2 :foreground ,lavandula-white))))
+   `(reb-match-3 ((,lavandula-class (:background ,lavandula-tetradic-b-3 :foreground ,lavandula-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -346,9 +358,9 @@
    `(elfeed-search-feed-face ((,lavandula-class (:foreground ,lavandula-purple))))
    `(elfeed-search-title-face ((,lavandula-class (:foreground ,lavandula-gray-black))))
    `(elfeed-search-unread-title-face ((,lavandula-class (:weight bold :foreground ,lavandula-green))))
-   `(elfeed-search-filter-face ((,lavandula-class (:weight bold :foreground ,lavandula-orange))))
-   `(elfeed-search-last-update-face ((,lavandula-class (:weight bold :foreground ,lavandula-orange))))
-   `(elfeed-search-unread-count-face ((,lavandula-class (:weight bold :foreground ,lavandula-orange))))
+   `(elfeed-search-filter-face ((,lavandula-class (:weight bold :foreground ,lavandula-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,lavandula-class (:weight bold :foreground ,lavandula-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,lavandula-class (:weight bold :foreground ,lavandula-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,lavandula-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,lavandula-class (:inherit elfeed-search-unread-title-face))))
@@ -357,26 +369,31 @@
    `(elfeed-show-feed-face ((,lavandula-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,lavandula-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,lavandula-class (:foreground ,lavandula-success))))
+   `(elfeed-log-debug-level-face ((,lavandula-class (:foreground ,lavandula-change))))
+   `(elfeed-log-warn-level-face ((,lavandula-class (:foreground ,lavandula-warning))))
+   `(elfeed-log-error-level-face ((,lavandula-class (:foreground ,lavandula-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,lavandula-class (:foreground ,lavandula-alt-light-green :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,lavandula-class (:foreground ,lavandula-alt-light-green :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,lavandula-class (:foreground ,lavandula-alt-light-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,lavandula-class (:foreground ,lavandula-alt-light-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,lavandula-class (:foreground ,lavandula-alt-light-blue :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,lavandula-class (:foreground ,lavandula-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,lavandula-class (:foreground ,lavandula-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,lavandula-class (:foreground ,lavandula-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,lavandula-class (:foreground ,lavandula-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,lavandula-class (:foreground ,lavandula-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,lavandula-class (:foreground ,lavandula-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,lavandula-class (:foreground ,lavandula-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,lavandula-class (:foreground ,lavandula-fg-1 :background ,lavandula-bg))))
+   `(corfu-default ((,lavandula-class (:foreground ,lavandula-fg-1 :background ,lavandula-bg-1))))
    `(corfu-current ((,lavandula-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,lavandula-class (:background ,lavandula-shadow))))
    `(corfu-border ((,lavandula-class (:background ,lavandula-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,lavandula-class (:foreground ,lavandula-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,lavandula-class (:foreground ,lavandula-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,lavandula-class (:foreground ,lavandula-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,lavandula-class (:foreground ,lavandula-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,lavandula-class (:foreground ,lavandula-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,lavandula-class (:foreground ,lavandula-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,lavandula-class (:foreground ,lavandula-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,lavandula-class (:foreground ,lavandula-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,lavandula-class (:foreground ,lavandula-complementary-a-0 :weight bold))))
@@ -393,7 +410,7 @@
    `(devdocs-code-block ((,lavandula-class (:weight bold :background ,lavandula-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-square-a-3 :inherit region))))
+   `(pdf-view-region ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,lavandula-class (:foreground ,lavandula-white :background ,lavandula-fl-builtin :inherit region))))

@@ -4,7 +4,7 @@
 
 ;; Author: Szymon Wilczek <swilczek.lx@gmail.com>
 ;; URL: https://github.com/szymonwilczek/au-themes
-;; Version: 0.4.0
+;; Version: 0.4.1
 ;; Package-Requires: ((emacs "29.1") (modus-themes "5.2.0"))
 ;; Keywords: faces, themes, accessibility, autism, neurodivergence
 
@@ -166,14 +166,23 @@ Stavrou, kept here so that the themes need only modus-themes.")
           (insert-file-contents file)
           (when (search-forward "(modus-themes-theme" nil t)
             (goto-char (match-beginning 0))
-            (ignore-errors
-              (let* ((form (read (current-buffer)))
-                     (name (cadr (nth 1 form)))
-                     (desc (nth 3 form))
-                     (mode (cadr (nth 4 form)))
-                     (palette (cadr (nth 5 form))))
-                (modus-themes-declare name 'au-themes desc mode palette nil nil)
-                (modus-themes-register name)))))))))
+            (pcase (condition-case err
+                       (read (current-buffer))
+                     ((end-of-file invalid-read-syntax)
+                      (display-warning
+                       'au-themes
+                       (format-message "Cannot read the theme form in %s (%s)"
+                                       file (car err)))
+                      nil))
+              (`(modus-themes-theme
+                 (quote ,(and name (pred symbolp)))
+                 (quote au-themes)
+                 ,(and desc (pred stringp))
+                 (quote ,(and mode (or 'light 'dark)))
+                 (quote ,(and palette (pred symbolp)))
+                 . ,_)
+               (modus-themes-declare name 'au-themes desc mode palette nil nil)
+               (modus-themes-register name)))))))))
 
 (defun au-themes--discover-themes ()
   "Return the sorted list of au-themes found on disk.
@@ -203,7 +212,9 @@ HEX is parsed with `color-values-from-color-spec' rather than
 
 (defun au-themes--theme-palette (theme)
   "Extract palette alist for THEME, requiring theme library if needed."
-  (let* ((pal-sym (intern (format "%s-palette-partial" theme)))
+  (let* ((pal-sym (intern (format "au-themes-%s-palette-partial"
+                                  (string-remove-prefix
+                                   "au-" (symbol-name theme)))))
          (file-sym (intern (format "%s-theme" theme))))
     (unless (boundp pal-sym)
       (require file-sym nil t))

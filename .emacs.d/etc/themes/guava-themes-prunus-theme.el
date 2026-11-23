@@ -57,14 +57,15 @@
 
       (prunus-blue                      "#4650e1")
       (prunus-deep-blue                 "#4650af")
-      (prunus-cyan                      "#00aaaa")
+      (prunus-cyan                      "#00b9b9")
+      (prunus-dark-cyan                 "#006969")
 
       (prunus-purple                    "#7350a0")
       (prunus-purple-red                "#8B2252")
 
       (prunus-fg-1                      "#ebafc8")
       (prunus-fg-2                      "#af738c")
-      (prunus-bg                        "#190f05")
+      (prunus-bg-1                      "#190f05")
       (prunus-highlight                 "#2d2319")
       (prunus-shadow                    "#b3b3b3")
       (prunus-tooltip                   "#ffffe0")
@@ -78,7 +79,7 @@
 
       (prunus-mode-line                 "#50463c")
       (prunus-mode-line-inactive        "#645a50")
-      (prunus-mode-line-modified        "#d74692")
+      (prunus-mode-line-modified        "#D2DCA0")
       (prunus-bell                      "#465a5a")
 
       (prunus-tab-1                     prunus-mode-line)
@@ -106,13 +107,23 @@
       (prunus-diff-context              "#828282")
       (prunus-smerge-base               "#5A5AA0")
 
-      (prunus-square-a-0                "#af50c8")
-      (prunus-square-a-1                "#28a03c")
-      (prunus-square-a-2                "#ff6400")
-      (prunus-square-a-3                "#3c82ff")
+      (prunus-tetradic-b-0                "#af50c8")
+      (prunus-tetradic-b-1                "#28a03c")
+      (prunus-tetradic-b-2                "#ff6400")
+      (prunus-tetradic-b-3                "#3c82ff")
 
       (prunus-complementary-a-0         "#46C8A5")
-      (prunus-complementary-a-1         "#C84669"))
+      (prunus-complementary-a-1         "#C84669")
+
+      (prunus-tetradic-a-0              prunus-mode-line-modified)
+      (prunus-tetradic-a-1              "#A0DCC8")
+      (prunus-tetradic-a-2              "#AAA0DC")
+      (prunus-tetradic-a-3              "#DCA0B4")
+
+      (prunus-tetradic-b-0              "#A646B9")
+      (prunus-tetradic-b-1              "#59B946")
+      (prunus-tetradic-b-2              "#B96C46")
+      (prunus-tetradic-b-3              "#4693B9"))
 
   (custom-theme-set-faces
    'guava-themes-prunus
@@ -121,7 +132,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,prunus-class (:foreground ,prunus-fg-1 :background ,prunus-bg))))
+   `(default ((,prunus-class (:foreground ,prunus-fg-1 :background ,prunus-bg-1))))
 
    ;; error, warning, success
    `(error ((,prunus-class (:foreground ,prunus-error :weight bold))))
@@ -161,7 +172,7 @@
    `(cursor ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line))))
 
    ;; fringe
-   `(fringe ((,prunus-class (:foreground ,prunus-cyan :background ,prunus-bg))))
+   `(fringe ((,prunus-class (:foreground ,prunus-fl-builtin :background ,prunus-bg-1))))
    `(diff-hl-change ((,prunus-class (:foreground ,prunus-change :background ,prunus-change))))
    `(diff-hl-insert ((,prunus-class (:foreground ,prunus-success :background ,prunus-success))))
    `(diff-hl-delete ((,prunus-class (:foreground ,prunus-error :background ,prunus-error))))
@@ -169,8 +180,8 @@
    ;; line-number
    `(line-number ((,prunus-class (:foreground ,prunus-fg-1 :inherit default))))
    `(line-number-current-line ((,prunus-class (:foreground ,prunus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,prunus-class (:background ,prunus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,prunus-class (:background ,prunus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,prunus-class (:foreground ,prunus-white :background ,prunus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line
@@ -189,7 +200,7 @@
    `(vertical-border ((,prunus-class (:foreground ,prunus-mode-line))))
 
    ;; header-line
-   `(header-line ((,prunus-class (:inherit mode-line))))
+   `(header-line ((,prunus-class (:background ,prunus-tab-1 :inherit mode-line))))
    `(which-func ((,prunus-class (:weight bold :foreground ,prunus-mode-line-modified))))
 
    ;; tab-bar
@@ -215,8 +226,8 @@
    `(trailing-whitespace ((,prunus-class (:background ,prunus-error))))
 
    ;; links
-   `(link ((,prunus-class (:foreground ,prunus-deep-blue :underline t :weight bold))))
-   `(link-visited ((,prunus-class (:foreground ,prunus-cyan :underline t :weight bold))))
+   `(link ((,prunus-class (:foreground ,prunus-cyan :underline t :weight bold))))
+   `(link-visited ((,prunus-class (:foreground ,prunus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,prunus-class (:foreground ,prunus-coffee :weight medium))))
@@ -265,13 +276,13 @@
    ;; org-faces
    `(org-todo ((,prunus-class (:foreground ,prunus-error :weight bold))))
    `(org-done ((,prunus-class (:foreground ,prunus-success :weight bold))))
-   `(org-hide ((,prunus-class (:foreground ,prunus-bg))))
+   `(org-hide ((,prunus-class (:foreground ,prunus-bg-1))))
    `(org-table ((,prunus-class (:foreground ,prunus-light-pink))))
    `(org-table-header ((,prunus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,prunus-class (:foreground ,prunus-deep-red))))
    `(org-date-selected ((,prunus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,prunus-class (:foreground ,prunus-square-a-2))))
-   `(org-headline-done ((,prunus-class (:foreground ,prunus-square-a-3))))
+   `(org-headline-todo ((,prunus-class (:foreground ,prunus-tetradic-b-2))))
+   `(org-headline-done ((,prunus-class (:foreground ,prunus-tetradic-b-3))))
    `(org-document-title ((,prunus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,prunus-class (:inherit shadow))))
    `(org-meta-line ((,prunus-class (:inherit font-lock-comment-face))))
@@ -281,16 +292,22 @@
    `(window-divider-first-pixel ((,prunus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,prunus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,prunus-class (:foreground ,prunus-white :background ,prunus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,prunus-class (:foreground ,prunus-white :background ,prunus-tetradic-b-2))))
    `(isearch-fail ((,prunus-class (:foreground ,prunus-white :background ,prunus-error))))
-   `(lazy-highlight ((,prunus-class (:foreground ,prunus-white :background ,prunus-square-a-3))))
-   `(isearch-group-1 ((,prunus-class (:foreground ,prunus-white :background ,prunus-square-a-0))))
-   `(isearch-group-2 ((,prunus-class (:foreground ,prunus-white :background ,prunus-square-a-1))))
+   `(lazy-highlight ((,prunus-class (:foreground ,prunus-white :background ,prunus-tetradic-b-3))))
+   `(isearch-group-1 ((,prunus-class (:foreground ,prunus-white :background ,prunus-tetradic-b-0))))
+   `(isearch-group-2 ((,prunus-class (:foreground ,prunus-white :background ,prunus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,prunus-class (:inherit isearch))))
    `(match ((,prunus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,prunus-class (:background ,prunus-tetradic-b-0 :foreground ,prunus-white))))
+   `(reb-match-1 ((,prunus-class (:background ,prunus-tetradic-b-1 :foreground ,prunus-white))))
+   `(reb-match-2 ((,prunus-class (:background ,prunus-tetradic-b-2 :foreground ,prunus-white))))
+   `(reb-match-3 ((,prunus-class (:background ,prunus-tetradic-b-3 :foreground ,prunus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -350,9 +367,9 @@
    `(elfeed-search-feed-face ((,prunus-class (:foreground ,prunus-pink))))
    `(elfeed-search-title-face ((,prunus-class (:foreground ,prunus-alt-brown))))
    `(elfeed-search-unread-title-face ((,prunus-class (:weight bold :foreground ,prunus-alt-light-brown))))
-   `(elfeed-search-filter-face ((,prunus-class (:weight bold :foreground ,prunus-light-pink))))
-   `(elfeed-search-last-update-face ((,prunus-class (:weight bold :foreground ,prunus-light-pink))))
-   `(elfeed-search-unread-count-face ((,prunus-class (:weight bold :foreground ,prunus-light-pink))))
+   `(elfeed-search-filter-face ((,prunus-class (:weight bold :foreground ,prunus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,prunus-class (:weight bold :foreground ,prunus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,prunus-class (:weight bold :foreground ,prunus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,prunus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,prunus-class (:inherit elfeed-search-unread-title-face))))
@@ -361,26 +378,31 @@
    `(elfeed-show-feed-face ((,prunus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,prunus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,prunus-class (:foreground ,prunus-success))))
+   `(elfeed-log-debug-level-face ((,prunus-class (:foreground ,prunus-change))))
+   `(elfeed-log-warn-level-face ((,prunus-class (:foreground ,prunus-warning))))
+   `(elfeed-log-error-level-face ((,prunus-class (:foreground ,prunus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,prunus-class (:foreground ,prunus-green-forest :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,prunus-class (:foreground ,prunus-green-forest :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,prunus-class (:foreground ,prunus-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,prunus-class (:foreground ,prunus-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,prunus-class (:foreground ,prunus-shadow :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,prunus-class (:foreground ,prunus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,prunus-class (:foreground ,prunus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,prunus-class (:foreground ,prunus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,prunus-class (:foreground ,prunus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,prunus-class (:foreground ,prunus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,prunus-class (:foreground ,prunus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,prunus-class (:foreground ,prunus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,prunus-class (:foreground ,prunus-fg-1 :background ,prunus-bg))))
+   `(corfu-default ((,prunus-class (:foreground ,prunus-fg-1 :background ,prunus-bg-1))))
    `(corfu-current ((,prunus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,prunus-class (:background ,prunus-shadow))))
    `(corfu-border ((,prunus-class (:background ,prunus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,prunus-class (:foreground ,prunus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,prunus-class (:foreground ,prunus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,prunus-class (:foreground ,prunus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,prunus-class (:foreground ,prunus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,prunus-class (:foreground ,prunus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,prunus-class (:foreground ,prunus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,prunus-class (:foreground ,prunus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,prunus-class (:foreground ,prunus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,prunus-class (:foreground ,prunus-complementary-a-0 :weight bold))))
@@ -397,7 +419,7 @@
    `(devdocs-code-block ((,prunus-class (:weight bold :background ,prunus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,prunus-class (:foreground ,prunus-white :background ,prunus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,prunus-class (:foreground ,prunus-white :background ,prunus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,prunus-class (:foreground ,prunus-white :background ,prunus-fl-builtin :inherit region))))

@@ -38,18 +38,19 @@
       (solanum-black                     "#000000")
       (solanum-white                     "#FFFFFF")
 
-      (solanum-red-tomato                "#cd151f")
+      (solanum-red-tomato                "#b91f29")
       (solanum-orange                    "#e98c85")
 
       (solanum-yellow-potato             "#fde8b9")
 
-      (solanum-light-green               "#4ec9b0")
+      (solanum-light-green               "#39b982")
       (solanum-alt-light-green           "#61ff96")
       (solanum-deep-green                "#007d37")
 
       (solanum-light-blue                "#8ec4de")
       (solanum-blue                      "#0d62b2")
-      (solanum-cyan                      "#00ffff")
+      (solanum-cyan                      "#00c3c3")
+      (solanum-dark-cyan                 "#007373")
 
       (solanum-light-purple              "#bec8ff")
       (solanum-purple                    "#786ed7")
@@ -59,7 +60,7 @@
 
       (solanum-fg-1                      "#FFFFFF")
       (solanum-fg-2                      "#c3c3c3")
-      (solanum-bg                        "#130d1a")
+      (solanum-bg-1                      "#130d1a")
       (solanum-highlight                 "#27212e")
       (solanum-shadow                    "#b3b3b3")
       (solanum-tooltip                   "#ffffe0")
@@ -68,21 +69,21 @@
 
       (solanum-error                     "#FF0000")
       (solanum-warning                   "#f6d909")
-      (solanum-success                   "#23a334")
+      (solanum-success                   "#23b734")
       (solanum-change                    "#0d62b2")
 
       (solanum-mode-line                 "#73466e")
       (solanum-mode-line-inactive        "#3b3550")
-      (solanum-mode-line-modified        "#3C8CA0")
+      (solanum-mode-line-modified        "#AAA0DC")
       (solanum-bell                      "#4b7337")
 
       (solanum-tab-1                     solanum-mode-line)
       (solanum-tab-2                     solanum-mode-line-inactive)
       (solanum-tab-3                     solanum-alt-dark-purple)
 
-      (solanum-fl-comment                solanum-red-tomato)
+      (solanum-fl-comment                solanum-deep-green)
       (solanum-fl-string                 solanum-yellow-potato)
-      (solanum-fl-keyword                solanum-deep-green)
+      (solanum-fl-keyword                solanum-red-tomato)
       (solanum-fl-builtin                solanum-dark-purple)
       (solanum-fl-type                   solanum-orange)
       (solanum-fl-function-name          solanum-purple)
@@ -90,7 +91,7 @@
       (solanum-fl-constant               solanum-light-blue)
       (solanum-fl-warning                solanum-warning)
       (solanum-fl-punctuation            solanum-fg-2)
-      (solanum-fl-negation-char          solanum-alt-light-green)
+      (solanum-fl-negation-char          solanum-blue)
 
       (solanum-diff-added                "#5aa05a")
       (solanum-diff-removed              "#a05a5a")
@@ -101,13 +102,18 @@
       (solanum-diff-context              "#828282")
       (solanum-smerge-base               "#5A5AA0")
 
-      (solanum-square-a-0                "#af50c8")
-      (solanum-square-a-1                "#28a03c")
-      (solanum-square-a-2                "#ff6400")
-      (solanum-square-a-3                "#3c82ff")
-
       (solanum-complementary-a-0         "#46C8A5")
-      (solanum-complementary-a-1         "#C84669"))
+      (solanum-complementary-a-1         "#C84669")
+
+      (solanum-tetradic-a-0              solanum-mode-line-modified)
+      (solanum-tetradic-a-1              "#DCA0B4")
+      (solanum-tetradic-a-2              "#A0DCC8")
+      (solanum-tetradic-a-3              "#D2DCA0")
+
+      (solanum-tetradic-b-0              "#BA5ACD")
+      (solanum-tetradic-b-1              "#6DCD5A")
+      (solanum-tetradic-b-2              "#CD805A")
+      (solanum-tetradic-b-3              "#5AA7CD"))
 
   (custom-theme-set-faces
    'guava-themes-solanum
@@ -116,7 +122,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,solanum-class (:foreground ,solanum-fg-1 :background ,solanum-bg))))
+   `(default ((,solanum-class (:foreground ,solanum-fg-1 :background ,solanum-bg-1))))
 
    ;; error, warning, success
    `(error ((,solanum-class (:foreground ,solanum-error :weight bold))))
@@ -156,7 +162,7 @@
    `(cursor ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line))))
 
    ;; fringe
-   `(fringe ((,solanum-class (:foreground ,solanum-red-tomato :background ,solanum-bg))))
+   `(fringe ((,solanum-class (:foreground ,solanum-fl-builtin :background ,solanum-bg-1))))
    `(diff-hl-change ((,solanum-class (:foreground ,solanum-change :background ,solanum-change))))
    `(diff-hl-insert ((,solanum-class (:foreground ,solanum-success :background ,solanum-success))))
    `(diff-hl-delete ((,solanum-class (:foreground ,solanum-error :background ,solanum-error))))
@@ -164,8 +170,8 @@
    ;; line-number
    `(line-number ((,solanum-class (:foreground ,solanum-fg-1 :inherit default))))
    `(line-number-current-line ((,solanum-class (:foreground ,solanum-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,solanum-class (:background ,solanum-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,solanum-class (:background ,solanum-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,solanum-class (:foreground ,solanum-white :background ,solanum-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line
@@ -184,7 +190,7 @@
    `(vertical-border ((,solanum-class (:foreground ,solanum-mode-line))))
 
    ;; header-line
-   `(header-line ((,solanum-class (:inherit mode-line))))
+   `(header-line ((,solanum-class (:background ,solanum-tab-1 :inherit mode-line))))
    `(which-func ((,solanum-class (:weight bold :foreground ,solanum-mode-line-modified))))
 
    ;; tab-bar
@@ -210,8 +216,8 @@
    `(trailing-whitespace ((,solanum-class (:background ,solanum-error))))
 
    ;; links
-   `(link ((,solanum-class (:foreground ,solanum-yellow-potato :underline t :weight bold))))
-   `(link-visited ((,solanum-class (:foreground ,solanum-orange :underline t :weight bold))))
+   `(link ((,solanum-class (:foreground ,solanum-cyan :underline t :weight bold))))
+   `(link-visited ((,solanum-class (:foreground ,solanum-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,solanum-class (:foreground ,solanum-purple :weight medium))))
@@ -260,13 +266,13 @@
    ;; org-faces
    `(org-todo ((,solanum-class (:foreground ,solanum-error :weight bold))))
    `(org-done ((,solanum-class (:foreground ,solanum-success :weight bold))))
-   `(org-hide ((,solanum-class (:foreground ,solanum-bg))))
+   `(org-hide ((,solanum-class (:foreground ,solanum-bg-1))))
    `(org-table ((,solanum-class (:foreground ,solanum-yellow-potato))))
    `(org-table-header ((,solanum-class (:inverse-video t :inherit org-table))))
    `(org-date ((,solanum-class (:foreground ,solanum-alt-light-green))))
    `(org-date-selected ((,solanum-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,solanum-class (:foreground ,solanum-square-a-2))))
-   `(org-headline-done ((,solanum-class (:foreground ,solanum-square-a-1))))
+   `(org-headline-todo ((,solanum-class (:foreground ,solanum-tetradic-b-2))))
+   `(org-headline-done ((,solanum-class (:foreground ,solanum-tetradic-b-1))))
    `(org-document-title ((,solanum-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,solanum-class (:inherit shadow))))
    `(org-meta-line ((,solanum-class (:inherit font-lock-comment-face))))
@@ -276,16 +282,22 @@
    `(window-divider-first-pixel ((,solanum-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,solanum-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,solanum-class (:foreground ,solanum-white :background ,solanum-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,solanum-class (:foreground ,solanum-white :background ,solanum-tetradic-b-2))))
    `(isearch-fail ((,solanum-class (:foreground ,solanum-white :background ,solanum-error))))
-   `(lazy-highlight ((,solanum-class (:foreground ,solanum-white :background ,solanum-square-a-3))))
-   `(isearch-group-1 ((,solanum-class (:foreground ,solanum-white :background ,solanum-square-a-0))))
-   `(isearch-group-2 ((,solanum-class (:foreground ,solanum-white :background ,solanum-square-a-1))))
+   `(lazy-highlight ((,solanum-class (:foreground ,solanum-white :background ,solanum-tetradic-b-3))))
+   `(isearch-group-1 ((,solanum-class (:foreground ,solanum-white :background ,solanum-tetradic-b-0))))
+   `(isearch-group-2 ((,solanum-class (:foreground ,solanum-white :background ,solanum-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,solanum-class (:inherit isearch))))
    `(match ((,solanum-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,solanum-class (:background ,solanum-tetradic-b-0 :foreground ,solanum-white))))
+   `(reb-match-1 ((,solanum-class (:background ,solanum-tetradic-b-1 :foreground ,solanum-white))))
+   `(reb-match-2 ((,solanum-class (:background ,solanum-tetradic-b-2 :foreground ,solanum-white))))
+   `(reb-match-3 ((,solanum-class (:background ,solanum-tetradic-b-3 :foreground ,solanum-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -345,9 +357,9 @@
    `(elfeed-search-feed-face ((,solanum-class (:foreground ,solanum-light-green))))
    `(elfeed-search-title-face ((,solanum-class (:foreground ,solanum-alt-dark-purple))))
    `(elfeed-search-unread-title-face ((,solanum-class (:weight bold :foreground ,solanum-deep-green))))
-   `(elfeed-search-filter-face ((,solanum-class (:weight bold :foreground ,solanum-light-purple))))
-   `(elfeed-search-last-update-face ((,solanum-class (:weight bold :foreground ,solanum-light-purple))))
-   `(elfeed-search-unread-count-face ((,solanum-class (:weight bold :foreground ,solanum-light-purple))))
+   `(elfeed-search-filter-face ((,solanum-class (:weight bold :foreground ,solanum-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,solanum-class (:weight bold :foreground ,solanum-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,solanum-class (:weight bold :foreground ,solanum-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,solanum-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,solanum-class (:inherit elfeed-search-unread-title-face))))
@@ -356,26 +368,31 @@
    `(elfeed-show-feed-face ((,solanum-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,solanum-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,solanum-class (:foreground ,solanum-success))))
+   `(elfeed-log-debug-level-face ((,solanum-class (:foreground ,solanum-change))))
+   `(elfeed-log-warn-level-face ((,solanum-class (:foreground ,solanum-warning))))
+   `(elfeed-log-error-level-face ((,solanum-class (:foreground ,solanum-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,solanum-class (:foreground ,solanum-red-tomato :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,solanum-class (:foreground ,solanum-red-tomato :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,solanum-class (:foreground ,solanum-yellow-potato :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,solanum-class (:foreground ,solanum-yellow-potato :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,solanum-class (:foreground ,solanum-yellow-potato :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,solanum-class (:foreground ,solanum-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,solanum-class (:foreground ,solanum-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,solanum-class (:foreground ,solanum-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,solanum-class (:foreground ,solanum-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,solanum-class (:foreground ,solanum-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,solanum-class (:foreground ,solanum-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,solanum-class (:foreground ,solanum-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,solanum-class (:foreground ,solanum-fg-1 :background ,solanum-bg))))
+   `(corfu-default ((,solanum-class (:foreground ,solanum-fg-1 :background ,solanum-bg-1))))
    `(corfu-current ((,solanum-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,solanum-class (:background ,solanum-shadow))))
    `(corfu-border ((,solanum-class (:background ,solanum-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,solanum-class (:foreground ,solanum-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,solanum-class (:foreground ,solanum-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,solanum-class (:foreground ,solanum-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,solanum-class (:foreground ,solanum-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,solanum-class (:foreground ,solanum-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,solanum-class (:foreground ,solanum-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,solanum-class (:foreground ,solanum-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,solanum-class (:foreground ,solanum-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,solanum-class (:foreground ,solanum-complementary-a-0 :weight bold))))
@@ -392,10 +409,10 @@
    `(devdocs-code-block ((,solanum-class (:weight bold :background ,solanum-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,solanum-class (:foreground ,solanum-white :background ,solanum-square-a-3 :inherit region))))
+   `(pdf-view-region ((,solanum-class (:foreground ,solanum-white :background ,solanum-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
-   `(idle-highlight ((,solanum-class (:foreground ,solanum-black :background ,solanum-fl-builtin :inherit region))))
+   `(idle-highlight ((,solanum-class (:foreground ,solanum-white :background ,solanum-fl-builtin :inherit region))))
 
    ;; keycast
    `(keycast-command ((,solanum-class (:weight bold))))

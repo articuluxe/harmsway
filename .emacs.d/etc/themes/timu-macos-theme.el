@@ -613,7 +613,7 @@ Sourced other themes to get information about font faces for packages.")
      `(all-the-icons-ibuffer-size-face ((,class (:foreground ,yellow))))
 
 ;;;; all-the-icons-dired - dark
-     `(all-the-icons-dired-dir-face ((,class (:foreground ,fg-other))))
+     `(all-the-icons-dired-dir-face ((,class (:foreground ,blue))))
 
 ;;;; all-the-icons-ivy-rich - dark
      `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,purple))))
@@ -629,20 +629,20 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; ansi - dark
      `(ansi-color-black ((,class (:foreground ,macos0))))
-     `(ansi-color-blue ((,class (:foreground ,purple))))
-     `(ansi-color-cyan ((,class (:foreground ,darkblue))))
+     `(ansi-color-blue ((,class (:foreground ,blue))))
+     `(ansi-color-cyan ((,class (:foreground ,cyan))))
      `(ansi-color-green ((,class (:foreground ,green))))
      `(ansi-color-magenta ((,class (:foreground ,magenta))))
-     `(ansi-color-purple ((,class (:foreground ,teal))))
+     `(ansi-color-purple ((,class (:foreground ,purple))))
      `(ansi-color-red ((,class (:foreground ,red))))
      `(ansi-color-white ((,class (:foreground ,macos8))))
      `(ansi-color-yellow ((,class (:foreground ,yellow))))
      `(ansi-color-bright-black ((,class (:foreground ,macos0))))
-     `(ansi-color-bright-blue ((,class (:foreground ,purple))))
-     `(ansi-color-bright-cyan ((,class (:foreground ,darkblue))))
+     `(ansi-color-bright-blue ((,class (:foreground ,blue))))
+     `(ansi-color-bright-cyan ((,class (:foreground ,cyan))))
      `(ansi-color-bright-green ((,class (:foreground ,green))))
      `(ansi-color-bright-magenta ((,class (:foreground ,magenta))))
-     `(ansi-color-bright-purple ((,class (:foreground ,teal))))
+     `(ansi-color-bright-purple ((,class (:foreground ,purple))))
      `(ansi-color-bright-red ((,class (:foreground ,red))))
      `(ansi-color-bright-white ((,class (:foreground ,macos8))))
      `(ansi-color-bright-yellow ((,class (:foreground ,yellow))))
@@ -1475,6 +1475,10 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-signature-revoked ((,class (:foreground ,teal))))
      `(magit-signature-untrusted ((,class (:foreground ,yellow))))
      `(magit-tag ((,class (:foreground ,yellow))))
+
+;;;; majutsu-mode - dark
+     `(majutsu-log-author ((,class (:foreground ,yellow))))
+     `(majutsu-log-date ((,class (:foreground ,cyan))))
 
 ;;;; make-mode - dark
      `(makefile-targets ((,class (:foreground ,purple))))
@@ -2348,7 +2352,7 @@ Sourced other themes to get information about font faces for packages.")
      `(all-the-icons-ibuffer-size-face ((,class (:foreground ,yellow))))
 
 ;;;; all-the-icons-dired - light
-     `(all-the-icons-dired-dir-face ((,class (:foreground ,fg-other))))
+     `(all-the-icons-dired-dir-face ((,class (:foreground ,blue))))
 
 ;;;; all-the-icons-ivy-rich - light
      `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,purple))))
@@ -3210,6 +3214,10 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-signature-revoked ((,class (:foreground ,teal))))
      `(magit-signature-untrusted ((,class (:foreground ,yellow))))
      `(magit-tag ((,class (:foreground ,yellow))))
+
+;;;; majutsu-mode - light
+     `(majutsu-log-author ((,class (:foreground ,orange))))
+     `(majutsu-log-date ((,class (:foreground ,darkcyan))))
 
 ;;;; make-mode - light
      `(makefile-targets ((,class (:foreground ,purple))))

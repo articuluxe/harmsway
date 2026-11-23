@@ -49,15 +49,17 @@
 
       (psidium-brown                     "#785f46")
 
-      (psidium-light-blue                "#37b9c0")
+      ;; (psidium-light-blue                "#3791c0")
       (psidium-blue                      "#2a4ad9")
       (psidium-deep-blue                 "#483d8b")
+      (psidium-cyan                      "#00afaf")
+      (psidium-dark-cyan                 "#006969")
 
       (psidium-purple                    "#812db2")
 
       (psidium-fg-1                      "#000000")
       (psidium-fg-2                      "#3c3c3c")
-      (psidium-bg                        "#F1EECE")
+      (psidium-bg-1                      "#F1EECE")
       (psidium-highlight                 "#dddaba")
       (psidium-shadow                    "#7f7f7f")
       (psidium-tooltip                   "#ffffe0")
@@ -71,7 +73,7 @@
 
       (psidium-mode-line                 "#F8767C")
       (psidium-mode-line-inactive        "#aecd34")
-      (psidium-mode-line-modified        "#483d8b")
+      (psidium-mode-line-modified        "#F8EDC6")
       (psidium-bell                      "#76BEF8")
 
       (psidium-tab-1                     psidium-mode-line)
@@ -99,13 +101,18 @@
       (psidium-diff-context              "#dcdcdc")
       (psidium-smerge-base               "#C8C8F0")
 
-      (psidium-square-a-0                "#af50c8")
-      (psidium-square-a-1                "#28a03c")
-      (psidium-square-a-2                "#ff6400")
-      (psidium-square-a-3                "#3c82ff")
-
       (psidium-complementary-a-0         "#4680DE")
-      (psidium-complementary-a-1         "#DE4680"))
+      (psidium-complementary-a-1         "#DE4680")
+
+      (psidium-tetradic-a-0              psidium-mode-line-modified)
+      (psidium-tetradic-a-1              "#F8C6EA")
+      (psidium-tetradic-a-2              "#C6D1F8")
+      (psidium-tetradic-a-3              "#C6F8D4")
+
+      (psidium-tetradic-b-0              "#C94ED0")
+      (psidium-tetradic-b-1              "#55D04E")
+      (psidium-tetradic-b-2              "#D0894E")
+      (psidium-tetradic-b-3              "#4E96D0"))
 
   (custom-theme-set-faces
    'guava-themes-psidium
@@ -114,7 +121,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,psidium-class (:foreground ,psidium-fg-1 :background ,psidium-bg))))
+   `(default ((,psidium-class (:foreground ,psidium-fg-1 :background ,psidium-bg-1))))
 
    ;; error, warning, success
    `(error ((,psidium-class (:foreground ,psidium-error :weight bold))))
@@ -154,7 +161,7 @@
    `(cursor ((,psidium-class (:foreground ,psidium-black :background ,psidium-mode-line))))
 
    ;; fringe
-   `(fringe ((,psidium-class (:foreground ,psidium-blue :background ,psidium-bg))))
+   `(fringe ((,psidium-class (:foreground ,psidium-fl-builtin :background ,psidium-bg-1))))
    `(diff-hl-change ((,psidium-class (:foreground ,psidium-change :background ,psidium-change))))
    `(diff-hl-insert ((,psidium-class (:foreground ,psidium-success :background ,psidium-success))))
    `(diff-hl-delete ((,psidium-class (:foreground ,psidium-error :background ,psidium-error))))
@@ -162,8 +169,8 @@
    ;; line-number
    `(line-number ((,psidium-class (:foreground ,psidium-fg-1 :inherit default))))
    `(line-number-current-line ((,psidium-class (:foreground ,psidium-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,psidium-class (:background ,psidium-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,psidium-class (:background ,psidium-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,psidium-class (:foreground ,psidium-white :background ,psidium-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line
@@ -182,7 +189,7 @@
    `(vertical-border ((,psidium-class (:foreground ,psidium-mode-line))))
 
    ;; header-line
-   `(header-line ((,psidium-class (:inherit mode-line))))
+   `(header-line ((,psidium-class (:background ,psidium-tab-1 :inherit mode-line))))
    `(which-func ((,psidium-class (:weight bold :foreground ,psidium-mode-line-modified))))
 
    ;; tab-bar
@@ -208,8 +215,8 @@
    `(trailing-whitespace ((,psidium-class (:background ,psidium-error))))
 
    ;; links
-   `(link ((,psidium-class (:foreground ,psidium-light-blue :underline t :weight bold))))
-   `(link-visited ((,psidium-class (:foreground ,psidium-purple :underline t :weight bold))))
+   `(link ((,psidium-class (:foreground ,psidium-cyan :underline t :weight bold))))
+   `(link-visited ((,psidium-class (:foreground ,psidium-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,psidium-class (:foreground ,psidium-red :weight medium))))
@@ -222,14 +229,14 @@
    `(outline-8 ((,psidium-class (:inherit outline-4))))
 
    ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
-   `(homoglyph ((,psidium-class (:foreground ,psidium-blue))))
+   `(homoglyph ((,psidium-class (:foreground ,psidium-cyan))))
    `(escape-glyph ((,psidium-class (:inherit homoglyph))))
    `(nobreak-space ((,psidium-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
    `(nobreak-hyphen ((,psidium-class (:inherit homoglyph))))
 
    ;; pulse-highlight-start-face
    ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
-   `(pulse-highlight-start-face ((,psidium-class (:background ,psidium-light-blue))))
+   `(pulse-highlight-start-face ((,psidium-class (:background ,psidium-cyan))))
 
    ;; help-key-binding
    `(help-key-binding ((,psidium-class (:foreground ,psidium-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
@@ -258,13 +265,13 @@
    ;; org-faces
    `(org-todo ((,psidium-class (:foreground ,psidium-error :weight bold))))
    `(org-done ((,psidium-class (:foreground ,psidium-success :weight bold))))
-   `(org-hide ((,psidium-class (:foreground ,psidium-bg))))
+   `(org-hide ((,psidium-class (:foreground ,psidium-bg-1))))
    `(org-table ((,psidium-class (:foreground ,psidium-deep-green))))
    `(org-table-header ((,psidium-class (:inverse-video t :inherit org-table))))
    `(org-date ((,psidium-class (:foreground ,psidium-pink))))
    `(org-date-selected ((,psidium-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,psidium-class (:foreground ,psidium-square-a-2))))
-   `(org-headline-done ((,psidium-class (:foreground ,psidium-square-a-3))))
+   `(org-headline-todo ((,psidium-class (:foreground ,psidium-tetradic-b-2))))
+   `(org-headline-done ((,psidium-class (:foreground ,psidium-tetradic-b-3))))
    `(org-document-title ((,psidium-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,psidium-class (:inherit shadow))))
    `(org-meta-line ((,psidium-class (:inherit font-lock-comment-face))))
@@ -274,16 +281,22 @@
    `(window-divider-first-pixel ((,psidium-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,psidium-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,psidium-class (:foreground ,psidium-white :background ,psidium-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,psidium-class (:foreground ,psidium-white :background ,psidium-tetradic-b-2))))
    `(isearch-fail ((,psidium-class (:foreground ,psidium-white :background ,psidium-error))))
-   `(lazy-highlight ((,psidium-class (:foreground ,psidium-white :background ,psidium-square-a-3))))
-   `(isearch-group-1 ((,psidium-class (:foreground ,psidium-white :background ,psidium-square-a-0))))
-   `(isearch-group-2 ((,psidium-class (:foreground ,psidium-white :background ,psidium-square-a-1))))
+   `(lazy-highlight ((,psidium-class (:foreground ,psidium-white :background ,psidium-tetradic-b-3))))
+   `(isearch-group-1 ((,psidium-class (:foreground ,psidium-white :background ,psidium-tetradic-b-0))))
+   `(isearch-group-2 ((,psidium-class (:foreground ,psidium-white :background ,psidium-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,psidium-class (:inherit isearch))))
    `(match ((,psidium-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,psidium-class (:background ,psidium-tetradic-b-0 :foreground ,psidium-white))))
+   `(reb-match-1 ((,psidium-class (:background ,psidium-tetradic-b-1 :foreground ,psidium-white))))
+   `(reb-match-2 ((,psidium-class (:background ,psidium-tetradic-b-2 :foreground ,psidium-white))))
+   `(reb-match-3 ((,psidium-class (:background ,psidium-tetradic-b-3 :foreground ,psidium-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -343,9 +356,9 @@
    `(elfeed-search-feed-face ((,psidium-class (:foreground ,psidium-deep-green))))
    `(elfeed-search-title-face ((,psidium-class (:foreground ,psidium-brown))))
    `(elfeed-search-unread-title-face ((,psidium-class (:weight bold :foreground ,psidium-red))))
-   `(elfeed-search-filter-face ((,psidium-class (:weight bold :foreground ,psidium-deep-blue))))
-   `(elfeed-search-last-update-face ((,psidium-class (:weight bold :foreground ,psidium-deep-blue))))
-   `(elfeed-search-unread-count-face ((,psidium-class (:weight bold :foreground ,psidium-deep-blue))))
+   `(elfeed-search-filter-face ((,psidium-class (:weight bold :foreground ,psidium-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,psidium-class (:weight bold :foreground ,psidium-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,psidium-class (:weight bold :foreground ,psidium-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,psidium-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,psidium-class (:inherit elfeed-search-unread-title-face))))
@@ -354,26 +367,31 @@
    `(elfeed-show-feed-face ((,psidium-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,psidium-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,psidium-class (:foreground ,psidium-success))))
+   `(elfeed-log-debug-level-face ((,psidium-class (:foreground ,psidium-change))))
+   `(elfeed-log-warn-level-face ((,psidium-class (:foreground ,psidium-warning))))
+   `(elfeed-log-error-level-face ((,psidium-class (:foreground ,psidium-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,psidium-class (:foreground ,psidium-deep-blue :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,psidium-class (:foreground ,psidium-deep-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,psidium-class (:foreground ,psidium-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,psidium-class (:foreground ,psidium-shadow :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,psidium-class (:foreground ,psidium-shadow :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,psidium-class (:foreground ,psidium-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,psidium-class (:foreground ,psidium-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,psidium-class (:foreground ,psidium-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,psidium-class (:foreground ,psidium-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,psidium-class (:foreground ,psidium-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,psidium-class (:foreground ,psidium-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,psidium-class (:foreground ,psidium-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,psidium-class (:foreground ,psidium-fg-1 :background ,psidium-bg))))
+   `(corfu-default ((,psidium-class (:foreground ,psidium-fg-1 :background ,psidium-bg-1))))
    `(corfu-current ((,psidium-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,psidium-class (:background ,psidium-shadow))))
    `(corfu-border ((,psidium-class (:background ,psidium-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,psidium-class (:foreground ,psidium-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,psidium-class (:foreground ,psidium-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,psidium-class (:foreground ,psidium-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,psidium-class (:foreground ,psidium-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,psidium-class (:foreground ,psidium-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,psidium-class (:foreground ,psidium-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,psidium-class (:foreground ,psidium-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,psidium-class (:foreground ,psidium-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,psidium-class (:foreground ,psidium-complementary-a-0 :weight bold))))
@@ -390,7 +408,7 @@
    `(devdocs-code-block ((,psidium-class (:weight bold :background ,psidium-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,psidium-class (:foreground ,psidium-white :background ,psidium-square-a-3 :inherit region))))
+   `(pdf-view-region ((,psidium-class (:foreground ,psidium-white :background ,psidium-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,psidium-class (:foreground ,psidium-white :background ,psidium-fl-builtin :inherit region))))

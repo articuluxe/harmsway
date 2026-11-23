@@ -272,7 +272,7 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
         (cons (string-trim title)
               (string-trim body))))))
 
-(defun forge--post-submit-callback (&optional full-pull)
+(defun forge--post-submit-callback ()
   (let* ((file    buffer-file-name)
          (winconf forge--pre-post-winconf)
          (editbuf (current-buffer))
@@ -293,15 +293,18 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
       (with-current-buffer
           (if (buffer-live-p prevbuf) prevbuf (current-buffer))
         (let-alist value
-          (cond-let
-            ((and full-pull (not (oref repo selective-p)))
-             (forge--pull repo))
-            ([number .number]
-             (forge--pull-topic repo number))
-            ;; Gitlab:
-            ((equal .issue_type "issue")
-             (forge--pull-topic repo (format "#%i" .iid)))
-            ((forge--pull-topic repo (format "!%i" .iid)))))))))
+          (let ((forge--inhibit-unread-discussion-status
+                 (and (not topic) 'create)))
+            (forge--pull-topic
+             repo
+             (cond
+               (topic) ; Creating new post on existing topic.
+               ((forge--childp repo 'forge-gitlab-repository)
+                (format "%s%i" (if (equal .issue_type "issue") "#" "!") .iid))
+               ((or .createDiscussion.discussion.number
+                    .createIssue.issue.number
+                    ;; Creating Github pullreq using REST.
+                    .number))))))))))
 
 (defun forge--post-submit-errorback ()
   (lambda (error &rest _)

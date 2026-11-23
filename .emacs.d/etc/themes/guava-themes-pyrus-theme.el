@@ -52,15 +52,16 @@
       (pyrus-light-blue                "#4ba5e6")
       (pyrus-blue                      "#2a4ad9")
       (pyrus-deep-blue                 "#483d8b")
-      (pyrus-cyan                      "#0080ff")
+      (pyrus-cyan                      "#00a5a5")
+      (pyrus-dark-cyan                 "#005f5f")
 
       (pyrus-light-purple              "#8787e1")
       (pyrus-purple                    "#874be1")
       (pyrus-deep-magenta              "#642864")
 
-      (pyrus-fg-1                      "#780000")
+      (pyrus-fg-1                      "#6e0000")
       (pyrus-fg-2                      "#b43c3c")
-      (pyrus-bg                        "#f9fefd")
+      (pyrus-bg-1                      "#f9fefd")
       (pyrus-highlight                 "#e5eae9")
       (pyrus-shadow                    "#898989")
       (pyrus-tooltip                   "#ffffe0")
@@ -74,7 +75,7 @@
 
       (pyrus-mode-line                 "#295323")
       (pyrus-mode-line-inactive        "#228b22")
-      (pyrus-mode-line-modified        "#f38866")
+      (pyrus-mode-line-modified        "#F3A5A2")
       (pyrus-bell                      "#532341")
 
       (pyrus-tab-1                     pyrus-mode-line)
@@ -102,13 +103,18 @@
       (pyrus-diff-context              "#dcdcdc")
       (pyrus-smerge-base               "#C8C8F0")
 
-      (pyrus-square-a-0                "#c846e6")
-      (pyrus-square-a-1                "#28a03c")
-      (pyrus-square-a-2                "#ff6400")
-      (pyrus-square-a-3                "#3c82ff")
-
       (pyrus-complementary-a-0         "#4680DE")
-      (pyrus-complementary-a-1         "#DE4680"))
+      (pyrus-complementary-a-1         "#DE4680")
+
+      (pyrus-tetradic-a-0              pyrus-mode-line-modified)
+      (pyrus-tetradic-a-1              "#C8F3A2")
+      (pyrus-tetradic-a-2              "#CDA2F3")
+      (pyrus-tetradic-a-3              "#A2F0F3")
+
+      (pyrus-tetradic-b-0              "#8F82BE")
+      (pyrus-tetradic-b-1              "#B1BE82")
+      (pyrus-tetradic-b-2              "#BE8293")
+      (pyrus-tetradic-b-3              "#82BEAD"))
 
   (custom-theme-set-faces
    'guava-themes-pyrus
@@ -117,7 +123,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg))))
+   `(default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg-1))))
 
    ;; error, warning, success
    `(error ((,pyrus-class (:foreground ,pyrus-error :weight bold))))
@@ -157,7 +163,7 @@
    `(cursor ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
 
    ;; fringe
-   `(fringe ((,pyrus-class (:foreground ,pyrus-blue :background ,pyrus-bg))))
+   `(fringe ((,pyrus-class (:foreground ,pyrus-fl-builtin :background ,pyrus-bg-1))))
    `(diff-hl-change ((,pyrus-class (:foreground ,pyrus-change :background ,pyrus-change))))
    `(diff-hl-insert ((,pyrus-class (:foreground ,pyrus-success :background ,pyrus-success))))
    `(diff-hl-delete ((,pyrus-class (:foreground ,pyrus-error :background ,pyrus-error))))
@@ -165,8 +171,8 @@
    ;; line-number
    `(line-number ((,pyrus-class (:foreground ,pyrus-fg-1 :inherit default))))
    `(line-number-current-line ((,pyrus-class (:foreground ,pyrus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,pyrus-class (:background ,pyrus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,pyrus-class (:background ,pyrus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line
@@ -185,7 +191,7 @@
    `(vertical-border ((,pyrus-class (:foreground ,pyrus-mode-line))))
 
    ;; header-line
-   `(header-line ((,pyrus-class (:inherit mode-line))))
+   `(header-line ((,pyrus-class (:background ,pyrus-tab-1 :inherit mode-line))))
    `(which-func ((,pyrus-class (:weight bold :foreground ,pyrus-mode-line-modified))))
 
    ;; tab-bar
@@ -211,12 +217,12 @@
    `(trailing-whitespace ((,pyrus-class (:background ,pyrus-error))))
 
    ;; links
-   `(link ((,pyrus-class (:foreground ,pyrus-light-blue :underline t :weight bold))))
-   `(link-visited ((,pyrus-class (:foreground ,pyrus-green-subdued :underline t :weight bold))))
+   `(link ((,pyrus-class (:foreground ,pyrus-cyan :underline t :weight bold))))
+   `(link-visited ((,pyrus-class (:foreground ,pyrus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,pyrus-class (:foreground ,pyrus-green :weight medium))))
-   `(outline-2 ((,pyrus-class (:foreground ,pyrus-cyan :weight medium))))
+   `(outline-2 ((,pyrus-class (:foreground ,pyrus-light-blue :weight medium))))
    `(outline-3 ((,pyrus-class (:foreground ,pyrus-deep-orange :weight medium))))
    `(outline-4 ((,pyrus-class (:foreground ,pyrus-purple :weight medium))))
    `(outline-5 ((,pyrus-class (:inherit outline-1))))
@@ -261,13 +267,13 @@
    ;; org-faces
    `(org-todo ((,pyrus-class (:foreground ,pyrus-error :weight bold))))
    `(org-done ((,pyrus-class (:foreground ,pyrus-success :weight bold))))
-   `(org-hide ((,pyrus-class (:foreground ,pyrus-bg))))
+   `(org-hide ((,pyrus-class (:foreground ,pyrus-bg-1))))
    `(org-table ((,pyrus-class (:foreground ,pyrus-green))))
    `(org-table-header ((,pyrus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,pyrus-class (:foreground ,pyrus-orange-subdued))))
    `(org-date-selected ((,pyrus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,pyrus-class (:foreground ,pyrus-square-a-0))))
-   `(org-headline-done ((,pyrus-class (:foreground ,pyrus-square-a-3))))
+   `(org-headline-todo ((,pyrus-class (:foreground ,pyrus-tetradic-b-0))))
+   `(org-headline-done ((,pyrus-class (:foreground ,pyrus-tetradic-b-3))))
    `(org-document-title ((,pyrus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,pyrus-class (:inherit shadow))))
    `(org-meta-line ((,pyrus-class (:inherit font-lock-comment-face))))
@@ -277,16 +283,22 @@
    `(window-divider-first-pixel ((,pyrus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,pyrus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tetradic-b-2))))
    `(isearch-fail ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-error))))
-   `(lazy-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-3))))
-   `(isearch-group-1 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-0))))
-   `(isearch-group-2 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-1))))
+   `(lazy-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tetradic-b-3))))
+   `(isearch-group-1 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tetradic-b-0))))
+   `(isearch-group-2 ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,pyrus-class (:inherit isearch))))
    `(match ((,pyrus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,pyrus-class (:background ,pyrus-tetradic-b-0 :foreground ,pyrus-white))))
+   `(reb-match-1 ((,pyrus-class (:background ,pyrus-tetradic-b-1 :foreground ,pyrus-white))))
+   `(reb-match-2 ((,pyrus-class (:background ,pyrus-tetradic-b-2 :foreground ,pyrus-white))))
+   `(reb-match-3 ((,pyrus-class (:background ,pyrus-tetradic-b-3 :foreground ,pyrus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -346,9 +358,9 @@
    `(elfeed-search-feed-face ((,pyrus-class (:foreground ,pyrus-cyan))))
    `(elfeed-search-title-face ((,pyrus-class (:foreground ,pyrus-green-subdued))))
    `(elfeed-search-unread-title-face ((,pyrus-class (:weight bold :foreground ,pyrus-green))))
-   `(elfeed-search-filter-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
-   `(elfeed-search-last-update-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
-   `(elfeed-search-unread-count-face ((,pyrus-class (:weight bold :foreground ,pyrus-light-blue))))
+   `(elfeed-search-filter-face ((,pyrus-class (:weight bold :foreground ,pyrus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,pyrus-class (:weight bold :foreground ,pyrus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,pyrus-class (:weight bold :foreground ,pyrus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,pyrus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,pyrus-class (:inherit elfeed-search-unread-title-face))))
@@ -357,26 +369,31 @@
    `(elfeed-show-feed-face ((,pyrus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,pyrus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,pyrus-class (:foreground ,pyrus-success))))
+   `(elfeed-log-debug-level-face ((,pyrus-class (:foreground ,pyrus-change))))
+   `(elfeed-log-warn-level-face ((,pyrus-class (:foreground ,pyrus-warning))))
+   `(elfeed-log-error-level-face ((,pyrus-class (:foreground ,pyrus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,pyrus-class (:foreground ,pyrus-light-green :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,pyrus-class (:foreground ,pyrus-light-green :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,pyrus-class (:foreground ,pyrus-orange-pink :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,pyrus-class (:foreground ,pyrus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,pyrus-class (:foreground ,pyrus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,pyrus-class (:foreground ,pyrus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,pyrus-class (:foreground ,pyrus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,pyrus-class (:foreground ,pyrus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,pyrus-class (:foreground ,pyrus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,pyrus-class (:foreground ,pyrus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg))))
+   `(corfu-default ((,pyrus-class (:foreground ,pyrus-fg-1 :background ,pyrus-bg-1))))
    `(corfu-current ((,pyrus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,pyrus-class (:background ,pyrus-shadow))))
    `(corfu-border ((,pyrus-class (:background ,pyrus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,pyrus-class (:foreground ,pyrus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,pyrus-class (:foreground ,pyrus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,pyrus-class (:foreground ,pyrus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,pyrus-class (:foreground ,pyrus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,pyrus-class (:foreground ,pyrus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,pyrus-class (:foreground ,pyrus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,pyrus-class (:foreground ,pyrus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,pyrus-class (:foreground ,pyrus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,pyrus-class (:foreground ,pyrus-complementary-a-0 :weight bold))))
@@ -393,7 +410,7 @@
    `(devdocs-code-block ((,pyrus-class (:weight bold :background ,pyrus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-fl-builtin :inherit region))))

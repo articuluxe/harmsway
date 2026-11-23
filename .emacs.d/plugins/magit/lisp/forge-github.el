@@ -434,6 +434,9 @@
 
 ;;;; Topics
 
+(defvar forge--initial-topic-pull nil)
+(defvar forge--inhibit-unread-discussion-status nil)
+
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (id string))
   (forge--pull-topic repo (forge-get-topic id)))
@@ -441,23 +444,26 @@
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (number number)
                                  &optional callback)
-  (forge-repo-query repo
-    (nconc
-     (forge--singularize-fragment forge--github-discussions-fragment number)
-     (forge--singularize-fragment forge--github-issues-fragment number)
-     (forge--singularize-fragment forge--github-pullreqs-fragment number))
-    :noerror t
-    :callback (lambda (data)
-                (let-alist data
-                  (cond ((setq data .repository.discussion)
-                         (forge--update-discussion repo data))
-                        ((setq data .repository.issue)
-                         (forge--update-issue repo data))
-                        ((setq data .repository.pullRequest)
-                         (forge--update-pullreq repo data))))
-                (if callback
-                    (funcall callback)
-                  (forge-refresh-buffer)))))
+  (let ((inhibit-unread forge--inhibit-unread-discussion-status))
+    (forge-repo-query repo
+      (nconc
+       (forge--singularize-fragment forge--github-discussions-fragment number)
+       (forge--singularize-fragment forge--github-issues-fragment number)
+       (forge--singularize-fragment forge--github-pullreqs-fragment number))
+      :noerror t
+      :callback
+      (lambda (data)
+        (let-alist data
+          (let ((forge--inhibit-unread-discussion-status inhibit-unread))
+            (cond ((setq data .repository.discussion)
+                   (forge--update-discussion repo data))
+                  ((setq data .repository.issue)
+                   (forge--update-issue repo data))
+                  ((setq data .repository.pullRequest)
+                   (forge--update-pullreq repo data))))
+          (if callback
+              (funcall callback)
+            (forge-refresh-buffer)))))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (topic forge-discussion))
@@ -479,9 +485,6 @@
     (forge--singularize-fragment forge--github-pullreqs-fragment
                                  (oref topic number))
     :callback (forge--pull-topic-callback repo #'forge--update-pullreq)))
-
-(defvar forge--initial-topic-pull nil)
-(defvar forge--inhibit-unread-discussion-status nil)
 
 (defun forge--pull-topic-callback (repo update)
   (let ((inhibit-unread forge--inhibit-unread-discussion-status))
@@ -519,8 +522,9 @@
           ;; people at the same time, but we have no (reasonable) way of
           ;; knowing that.  So in that case too, the status sadly doesn't
           ;; end up as `unread'.
-          (cond (forge--inhibit-unread-discussion-status
-                 )
+          (cond ((eq forge--inhibit-unread-discussion-status 'create)
+                 (oset topic status 'pending))
+                (forge--inhibit-unread-discussion-status)
                 (forge--initial-topic-pull
                  (oset topic status 'done))
                 ((null previous)
@@ -1025,7 +1029,8 @@
        (categoryId (forge--their-id forge--buffer-category 'category repo))
        (title title)
        (body  body))
-      :callback  (forge--post-submit-callback t)
+      :query     ((discussion number))
+      :callback  (forge--post-submit-callback)
       :errorback (forge--post-submit-errorback))))
 
 (cl-defmethod forge--submit-create-issue ((repo forge-github-repository) _)
@@ -1043,7 +1048,8 @@
        (and forge--buffer-assignees
             (assigneeIds
              (vconcat (forge--their-id forge--buffer-assignees 'assignees repo)))))
-      :callback  (forge--post-submit-callback t)
+      :query     ((issue number))
+      :callback  (forge--post-submit-callback)
       :errorback (forge--post-submit-errorback))))
 
 (cl-defmethod forge--create-pullreq-from-issue
@@ -1085,7 +1091,7 @@
                 (concat (oref head-repo owner) ":" head-branch)))
        (draft forge--buffer-draft-p)
        (maintainer_can_modify t))
-      :callback  (forge--post-submit-callback t)
+      :callback  (forge--post-submit-callback)
       :errorback (forge--post-submit-errorback))))
 
 (cl-defmethod forge--submit-create-post

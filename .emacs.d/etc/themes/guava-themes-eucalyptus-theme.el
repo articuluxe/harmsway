@@ -52,14 +52,15 @@
       (eucalyptus-blue                      "#2327dc")
       (eucalyptus-deep-blue                 "#46466e")
       (eucalyptus-alt-deep-blue             "#373c4b")
-      (eucalyptus-cyan                      "#00ffff")
-      (eucalyptus-alt-cyan                  "#008cd2")
+      (eucalyptus-cyan                      "#007daf")
+      (eucalyptus-dark-cyan                 "#005f91")
 
+      (eucalyptus-purple                    "#825a91")
       (eucalyptus-purple-red                "#874164")
 
       (eucalyptus-fg-1                      "#2d3241")
       (eucalyptus-fg-2                      "#696e7d")
-      (eucalyptus-bg                        "#a5aa96")
+      (eucalyptus-bg-1                      "#a5aa96")
       (eucalyptus-highlight                 "#9ba08c")
       (eucalyptus-shadow                    "#717171")
       (eucalyptus-tooltip                   "#ffffe0")
@@ -90,7 +91,7 @@
       (eucalyptus-fl-constant               eucalyptus-light-blue)
       (eucalyptus-fl-warning                eucalyptus-warning)
       (eucalyptus-fl-punctuation            eucalyptus-fg-2)
-      (eucalyptus-fl-negation-char          eucalyptus-alt-cyan)
+      (eucalyptus-fl-negation-char          eucalyptus-purple)
 
       (eucalyptus-diff-added                "#c8f0c8")
       (eucalyptus-diff-removed              "#f0c8c8")
@@ -101,13 +102,18 @@
       (eucalyptus-diff-context              "#dcdcdc")
       (eucalyptus-smerge-base               "#C8C8F0")
 
-      (eucalyptus-square-a-0                "#af37b9")
-      (eucalyptus-square-a-1                "#147828")
-      (eucalyptus-square-a-2                "#b45a00")
-      (eucalyptus-square-a-3                "#3c82e6")
-
       (eucalyptus-complementary-a-0         "#4680DE")
-      (eucalyptus-complementary-a-1         "#DE4680"))
+      (eucalyptus-complementary-a-1         "#DE4680")
+
+      (eucalyptus-tetradic-a-0              eucalyptus-mode-line-modified)
+      (eucalyptus-tetradic-a-1              "#7DAA56")
+      (eucalyptus-tetradic-a-2              "#8356AA")
+      (eucalyptus-tetradic-a-3              "#56A7AA")
+
+      (eucalyptus-tetradic-b-0              "#803C96")
+      (eucalyptus-tetradic-b-1              "#53963C")
+      (eucalyptus-tetradic-b-2              "#96533C")
+      (eucalyptus-tetradic-b-3              "#3C8096"))
 
   (custom-theme-set-faces
    'guava-themes-eucalyptus
@@ -116,7 +122,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,eucalyptus-class (:foreground ,eucalyptus-fg-1 :background ,eucalyptus-bg))))
+   `(default ((,eucalyptus-class (:foreground ,eucalyptus-fg-1 :background ,eucalyptus-bg-1))))
 
    ;; error, warning, success
    `(error ((,eucalyptus-class (:foreground ,eucalyptus-error :weight bold))))
@@ -156,7 +162,7 @@
    `(cursor ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line))))
 
    ;; fringe
-   `(fringe ((,eucalyptus-class (:foreground ,eucalyptus-blue :background ,eucalyptus-bg))))
+   `(fringe ((,eucalyptus-class (:foreground ,eucalyptus-fl-builtin :background ,eucalyptus-bg-1))))
    `(diff-hl-change ((,eucalyptus-class (:foreground ,eucalyptus-change :background ,eucalyptus-change))))
    `(diff-hl-insert ((,eucalyptus-class (:foreground ,eucalyptus-success :background ,eucalyptus-success))))
    `(diff-hl-delete ((,eucalyptus-class (:foreground ,eucalyptus-error :background ,eucalyptus-error))))
@@ -164,8 +170,8 @@
    ;; line-number
    `(line-number ((,eucalyptus-class (:foreground ,eucalyptus-fg-1 :inherit default))))
    `(line-number-current-line ((,eucalyptus-class (:foreground ,eucalyptus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,eucalyptus-class (:background ,eucalyptus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,eucalyptus-class (:background ,eucalyptus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line
@@ -184,7 +190,7 @@
    `(vertical-border ((,eucalyptus-class (:foreground ,eucalyptus-mode-line))))
 
    ;; header-line
-   `(header-line ((,eucalyptus-class (:inherit mode-line))))
+   `(header-line ((,eucalyptus-class (:background ,eucalyptus-tab-1 :inherit mode-line))))
    `(which-func ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-mode-line-modified))))
 
    ;; tab-bar
@@ -210,8 +216,8 @@
    `(trailing-whitespace ((,eucalyptus-class (:background ,eucalyptus-error))))
 
    ;; links
-   `(link ((,eucalyptus-class (:foreground ,eucalyptus-light-blue :underline t :weight bold))))
-   `(link-visited ((,eucalyptus-class (:foreground ,eucalyptus-deep-blue :underline t :weight bold))))
+   `(link ((,eucalyptus-class (:foreground ,eucalyptus-cyan :underline t :weight bold))))
+   `(link-visited ((,eucalyptus-class (:foreground ,eucalyptus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,eucalyptus-class (:foreground ,eucalyptus-deep-blue :weight medium))))
@@ -231,7 +237,7 @@
 
    ;; pulse-highlight-start-face
    ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
-   `(pulse-highlight-start-face ((,eucalyptus-class (:background ,eucalyptus-alt-cyan))))
+   `(pulse-highlight-start-face ((,eucalyptus-class (:background ,eucalyptus-cyan))))
 
    ;; help-key-binding
    `(help-key-binding ((,eucalyptus-class (:foreground ,eucalyptus-deep-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
@@ -260,13 +266,13 @@
    ;; org-faces
    `(org-todo ((,eucalyptus-class (:foreground ,eucalyptus-error :weight bold))))
    `(org-done ((,eucalyptus-class (:foreground ,eucalyptus-success :weight bold))))
-   `(org-hide ((,eucalyptus-class (:foreground ,eucalyptus-bg))))
+   `(org-hide ((,eucalyptus-class (:foreground ,eucalyptus-bg-1))))
    `(org-table ((,eucalyptus-class (:foreground ,eucalyptus-alt-deep-blue))))
    `(org-table-header ((,eucalyptus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,eucalyptus-class (:foreground ,eucalyptus-purple-red))))
    `(org-date-selected ((,eucalyptus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,eucalyptus-class (:foreground ,eucalyptus-square-a-2))))
-   `(org-headline-done ((,eucalyptus-class (:foreground ,eucalyptus-square-a-1))))
+   `(org-headline-todo ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-2))))
+   `(org-headline-done ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-1))))
    `(org-document-title ((,eucalyptus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,eucalyptus-class (:inherit shadow))))
    `(org-meta-line ((,eucalyptus-class (:inherit font-lock-comment-face))))
@@ -276,16 +282,22 @@
    `(window-divider-first-pixel ((,eucalyptus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,eucalyptus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tetradic-b-2))))
    `(isearch-fail ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-error))))
-   `(lazy-highlight ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-square-a-3))))
-   `(isearch-group-1 ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-square-a-0))))
-   `(isearch-group-2 ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-square-a-1))))
+   `(lazy-highlight ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tetradic-b-3))))
+   `(isearch-group-1 ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tetradic-b-0))))
+   `(isearch-group-2 ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,eucalyptus-class (:inherit isearch))))
    `(match ((,eucalyptus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,eucalyptus-class (:background ,eucalyptus-tetradic-b-0 :foreground ,eucalyptus-white))))
+   `(reb-match-1 ((,eucalyptus-class (:background ,eucalyptus-tetradic-b-1 :foreground ,eucalyptus-white))))
+   `(reb-match-2 ((,eucalyptus-class (:background ,eucalyptus-tetradic-b-2 :foreground ,eucalyptus-white))))
+   `(reb-match-3 ((,eucalyptus-class (:background ,eucalyptus-tetradic-b-3 :foreground ,eucalyptus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -345,9 +357,9 @@
    `(elfeed-search-feed-face ((,eucalyptus-class (:foreground ,eucalyptus-deep-red))))
    `(elfeed-search-title-face ((,eucalyptus-class (:foreground ,eucalyptus-gray))))
    `(elfeed-search-unread-title-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-fg-1))))
-   `(elfeed-search-filter-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-light-blue))))
-   `(elfeed-search-last-update-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-light-blue))))
-   `(elfeed-search-unread-count-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-light-blue))))
+   `(elfeed-search-filter-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,eucalyptus-class (:weight bold :foreground ,eucalyptus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,eucalyptus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,eucalyptus-class (:inherit elfeed-search-unread-title-face))))
@@ -356,26 +368,31 @@
    `(elfeed-show-feed-face ((,eucalyptus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,eucalyptus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,eucalyptus-class (:foreground ,eucalyptus-success))))
+   `(elfeed-log-debug-level-face ((,eucalyptus-class (:foreground ,eucalyptus-change))))
+   `(elfeed-log-warn-level-face ((,eucalyptus-class (:foreground ,eucalyptus-warning))))
+   `(elfeed-log-error-level-face ((,eucalyptus-class (:foreground ,eucalyptus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,eucalyptus-class (:foreground ,eucalyptus-light-blue :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,eucalyptus-class (:foreground ,eucalyptus-light-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,eucalyptus-class (:foreground ,eucalyptus-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,eucalyptus-class (:foreground ,eucalyptus-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,eucalyptus-class (:foreground ,eucalyptus-light-gray :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,eucalyptus-class (:foreground ,eucalyptus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,eucalyptus-class (:foreground ,eucalyptus-fg-1 :background ,eucalyptus-bg))))
+   `(corfu-default ((,eucalyptus-class (:foreground ,eucalyptus-fg-1 :background ,eucalyptus-bg-1))))
    `(corfu-current ((,eucalyptus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,eucalyptus-class (:background ,eucalyptus-shadow))))
    `(corfu-border ((,eucalyptus-class (:background ,eucalyptus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,eucalyptus-class (:foreground ,eucalyptus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,eucalyptus-class (:foreground ,eucalyptus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,eucalyptus-class (:foreground ,eucalyptus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,eucalyptus-class (:foreground ,eucalyptus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,eucalyptus-class (:foreground ,eucalyptus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,eucalyptus-class (:foreground ,eucalyptus-complementary-a-0 :weight bold))))
@@ -392,7 +409,7 @@
    `(devdocs-code-block ((,eucalyptus-class (:weight bold :background ,eucalyptus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-fl-builtin :inherit region))))

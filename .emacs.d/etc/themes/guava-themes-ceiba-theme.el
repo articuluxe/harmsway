@@ -38,7 +38,7 @@
       (ceiba-black                     "#000000")
       (ceiba-white                     "#FFFFFF")
 
-      (ceiba-light-gray                "#bab49e")
+      ;; (ceiba-light-gray                "#bab49e")
 
       (ceiba-light-green               "#64786e")
       (ceiba-green                     "#5b6452")
@@ -50,9 +50,11 @@
       (ceiba-orange                    "#ca6f39")
       (ceiba-deep-orange               "#a85639")
 
-      (ceiba-steel-blue                "#aabed8")
+      ;; (ceiba-steel-blue                "#aabed8")
       (ceiba-blue                      "#2327dc")
       (ceiba-alt-blue                  "#2268a7")
+      (ceiba-cyan                      "#008787")
+      (ceiba-dark-cyan                 "#005f5f")
 
       (ceiba-light-purple              "#bec8ff")
       (ceiba-purple                    "#4e466d")
@@ -64,7 +66,7 @@
 
       (ceiba-fg-1                      "#000000")
       (ceiba-fg-2                      "#3c3c3c")
-      (ceiba-bg                        "#bab49e")
+      (ceiba-bg-1                      "#bab49e")
       (ceiba-highlight                 "#a6a08a")
       (ceiba-shadow                    "#7f7f7f")
       (ceiba-tooltip                   "#ffffe0")
@@ -106,13 +108,18 @@
       (ceiba-diff-context              "#dcdcdc")
       (ceiba-smerge-base               "#C8C8F0")
 
-      (ceiba-square-a-0                "#af37b9")
-      (ceiba-square-a-1                "#147828")
-      (ceiba-square-a-2                "#b45a00")
-      (ceiba-square-a-3                "#3c82e6")
-
       (ceiba-complementary-a-0         "#4680DE")
-      (ceiba-complementary-a-1         "#DE4680"))
+      (ceiba-complementary-a-1         "#DE4680")
+
+      (ceiba-tetradic-a-0              ceiba-mode-line-modified)
+      (ceiba-tetradic-a-1              "#AAA198")
+      (ceiba-tetradic-a-2              "#98AA98")
+      (ceiba-tetradic-a-3              "#98A1AA")
+
+      (ceiba-tetradic-b-0              "#803C96")
+      (ceiba-tetradic-b-1              "#53963C")
+      (ceiba-tetradic-b-2              "#96533C")
+      (ceiba-tetradic-b-3              "#3C8096"))
 
   (custom-theme-set-faces
    'guava-themes-ceiba
@@ -121,7 +128,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,ceiba-class (:foreground ,ceiba-fg-1 :background ,ceiba-bg))))
+   `(default ((,ceiba-class (:foreground ,ceiba-fg-1 :background ,ceiba-bg-1))))
 
    ;; error, warning, success
    `(error ((,ceiba-class (:foreground ,ceiba-error :weight bold))))
@@ -161,7 +168,7 @@
    `(cursor ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line))))
 
    ;; fringe
-   `(fringe ((,ceiba-class (:foreground ,ceiba-blue :background ,ceiba-bg))))
+   `(fringe ((,ceiba-class (:foreground ,ceiba-fl-builtin :background ,ceiba-bg-1))))
    `(diff-hl-change ((,ceiba-class (:foreground ,ceiba-change :background ,ceiba-change))))
    `(diff-hl-insert ((,ceiba-class (:foreground ,ceiba-success :background ,ceiba-success))))
    `(diff-hl-delete ((,ceiba-class (:foreground ,ceiba-error :background ,ceiba-error))))
@@ -169,8 +176,8 @@
    ;; line-number
    `(line-number ((,ceiba-class (:foreground ,ceiba-fg-1 :inherit default))))
    `(line-number-current-line ((,ceiba-class (:foreground ,ceiba-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line
@@ -189,7 +196,7 @@
    `(vertical-border ((,ceiba-class (:foreground ,ceiba-mode-line))))
 
    ;; header-line
-   `(header-line ((,ceiba-class (:inherit mode-line))))
+   `(header-line ((,ceiba-class (:background ,ceiba-tab-1 :inherit mode-line))))
    `(which-func ((,ceiba-class (:weight bold :foreground ,ceiba-mode-line-modified))))
 
    ;; tab-bar
@@ -215,8 +222,8 @@
    `(trailing-whitespace ((,ceiba-class (:background ,ceiba-error))))
 
    ;; links
-   `(link ((,ceiba-class (:foreground ,ceiba-purple :underline t :weight bold))))
-   `(link-visited ((,ceiba-class (:foreground ,ceiba-purple-red :underline t :weight bold))))
+   `(link ((,ceiba-class (:foreground ,ceiba-cyan :underline t :weight bold))))
+   `(link-visited ((,ceiba-class (:foreground ,ceiba-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,ceiba-class (:foreground ,ceiba-alt-blue :weight medium))))
@@ -229,7 +236,7 @@
    `(outline-8 ((,ceiba-class (:inherit outline-4))))
 
    ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
-   `(homoglyph ((,ceiba-class (:foreground ,ceiba-blue))))
+   `(homoglyph ((,ceiba-class (:foreground ,ceiba-cyan))))
    `(escape-glyph ((,ceiba-class (:inherit homoglyph))))
    `(nobreak-space ((,ceiba-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
    `(nobreak-hyphen ((,ceiba-class (:inherit homoglyph))))
@@ -265,13 +272,13 @@
    ;; org-faces
    `(org-todo ((,ceiba-class (:foreground ,ceiba-error :weight bold))))
    `(org-done ((,ceiba-class (:foreground ,ceiba-success :weight bold))))
-   `(org-hide ((,ceiba-class (:foreground ,ceiba-bg))))
+   `(org-hide ((,ceiba-class (:foreground ,ceiba-bg-1))))
    `(org-table ((,ceiba-class (:foreground ,ceiba-brown-wood))))
    `(org-table-header ((,ceiba-class (:inverse-video t :inherit org-table))))
    `(org-date ((,ceiba-class (:foreground ,ceiba-orange))))
    `(org-date-selected ((,ceiba-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,ceiba-class (:foreground ,ceiba-square-a-2))))
-   `(org-headline-done ((,ceiba-class (:foreground ,ceiba-square-a-1))))
+   `(org-headline-todo ((,ceiba-class (:foreground ,ceiba-tetradic-b-2))))
+   `(org-headline-done ((,ceiba-class (:foreground ,ceiba-tetradic-b-1))))
    `(org-document-title ((,ceiba-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,ceiba-class (:inherit shadow))))
    `(org-meta-line ((,ceiba-class (:inherit font-lock-comment-face))))
@@ -281,16 +288,22 @@
    `(window-divider-first-pixel ((,ceiba-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,ceiba-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tetradic-b-2))))
    `(isearch-fail ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-error))))
-   `(lazy-highlight ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-square-a-3))))
-   `(isearch-group-1 ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-square-a-0))))
-   `(isearch-group-2 ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-square-a-1))))
+   `(lazy-highlight ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tetradic-b-3))))
+   `(isearch-group-1 ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tetradic-b-0))))
+   `(isearch-group-2 ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,ceiba-class (:inherit isearch))))
    `(match ((,ceiba-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,ceiba-class (:background ,ceiba-tetradic-b-0 :foreground ,ceiba-white))))
+   `(reb-match-1 ((,ceiba-class (:background ,ceiba-tetradic-b-1 :foreground ,ceiba-white))))
+   `(reb-match-2 ((,ceiba-class (:background ,ceiba-tetradic-b-2 :foreground ,ceiba-white))))
+   `(reb-match-3 ((,ceiba-class (:background ,ceiba-tetradic-b-3 :foreground ,ceiba-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -350,9 +363,9 @@
    `(elfeed-search-feed-face ((,ceiba-class (:foreground ,ceiba-green-blue))))
    `(elfeed-search-title-face ((,ceiba-class (:foreground ,ceiba-light-green))))
    `(elfeed-search-unread-title-face ((,ceiba-class (:weight bold :foreground ,ceiba-deep-green))))
-   `(elfeed-search-filter-face ((,ceiba-class (:weight bold :foreground ,ceiba-light-orange))))
-   `(elfeed-search-last-update-face ((,ceiba-class (:weight bold :foreground ,ceiba-light-orange))))
-   `(elfeed-search-unread-count-face ((,ceiba-class (:weight bold :foreground ,ceiba-light-orange))))
+   `(elfeed-search-filter-face ((,ceiba-class (:weight bold :foreground ,ceiba-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,ceiba-class (:weight bold :foreground ,ceiba-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,ceiba-class (:weight bold :foreground ,ceiba-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,ceiba-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,ceiba-class (:inherit elfeed-search-unread-title-face))))
@@ -361,26 +374,31 @@
    `(elfeed-show-feed-face ((,ceiba-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,ceiba-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,ceiba-class (:foreground ,ceiba-success))))
+   `(elfeed-log-debug-level-face ((,ceiba-class (:foreground ,ceiba-change))))
+   `(elfeed-log-warn-level-face ((,ceiba-class (:foreground ,ceiba-warning))))
+   `(elfeed-log-error-level-face ((,ceiba-class (:foreground ,ceiba-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,ceiba-class (:foreground ,ceiba-steel-blue :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,ceiba-class (:foreground ,ceiba-steel-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,ceiba-class (:foreground ,ceiba-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,ceiba-class (:foreground ,ceiba-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,ceiba-class (:foreground ,ceiba-light-gray :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,ceiba-class (:foreground ,ceiba-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,ceiba-class (:foreground ,ceiba-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,ceiba-class (:foreground ,ceiba-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,ceiba-class (:foreground ,ceiba-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,ceiba-class (:foreground ,ceiba-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,ceiba-class (:foreground ,ceiba-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,ceiba-class (:foreground ,ceiba-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,ceiba-class (:foreground ,ceiba-fg-1 :background ,ceiba-bg))))
+   `(corfu-default ((,ceiba-class (:foreground ,ceiba-fg-1 :background ,ceiba-bg-1))))
    `(corfu-current ((,ceiba-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,ceiba-class (:background ,ceiba-shadow))))
    `(corfu-border ((,ceiba-class (:background ,ceiba-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,ceiba-class (:foreground ,ceiba-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,ceiba-class (:foreground ,ceiba-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,ceiba-class (:foreground ,ceiba-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,ceiba-class (:foreground ,ceiba-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,ceiba-class (:foreground ,ceiba-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,ceiba-class (:foreground ,ceiba-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,ceiba-class (:foreground ,ceiba-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,ceiba-class (:foreground ,ceiba-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,ceiba-class (:foreground ,ceiba-complementary-a-0 :weight bold))))
@@ -397,7 +415,7 @@
    `(devdocs-code-block ((,ceiba-class (:weight bold :background ,ceiba-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-square-a-3 :inherit region))))
+   `(pdf-view-region ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-fl-builtin :inherit region))))

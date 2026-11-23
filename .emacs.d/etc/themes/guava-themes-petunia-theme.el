@@ -50,15 +50,15 @@
       (petunia-green-forest              "#008741")
       (petunia-alt-green-forest          "#006941")
 
-      (petunia-light-blue                "#00c3d7")
-      (petunia-deep-blue                 "#004b82")
-      (petunia-cyan                      "#00ffff")
+      (petunia-blue                      "#287dd7")
+      (petunia-cyan                      "#00d7d7")
+      (petunia-dark-cyan                 "#007373")
 
       (petunia-purple                    "#8c6ecd")
 
       (petunia-fg-1                      "#FFFFFF")
       (petunia-fg-2                      "#c3c3c3")
-      (petunia-bg                        "#000000")
+      (petunia-bg-1                      "#000000")
       (petunia-highlight                 "#1e1e1e")
       (petunia-shadow                    "#b3b3b3")
       (petunia-tooltip                   "#ffffe0")
@@ -72,7 +72,7 @@
 
       (petunia-mode-line                 "#8c6ecd")
       (petunia-mode-line-inactive        "#008741")
-      (petunia-mode-line-modified        "#00c3d7")
+      (petunia-mode-line-modified        "#a9c9d7")
       (petunia-bell                      "#FFDB5A")
 
       (petunia-tab-1                     petunia-mode-line)
@@ -86,7 +86,7 @@
       (petunia-fl-type                   petunia-yellow)
       (petunia-fl-function-name          petunia-red)
       (petunia-fl-variable-name          petunia-pink)
-      (petunia-fl-constant               petunia-light-blue)
+      (petunia-fl-constant               petunia-blue)
       (petunia-fl-warning                petunia-warning)
       (petunia-fl-punctuation            petunia-fg-2)
       (petunia-fl-negation-char          petunia-light-orange)
@@ -100,13 +100,18 @@
       (petunia-diff-context              "#828282")
       (petunia-smerge-base               "#5A5AA0")
 
-      (petunia-square-a-0                "#c878dc")
-      (petunia-square-a-1                "#28b43c")
-      (petunia-square-a-2                "#ff7300")
-      (petunia-square-a-3                "#009bff")
-
       (petunia-complementary-a-0         "#46C8A5")
-      (petunia-complementary-a-1         "#C84669"))
+      (petunia-complementary-a-1         "#C84669")
+
+      (petunia-tetradic-a-0              petunia-mode-line-modified)
+      (petunia-tetradic-a-1              "#CEA9D7")
+      (petunia-tetradic-a-2              "#D7B7A9")
+      (petunia-tetradic-a-3              "#B2D7A9")
+
+      (petunia-tetradic-b-0              "#A646B9")
+      (petunia-tetradic-b-1              "#59B946")
+      (petunia-tetradic-b-2              "#B96C46")
+      (petunia-tetradic-b-3              "#4693B9"))
 
   (custom-theme-set-faces
    'guava-themes-petunia
@@ -115,7 +120,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,petunia-class (:foreground ,petunia-fg-1 :background ,petunia-bg))))
+   `(default ((,petunia-class (:foreground ,petunia-fg-1 :background ,petunia-bg-1))))
 
    ;; error, warning, success
    `(error ((,petunia-class (:foreground ,petunia-error :weight bold))))
@@ -155,7 +160,7 @@
    `(cursor ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line))))
 
    ;; fringe
-   `(fringe ((,petunia-class (:foreground ,petunia-red :background ,petunia-bg))))
+   `(fringe ((,petunia-class (:foreground ,petunia-fl-builtin :background ,petunia-bg-1))))
    `(diff-hl-change ((,petunia-class (:foreground ,petunia-change :background ,petunia-change))))
    `(diff-hl-insert ((,petunia-class (:foreground ,petunia-success :background ,petunia-success))))
    `(diff-hl-delete ((,petunia-class (:foreground ,petunia-error :background ,petunia-error))))
@@ -163,8 +168,8 @@
    ;; line-number
    `(line-number ((,petunia-class (:foreground ,petunia-fg-1 :inherit default))))
    `(line-number-current-line ((,petunia-class (:foreground ,petunia-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,petunia-class (:background ,petunia-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,petunia-class (:background ,petunia-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,petunia-class (:foreground ,petunia-white :background ,petunia-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line
@@ -183,7 +188,7 @@
    `(vertical-border ((,petunia-class (:foreground ,petunia-mode-line))))
 
    ;; header-line
-   `(header-line ((,petunia-class (:inherit mode-line))))
+   `(header-line ((,petunia-class (:background ,petunia-tab-1 :inherit mode-line))))
    `(which-func ((,petunia-class (:weight bold :foreground ,petunia-mode-line-modified))))
 
    ;; tab-bar
@@ -209,8 +214,8 @@
    `(trailing-whitespace ((,petunia-class (:background ,petunia-error))))
 
    ;; links
-   `(link ((,petunia-class (:foreground ,petunia-light-blue :underline t :weight bold))))
-   `(link-visited ((,petunia-class (:foreground ,petunia-orange :underline t :weight bold))))
+   `(link ((,petunia-class (:foreground ,petunia-cyan :underline t :weight bold))))
+   `(link-visited ((,petunia-class (:foreground ,petunia-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,petunia-class (:foreground ,petunia-red :weight medium))))
@@ -259,13 +264,13 @@
    ;; org-faces
    `(org-todo ((,petunia-class (:foreground ,petunia-error :weight bold))))
    `(org-done ((,petunia-class (:foreground ,petunia-success :weight bold))))
-   `(org-hide ((,petunia-class (:foreground ,petunia-bg))))
+   `(org-hide ((,petunia-class (:foreground ,petunia-bg-1))))
    `(org-table ((,petunia-class (:foreground ,petunia-green-forest))))
    `(org-table-header ((,petunia-class (:inverse-video t :inherit org-table))))
    `(org-date ((,petunia-class (:foreground ,petunia-light-orange))))
    `(org-date-selected ((,petunia-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,petunia-class (:foreground ,petunia-square-a-0))))
-   `(org-headline-done ((,petunia-class (:foreground ,petunia-square-a-1))))
+   `(org-headline-todo ((,petunia-class (:foreground ,petunia-tetradic-b-0))))
+   `(org-headline-done ((,petunia-class (:foreground ,petunia-tetradic-b-1))))
    `(org-document-title ((,petunia-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,petunia-class (:inherit shadow))))
    `(org-meta-line ((,petunia-class (:inherit font-lock-comment-face))))
@@ -275,16 +280,22 @@
    `(window-divider-first-pixel ((,petunia-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,petunia-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,petunia-class (:foreground ,petunia-white :background ,petunia-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,petunia-class (:foreground ,petunia-white :background ,petunia-tetradic-b-2))))
    `(isearch-fail ((,petunia-class (:foreground ,petunia-white :background ,petunia-error))))
-   `(lazy-highlight ((,petunia-class (:foreground ,petunia-white :background ,petunia-square-a-3))))
-   `(isearch-group-1 ((,petunia-class (:foreground ,petunia-white :background ,petunia-square-a-0))))
-   `(isearch-group-2 ((,petunia-class (:foreground ,petunia-white :background ,petunia-square-a-1))))
+   `(lazy-highlight ((,petunia-class (:foreground ,petunia-white :background ,petunia-tetradic-b-3))))
+   `(isearch-group-1 ((,petunia-class (:foreground ,petunia-white :background ,petunia-tetradic-b-0))))
+   `(isearch-group-2 ((,petunia-class (:foreground ,petunia-white :background ,petunia-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,petunia-class (:inherit isearch))))
    `(match ((,petunia-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,petunia-class (:background ,petunia-tetradic-b-0 :foreground ,petunia-white))))
+   `(reb-match-1 ((,petunia-class (:background ,petunia-tetradic-b-1 :foreground ,petunia-white))))
+   `(reb-match-2 ((,petunia-class (:background ,petunia-tetradic-b-2 :foreground ,petunia-white))))
+   `(reb-match-3 ((,petunia-class (:background ,petunia-tetradic-b-3 :foreground ,petunia-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -340,13 +351,13 @@
 
    ;; elfeed
    `(elfeed-search-tag-face ((,petunia-class (:foreground ,petunia-pink))))
-   `(elfeed-search-date-face ((,petunia-class (:foreground ,petunia-light-blue))))
+   `(elfeed-search-date-face ((,petunia-class (:foreground ,petunia-blue))))
    `(elfeed-search-feed-face ((,petunia-class (:foreground ,petunia-orange))))
-   `(elfeed-search-title-face ((,petunia-class (:foreground ,petunia-deep-blue))))
+   `(elfeed-search-title-face ((,petunia-class (:foreground ,petunia-cream))))
    `(elfeed-search-unread-title-face ((,petunia-class (:weight bold :foreground ,petunia-green-forest))))
-   `(elfeed-search-filter-face ((,petunia-class (:weight bold :foreground ,petunia-light-orange))))
-   `(elfeed-search-last-update-face ((,petunia-class (:weight bold :foreground ,petunia-light-orange))))
-   `(elfeed-search-unread-count-face ((,petunia-class (:weight bold :foreground ,petunia-light-orange))))
+   `(elfeed-search-filter-face ((,petunia-class (:weight bold :foreground ,petunia-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,petunia-class (:weight bold :foreground ,petunia-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,petunia-class (:weight bold :foreground ,petunia-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,petunia-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,petunia-class (:inherit elfeed-search-unread-title-face))))
@@ -355,26 +366,31 @@
    `(elfeed-show-feed-face ((,petunia-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,petunia-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,petunia-class (:foreground ,petunia-success))))
+   `(elfeed-log-debug-level-face ((,petunia-class (:foreground ,petunia-change))))
+   `(elfeed-log-warn-level-face ((,petunia-class (:foreground ,petunia-warning))))
+   `(elfeed-log-error-level-face ((,petunia-class (:foreground ,petunia-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,petunia-class (:foreground ,petunia-light-green :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,petunia-class (:foreground ,petunia-light-green :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,petunia-class (:foreground ,petunia-yellow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,petunia-class (:foreground ,petunia-yellow :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,petunia-class (:foreground ,petunia-yellow :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,petunia-class (:foreground ,petunia-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,petunia-class (:foreground ,petunia-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,petunia-class (:foreground ,petunia-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,petunia-class (:foreground ,petunia-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,petunia-class (:foreground ,petunia-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,petunia-class (:foreground ,petunia-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,petunia-class (:foreground ,petunia-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,petunia-class (:foreground ,petunia-fg-1 :background ,petunia-bg))))
+   `(corfu-default ((,petunia-class (:foreground ,petunia-fg-1 :background ,petunia-bg-1))))
    `(corfu-current ((,petunia-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,petunia-class (:background ,petunia-shadow))))
    `(corfu-border ((,petunia-class (:background ,petunia-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,petunia-class (:foreground ,petunia-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,petunia-class (:foreground ,petunia-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,petunia-class (:foreground ,petunia-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,petunia-class (:foreground ,petunia-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,petunia-class (:foreground ,petunia-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,petunia-class (:foreground ,petunia-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,petunia-class (:foreground ,petunia-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,petunia-class (:foreground ,petunia-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,petunia-class (:foreground ,petunia-complementary-a-0 :weight bold))))
@@ -391,10 +407,10 @@
    `(devdocs-code-block ((,petunia-class (:weight bold :background ,petunia-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,petunia-class (:foreground ,petunia-white :background ,petunia-square-a-3 :inherit region))))
+   `(pdf-view-region ((,petunia-class (:foreground ,petunia-white :background ,petunia-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
-   `(idle-highlight ((,petunia-class (:foreground ,petunia-black :background ,petunia-fl-builtin :inherit region))))
+   `(idle-highlight ((,petunia-class (:foreground ,petunia-white :background ,petunia-fl-builtin :inherit region))))
 
    ;; keycast
    `(keycast-command ((,petunia-class (:weight bold))))

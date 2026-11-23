@@ -54,7 +54,8 @@
       (rubus-light-blue                "#5096f1")
       (rubus-blue                      "#1455f1")
       (rubus-blue-subdued              "#1c81a1")
-      (rubus-cyan                      "#00FFFF")
+      (rubus-cyan                      "#00c3c3")
+      (rubus-dark-cyan                 "#007373")
 
       (rubus-light-purple              "#beaadc")
       (rubus-purple                    "#8c78dc")
@@ -62,7 +63,7 @@
 
       (rubus-fg-1                      "#FFFFFF")
       (rubus-fg-2                      "#c3c3c3")
-      (rubus-bg                        "#0e1216")
+      (rubus-bg-1                      "#0e1216")
       (rubus-highlight                 "#22262a")
       (rubus-shadow                    "#b3b3b3")
       (rubus-tooltip                   "#ffffe0")
@@ -76,7 +77,7 @@
 
       (rubus-mode-line                 "#aa3232")
       (rubus-mode-line-inactive        "#cd7378")
-      (rubus-mode-line-modified        "#9682fa")
+      (rubus-mode-line-modified        "#A0DCC8")
       (rubus-bell                      "#326EAA")
 
       (rubus-tab-1                     rubus-mode-line)
@@ -104,13 +105,18 @@
       (rubus-diff-context              "#828282")
       (rubus-smerge-base               "#5A5AA0")
 
-      (rubus-square-a-0                "#af50c8")
-      (rubus-square-a-1                "#28a03c")
-      (rubus-square-a-2                "#ff6400")
-      (rubus-square-a-3                "#3c82ff")
-
       (rubus-complementary-a-0         "#46C8A5")
-      (rubus-complementary-a-1         "#C84669"))
+      (rubus-complementary-a-1         "#C84669")
+
+      (rubus-tetradic-a-0              rubus-mode-line-modified)
+      (rubus-tetradic-a-1              "#DCA0B4")
+      (rubus-tetradic-a-2              "#AAA0DC")
+      (rubus-tetradic-a-3              "#D2DCA0")
+
+      (rubus-tetradic-b-0              "#BA5ACD")
+      (rubus-tetradic-b-1              "#6DCD5A")
+      (rubus-tetradic-b-2              "#CD805A")
+      (rubus-tetradic-b-3              "#5AA7CD"))
 
   (custom-theme-set-faces
    'guava-themes-rubus
@@ -119,7 +125,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,rubus-class (:foreground ,rubus-fg-1 :background ,rubus-bg))))
+   `(default ((,rubus-class (:foreground ,rubus-fg-1 :background ,rubus-bg-1))))
 
    ;; error, warning, success
    `(error ((,rubus-class (:foreground ,rubus-error :weight bold))))
@@ -159,7 +165,7 @@
    `(cursor ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line))))
 
    ;; fringe
-   `(fringe ((,rubus-class (:foreground ,rubus-yellow :background ,rubus-bg))))
+   `(fringe ((,rubus-class (:foreground ,rubus-fl-builtin :background ,rubus-bg-1))))
    `(diff-hl-change ((,rubus-class (:foreground ,rubus-change :background ,rubus-change))))
    `(diff-hl-insert ((,rubus-class (:foreground ,rubus-success :background ,rubus-success))))
    `(diff-hl-delete ((,rubus-class (:foreground ,rubus-error :background ,rubus-error))))
@@ -167,8 +173,8 @@
    ;; line-number
    `(line-number ((,rubus-class (:foreground ,rubus-fg-1 :inherit default))))
    `(line-number-current-line ((,rubus-class (:foreground ,rubus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,rubus-class (:background ,rubus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,rubus-class (:background ,rubus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,rubus-class (:foreground ,rubus-white :background ,rubus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line
@@ -187,7 +193,7 @@
    `(vertical-border ((,rubus-class (:foreground ,rubus-mode-line))))
 
    ;; header-line
-   `(header-line ((,rubus-class (:inherit mode-line))))
+   `(header-line ((,rubus-class (:background ,rubus-tab-1 :inherit mode-line))))
    `(which-func ((,rubus-class (:weight bold :foreground ,rubus-mode-line-modified))))
 
    ;; tab-bar
@@ -213,8 +219,8 @@
    `(trailing-whitespace ((,rubus-class (:background ,rubus-error))))
 
    ;; links
-   `(link ((,rubus-class (:foreground ,rubus-light-green :underline t :weight bold))))
-   `(link-visited ((,rubus-class (:foreground ,rubus-green :underline t :weight bold))))
+   `(link ((,rubus-class (:foreground ,rubus-cyan :underline t :weight bold))))
+   `(link-visited ((,rubus-class (:foreground ,rubus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,rubus-class (:foreground ,rubus-raspberry :weight medium))))
@@ -263,13 +269,13 @@
    ;; org-faces
    `(org-todo ((,rubus-class (:foreground ,rubus-error :weight bold))))
    `(org-done ((,rubus-class (:foreground ,rubus-success :weight bold))))
-   `(org-hide ((,rubus-class (:foreground ,rubus-bg))))
+   `(org-hide ((,rubus-class (:foreground ,rubus-bg-1))))
    `(org-table ((,rubus-class (:foreground ,rubus-pink-cream))))
    `(org-table-header ((,rubus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,rubus-class (:foreground ,rubus-green-blue))))
    `(org-date-selected ((,rubus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,rubus-class (:foreground ,rubus-square-a-2))))
-   `(org-headline-done ((,rubus-class (:foreground ,rubus-square-a-1))))
+   `(org-headline-todo ((,rubus-class (:foreground ,rubus-tetradic-b-2))))
+   `(org-headline-done ((,rubus-class (:foreground ,rubus-tetradic-b-1))))
    `(org-document-title ((,rubus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,rubus-class (:inherit shadow))))
    `(org-meta-line ((,rubus-class (:inherit font-lock-comment-face))))
@@ -279,16 +285,22 @@
    `(window-divider-first-pixel ((,rubus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,rubus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,rubus-class (:foreground ,rubus-white :background ,rubus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,rubus-class (:foreground ,rubus-white :background ,rubus-tetradic-b-2))))
    `(isearch-fail ((,rubus-class (:foreground ,rubus-white :background ,rubus-error))))
-   `(lazy-highlight ((,rubus-class (:foreground ,rubus-white :background ,rubus-square-a-3))))
-   `(isearch-group-1 ((,rubus-class (:foreground ,rubus-white :background ,rubus-square-a-0))))
-   `(isearch-group-2 ((,rubus-class (:foreground ,rubus-white :background ,rubus-square-a-1))))
+   `(lazy-highlight ((,rubus-class (:foreground ,rubus-white :background ,rubus-tetradic-b-3))))
+   `(isearch-group-1 ((,rubus-class (:foreground ,rubus-white :background ,rubus-tetradic-b-0))))
+   `(isearch-group-2 ((,rubus-class (:foreground ,rubus-white :background ,rubus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,rubus-class (:inherit isearch))))
    `(match ((,rubus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,rubus-class (:background ,rubus-tetradic-b-0 :foreground ,rubus-white))))
+   `(reb-match-1 ((,rubus-class (:background ,rubus-tetradic-b-1 :foreground ,rubus-white))))
+   `(reb-match-2 ((,rubus-class (:background ,rubus-tetradic-b-2 :foreground ,rubus-white))))
+   `(reb-match-3 ((,rubus-class (:background ,rubus-tetradic-b-3 :foreground ,rubus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -348,9 +360,9 @@
    `(elfeed-search-feed-face ((,rubus-class (:foreground ,rubus-light-blue))))
    `(elfeed-search-title-face ((,rubus-class (:foreground ,rubus-green-forest))))
    `(elfeed-search-unread-title-face ((,rubus-class (:weight bold :foreground ,rubus-light-green))))
-   `(elfeed-search-filter-face ((,rubus-class (:weight bold :foreground ,rubus-yellow))))
-   `(elfeed-search-last-update-face ((,rubus-class (:weight bold :foreground ,rubus-yellow))))
-   `(elfeed-search-unread-count-face ((,rubus-class (:weight bold :foreground ,rubus-yellow))))
+   `(elfeed-search-filter-face ((,rubus-class (:weight bold :foreground ,rubus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,rubus-class (:weight bold :foreground ,rubus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,rubus-class (:weight bold :foreground ,rubus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,rubus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,rubus-class (:inherit elfeed-search-unread-title-face))))
@@ -359,26 +371,31 @@
    `(elfeed-show-feed-face ((,rubus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,rubus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,rubus-class (:foreground ,rubus-success))))
+   `(elfeed-log-debug-level-face ((,rubus-class (:foreground ,rubus-change))))
+   `(elfeed-log-warn-level-face ((,rubus-class (:foreground ,rubus-warning))))
+   `(elfeed-log-error-level-face ((,rubus-class (:foreground ,rubus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,rubus-class (:foreground ,rubus-light-purple :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,rubus-class (:foreground ,rubus-light-purple :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,rubus-class (:foreground ,rubus-orange :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,rubus-class (:foreground ,rubus-orange :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,rubus-class (:foreground ,rubus-orange :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,rubus-class (:foreground ,rubus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,rubus-class (:foreground ,rubus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,rubus-class (:foreground ,rubus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,rubus-class (:foreground ,rubus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,rubus-class (:foreground ,rubus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,rubus-class (:foreground ,rubus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,rubus-class (:foreground ,rubus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,rubus-class (:foreground ,rubus-fg-1 :background ,rubus-bg))))
+   `(corfu-default ((,rubus-class (:foreground ,rubus-fg-1 :background ,rubus-bg-1))))
    `(corfu-current ((,rubus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,rubus-class (:background ,rubus-shadow))))
    `(corfu-border ((,rubus-class (:background ,rubus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,rubus-class (:foreground ,rubus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,rubus-class (:foreground ,rubus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,rubus-class (:foreground ,rubus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,rubus-class (:foreground ,rubus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,rubus-class (:foreground ,rubus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,rubus-class (:foreground ,rubus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,rubus-class (:foreground ,rubus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,rubus-class (:foreground ,rubus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,rubus-class (:foreground ,rubus-complementary-a-0 :weight bold))))
@@ -395,7 +412,7 @@
    `(devdocs-code-block ((,rubus-class (:weight bold :background ,rubus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,rubus-class (:foreground ,rubus-white :background ,rubus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,rubus-class (:foreground ,rubus-white :background ,rubus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,rubus-class (:foreground ,rubus-white :background ,rubus-fl-builtin :inherit region))))

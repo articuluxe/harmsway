@@ -199,11 +199,11 @@ Non-interactively REV can also be a blob object."
     ;; from being enabled in hidden buffers.  Use a fake `buffer-name'
     ;; to trick it into believing the buffer is not hidden.
     (if (eq (aref buffer-name 0) ?\s)
-        (letrec ((adv (lambda (fn &optional buffer)
-                        (let ((name (funcall fn buffer)))
-                          (if (equal name buffer-name)
-                              (substring name 1)
-                            name)))))
+        (let ((adv (lambda (fn &optional buffer)
+                     (let ((name (funcall fn buffer)))
+                       (if (equal name buffer-name)
+                           (substring name 1)
+                         name)))))
           (advice-add 'buffer-name :around adv)
           (unwind-protect
               (normal-mode (not enable-local-variables))
@@ -212,9 +212,8 @@ Non-interactively REV can also be a blob object."
       ;; The FIND-FILE argument wasn't designed for our use case,
       ;; so we have to use this strange invocation to achieve that.
       (normal-mode (not enable-local-variables)))
-    ;; Set this here, so we don't have to make it permanent-local, which
-    ;; we probably shouldn't do, because for other packages changing the.
-    ;; If the user calls `normal-mode', this value will be discarded.
+    ;; Set this here, so we don't have to make it permanent-local,
+    ;; which we shouldn't do, because it's not our variable.
     (setq-local bookmark-make-record-function #'magit--make-blob-bookmark)
     (set-buffer-modified-p nil)
     (run-hooks 'magit-find-blob-hook)))

@@ -44,7 +44,7 @@
       (citrus-green-blue                "#197d5a")
 
       (citrus-yellow                    "#f5d49b")
-      (citrus-alt-yellow                "#e1b69b")
+      ;; (citrus-alt-yellow                "#e1b69b")
       (citrus-deep-yellow               "#b99869")
 
       (citrus-red                       "#df352c")
@@ -59,13 +59,16 @@
       (citrus-light-blue                "#4eb096")
       (citrus-blue                      "#3275a5")
       (citrus-deep-blue                 "#2327dc")
+      (citrus-cyan                      "#00a5a5")
+      (citrus-dark-cyan                 "#005f5f")
+
       (citrus-light-purple              "#bec8ff")
       (citrus-deep-purple               "#6d4393")
       (citrus-purple-red                "#77003a")
 
       (citrus-fg-1                      "#000000")
       (citrus-fg-2                      "#3c3c3c")
-      (citrus-bg                        "#edf2ed")
+      (citrus-bg-1                      "#edf2ed")
       (citrus-highlight                 "#d9ded9")
       (citrus-shadow                    "#6b6b6b")
       (citrus-tooltip                   "#ffffe0")
@@ -79,7 +82,7 @@
 
       (citrus-mode-line                 "#589337")
       (citrus-mode-line-inactive        "#6ea56e")
-      (citrus-mode-line-modified        "#43F29B")
+      (citrus-mode-line-modified        "#E6F0B4")
       (citrus-bell                      "#933787")
 
       (citrus-tab-1                     citrus-orange-red)
@@ -107,13 +110,18 @@
       (citrus-diff-context              "#dcdcdc")
       (citrus-smerge-base               "#C8C8F0")
 
-      (citrus-square-a-0                "#af28b9")
-      (citrus-square-a-1                "#28a03c")
-      (citrus-square-a-2                "#ff6400")
-      (citrus-square-a-3                "#3c82ff")
-
       (citrus-complementary-a-0         "#4680DE")
-      (citrus-complementary-a-1         "#DE4680"))
+      (citrus-complementary-a-1         "#DE4680")
+
+      (citrus-tetradic-a-0              citrus-mode-line-modified)
+      (citrus-tetradic-a-1              "#B4F0DC")
+      (citrus-tetradic-a-2              "#BEB4F0")
+      (citrus-tetradic-a-3              "#F0B4C8")
+
+      (citrus-tetradic-b-0              "#7B6EAA")
+      (citrus-tetradic-b-1              "#9DAA6E")
+      (citrus-tetradic-b-2              "#AA6E7F")
+      (citrus-tetradic-b-3              "#6EAA99"))
 
   (custom-theme-set-faces
    'guava-themes-citrus
@@ -122,7 +130,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,citrus-class (:foreground ,citrus-fg-1 :background ,citrus-bg))))
+   `(default ((,citrus-class (:foreground ,citrus-fg-1 :background ,citrus-bg-1))))
 
    ;; error, warning, success
    `(error ((,citrus-class (:foreground ,citrus-error :weight bold))))
@@ -162,7 +170,7 @@
    `(cursor ((,citrus-class (:foreground ,citrus-white :background ,citrus-mode-line))))
 
    ;; fringe
-   `(fringe ((,citrus-class (:foreground ,citrus-red :background ,citrus-bg))))
+   `(fringe ((,citrus-class (:foreground ,citrus-fl-builtin :background ,citrus-bg-1))))
    `(diff-hl-change ((,citrus-class (:foreground ,citrus-change :background ,citrus-change))))
    `(diff-hl-insert ((,citrus-class (:foreground ,citrus-success :background ,citrus-success))))
    `(diff-hl-delete ((,citrus-class (:foreground ,citrus-error :background ,citrus-error))))
@@ -170,8 +178,8 @@
    ;; line-number
    `(line-number ((,citrus-class (:foreground ,citrus-fg-1 :inherit default))))
    `(line-number-current-line ((,citrus-class (:foreground ,citrus-tab-1 :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,citrus-class (:background ,citrus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,citrus-class (:background ,citrus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,citrus-class (:foreground ,citrus-white :background ,citrus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-mode-line
@@ -216,8 +224,8 @@
    `(trailing-whitespace ((,citrus-class (:background ,citrus-error))))
 
    ;; links
-   `(link ((,citrus-class (:foreground ,citrus-light-blue :underline t :weight bold))))
-   `(link-visited ((,citrus-class (:foreground ,citrus-deep-blue :underline t :weight bold))))
+   `(link ((,citrus-class (:foreground ,citrus-cyan :underline t :weight bold))))
+   `(link-visited ((,citrus-class (:foreground ,citrus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,citrus-class (:foreground ,citrus-blue :weight medium))))
@@ -230,7 +238,7 @@
    `(outline-8 ((,citrus-class (:inherit outline-4))))
 
    ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
-   `(homoglyph ((,citrus-class (:foreground ,citrus-deep-blue))))
+   `(homoglyph ((,citrus-class (:foreground ,citrus-cyan))))
    `(escape-glyph ((,citrus-class (:inherit homoglyph))))
    `(nobreak-space ((,citrus-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
    `(nobreak-hyphen ((,citrus-class (:inherit homoglyph))))
@@ -266,13 +274,13 @@
    ;; org-faces
    `(org-todo ((,citrus-class (:foreground ,citrus-error :weight bold))))
    `(org-done ((,citrus-class (:foreground ,citrus-success :weight bold))))
-   `(org-hide ((,citrus-class (:foreground ,citrus-bg))))
+   `(org-hide ((,citrus-class (:foreground ,citrus-bg-1))))
    `(org-table ((,citrus-class (:foreground ,citrus-orange-red))))
    `(org-table-header ((,citrus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,citrus-class (:foreground ,citrus-purple-red))))
    `(org-date-selected ((,citrus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,citrus-class (:foreground ,citrus-square-a-2))))
-   `(org-headline-done ((,citrus-class (:foreground ,citrus-square-a-1))))
+   `(org-headline-todo ((,citrus-class (:foreground ,citrus-tetradic-b-2))))
+   `(org-headline-done ((,citrus-class (:foreground ,citrus-tetradic-b-1))))
    `(org-document-title ((,citrus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,citrus-class (:inherit shadow))))
    `(org-meta-line ((,citrus-class (:inherit font-lock-comment-face))))
@@ -282,16 +290,22 @@
    `(window-divider-first-pixel ((,citrus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,citrus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,citrus-class (:foreground ,citrus-white :background ,citrus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,citrus-class (:foreground ,citrus-white :background ,citrus-tetradic-b-2))))
    `(isearch-fail ((,citrus-class (:foreground ,citrus-white :background ,citrus-error))))
-   `(lazy-highlight ((,citrus-class (:foreground ,citrus-white :background ,citrus-square-a-3))))
-   `(isearch-group-1 ((,citrus-class (:foreground ,citrus-white :background ,citrus-square-a-0))))
-   `(isearch-group-2 ((,citrus-class (:foreground ,citrus-white :background ,citrus-square-a-1))))
+   `(lazy-highlight ((,citrus-class (:foreground ,citrus-white :background ,citrus-tetradic-b-3))))
+   `(isearch-group-1 ((,citrus-class (:foreground ,citrus-white :background ,citrus-tetradic-b-0))))
+   `(isearch-group-2 ((,citrus-class (:foreground ,citrus-white :background ,citrus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,citrus-class (:inherit isearch))))
    `(match ((,citrus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,citrus-class (:background ,citrus-tetradic-b-0 :foreground ,citrus-white))))
+   `(reb-match-1 ((,citrus-class (:background ,citrus-tetradic-b-1 :foreground ,citrus-white))))
+   `(reb-match-2 ((,citrus-class (:background ,citrus-tetradic-b-2 :foreground ,citrus-white))))
+   `(reb-match-3 ((,citrus-class (:background ,citrus-tetradic-b-3 :foreground ,citrus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -351,9 +365,9 @@
    `(elfeed-search-feed-face ((,citrus-class (:foreground ,citrus-green-lime))))
    `(elfeed-search-title-face ((,citrus-class (:foreground ,citrus-brown))))
    `(elfeed-search-unread-title-face ((,citrus-class (:weight bold :foreground ,citrus-deep-orange))))
-   `(elfeed-search-filter-face ((,citrus-class (:weight bold :foreground ,citrus-yellow))))
-   `(elfeed-search-last-update-face ((,citrus-class (:weight bold :foreground ,citrus-yellow))))
-   `(elfeed-search-unread-count-face ((,citrus-class (:weight bold :foreground ,citrus-yellow))))
+   `(elfeed-search-filter-face ((,citrus-class (:weight bold :foreground ,citrus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,citrus-class (:weight bold :foreground ,citrus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,citrus-class (:weight bold :foreground ,citrus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,citrus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,citrus-class (:inherit elfeed-search-unread-title-face))))
@@ -362,26 +376,31 @@
    `(elfeed-show-feed-face ((,citrus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,citrus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,citrus-class (:foreground ,citrus-success))))
+   `(elfeed-log-debug-level-face ((,citrus-class (:foreground ,citrus-change))))
+   `(elfeed-log-warn-level-face ((,citrus-class (:foreground ,citrus-warning))))
+   `(elfeed-log-error-level-face ((,citrus-class (:foreground ,citrus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,citrus-class (:foreground ,citrus-yellow :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,citrus-class (:foreground ,citrus-yellow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,citrus-class (:foreground ,citrus-alt-yellow :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,citrus-class (:foreground ,citrus-alt-yellow :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,citrus-class (:foreground ,citrus-alt-yellow :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,citrus-class (:foreground ,citrus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,citrus-class (:foreground ,citrus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,citrus-class (:foreground ,citrus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,citrus-class (:foreground ,citrus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,citrus-class (:foreground ,citrus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,citrus-class (:foreground ,citrus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,citrus-class (:foreground ,citrus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,citrus-class (:foreground ,citrus-fg-1 :background ,citrus-bg))))
+   `(corfu-default ((,citrus-class (:foreground ,citrus-fg-1 :background ,citrus-bg-1))))
    `(corfu-current ((,citrus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,citrus-class (:background ,citrus-shadow))))
    `(corfu-border ((,citrus-class (:background ,citrus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,citrus-class (:foreground ,citrus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,citrus-class (:foreground ,citrus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,citrus-class (:foreground ,citrus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,citrus-class (:foreground ,citrus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,citrus-class (:foreground ,citrus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,citrus-class (:foreground ,citrus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,citrus-class (:foreground ,citrus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,citrus-class (:foreground ,citrus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,citrus-class (:foreground ,citrus-complementary-a-0 :weight bold))))
@@ -398,7 +417,7 @@
    `(devdocs-code-block ((,citrus-class (:weight bold :background ,citrus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,citrus-class (:foreground ,citrus-white :background ,citrus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,citrus-class (:foreground ,citrus-white :background ,citrus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,citrus-class (:foreground ,citrus-white :background ,citrus-fl-builtin :inherit region))))

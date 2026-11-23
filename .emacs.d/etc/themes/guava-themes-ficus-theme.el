@@ -38,7 +38,7 @@
       (ficus-black                     "#000000")
       (ficus-white                     "#FFFFFF")
 
-      (ficus-light-gray                "#9196a5")
+      ;; (ficus-light-gray                "#9196a5")
       (ficus-gray                      "#646464")
 
       (ficus-light-green               "#6e7d64")
@@ -56,14 +56,15 @@
       ;; (ficus-blue                      "#2327dc")
       (ficus-blue                      "#2d8296")
       (ficus-deep-blue                 "#465a6e")
-      (ficus-cyan                      "#00ffff")
-      (ficus-alt-cyan                  "#008cd2")
+      (ficus-cyan                      "#00afaf")
+      (ficus-dark-cyan                 "#007373")
 
-      (ficus-purple-red                "#874164")
+      (ficus-purple-red                "#914b6e")
+      (ficus-purple                    "#9678b9")
 
       (ficus-fg-1                      "#d7d7d7")
       (ficus-fg-2                      "#878787")
-      (ficus-bg                        "#232020")
+      (ficus-bg-1                      "#232020")
       (ficus-highlight                 "#322f2f")
       (ficus-shadow                    "#7b7b7b")
       (ficus-tooltip                   "#ffffe0")
@@ -77,7 +78,7 @@
 
       (ficus-mode-line                 "#b05051")
       (ficus-mode-line-inactive        "#967f79")
-      (ficus-mode-line-modified        "#46cee0")
+      (ficus-mode-line-modified        "#8CF4ED")
       (ficus-bell                      "#5082B0")
 
 
@@ -95,7 +96,7 @@
       (ficus-fl-constant               ficus-blue)
       (ficus-fl-warning                ficus-warning)
       (ficus-fl-punctuation            ficus-fg-2)
-      (ficus-fl-negation-char          ficus-alt-cyan)
+      (ficus-fl-negation-char          ficus-purple)
 
       (ficus-diff-added                "#5aa05a")
       (ficus-diff-removed              "#a05a5a")
@@ -106,13 +107,18 @@
       (ficus-diff-context              "#828282")
       (ficus-smerge-base               "#5A5AA0")
 
-      (ficus-square-a-0                "#a550be")
-      (ficus-square-a-1                "#28a03c")
-      (ficus-square-a-2                "#ff6400")
-      (ficus-square-a-3                "#3c82ff")
-
       (ficus-complementary-a-0         "#4680DE")
-      (ficus-complementary-a-1         "#DE4680"))
+      (ficus-complementary-a-1         "#DE4680")
+
+      (ficus-tetradic-a-0              ficus-mode-line-modified)
+      (ficus-tetradic-a-1              "#F48C93")
+      (ficus-tetradic-a-2              "#b98cf4")
+      (ficus-tetradic-a-3              "#C7F48C")
+
+      (ficus-tetradic-b-0              "#BA5ACD")
+      (ficus-tetradic-b-1              "#6DCD5A")
+      (ficus-tetradic-b-2              "#CD805A")
+      (ficus-tetradic-b-3              "#5AA7CD"))
 
   (custom-theme-set-faces
    'guava-themes-ficus
@@ -121,7 +127,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,ficus-class (:foreground ,ficus-fg-1 :background ,ficus-bg))))
+   `(default ((,ficus-class (:foreground ,ficus-fg-1 :background ,ficus-bg-1))))
 
    ;; error, warning, success
    `(error ((,ficus-class (:foreground ,ficus-error :weight bold))))
@@ -161,7 +167,7 @@
    `(cursor ((,ficus-class (:foreground ,ficus-white :background ,ficus-mode-line))))
 
    ;; fringe
-   `(fringe ((,ficus-class (:foreground ,ficus-light-red :background ,ficus-bg))))
+   `(fringe ((,ficus-class (:foreground ,ficus-fl-builtin :background ,ficus-bg-1))))
    `(diff-hl-change ((,ficus-class (:foreground ,ficus-change :background ,ficus-change))))
    `(diff-hl-insert ((,ficus-class (:foreground ,ficus-success :background ,ficus-success))))
    `(diff-hl-delete ((,ficus-class (:foreground ,ficus-error :background ,ficus-error))))
@@ -169,8 +175,8 @@
    ;; line-number
    `(line-number ((,ficus-class (:foreground ,ficus-fg-1 :inherit default))))
    `(line-number-current-line ((,ficus-class (:foreground ,ficus-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,ficus-class (:background ,ficus-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,ficus-class (:background ,ficus-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,ficus-class (:foreground ,ficus-white :background ,ficus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,ficus-class (:foreground ,ficus-white :background ,ficus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,ficus-class (:foreground ,ficus-white :background ,ficus-mode-line
@@ -189,7 +195,7 @@
    `(vertical-border ((,ficus-class (:foreground ,ficus-mode-line))))
 
    ;; header-line
-   `(header-line ((,ficus-class (:inherit mode-line))))
+   `(header-line ((,ficus-class (:background ,ficus-tab-1 :inherit mode-line))))
    `(which-func ((,ficus-class (:weight bold :foreground ,ficus-mode-line-modified))))
 
    ;; tab-bar
@@ -215,8 +221,8 @@
    `(trailing-whitespace ((,ficus-class (:background ,ficus-error))))
 
    ;; links
-   `(link ((,ficus-class (:foreground ,ficus-blue :underline t :weight bold))))
-   `(link-visited ((,ficus-class (:foreground ,ficus-deep-blue :underline t :weight bold))))
+   `(link ((,ficus-class (:foreground ,ficus-cyan :underline t :weight bold))))
+   `(link-visited ((,ficus-class (:foreground ,ficus-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,ficus-class (:foreground ,ficus-deep-blue :weight medium))))
@@ -236,7 +242,7 @@
 
    ;; pulse-highlight-start-face
    ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
-   `(pulse-highlight-start-face ((,ficus-class (:background ,ficus-alt-cyan))))
+   `(pulse-highlight-start-face ((,ficus-class (:background ,ficus-cyan))))
 
    ;; help-key-binding
    `(help-key-binding ((,ficus-class (:foreground ,ficus-light-red :background "grey19" :box (:line-width (-1 . -1) :color "grey35") :inherit fixed-pitch))))
@@ -265,13 +271,13 @@
    ;; org-faces
    `(org-todo ((,ficus-class (:foreground ,ficus-error :weight bold))))
    `(org-done ((,ficus-class (:foreground ,ficus-success :weight bold))))
-   `(org-hide ((,ficus-class (:foreground ,ficus-bg))))
+   `(org-hide ((,ficus-class (:foreground ,ficus-bg-1))))
    `(org-table ((,ficus-class (:foreground ,ficus-light-red))))
    `(org-table-header ((,ficus-class (:inverse-video t :inherit org-table))))
    `(org-date ((,ficus-class (:foreground ,ficus-purple-red))))
    `(org-date-selected ((,ficus-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,ficus-class (:foreground ,ficus-square-a-2))))
-   `(org-headline-done ((,ficus-class (:foreground ,ficus-square-a-1))))
+   `(org-headline-todo ((,ficus-class (:foreground ,ficus-tetradic-b-2))))
+   `(org-headline-done ((,ficus-class (:foreground ,ficus-tetradic-b-1))))
    `(org-document-title ((,ficus-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,ficus-class (:inherit shadow))))
    `(org-meta-line ((,ficus-class (:inherit font-lock-comment-face))))
@@ -281,16 +287,22 @@
    `(window-divider-first-pixel ((,ficus-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,ficus-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,ficus-class (:foreground ,ficus-white :background ,ficus-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,ficus-class (:foreground ,ficus-white :background ,ficus-tetradic-b-2))))
    `(isearch-fail ((,ficus-class (:foreground ,ficus-white :background ,ficus-error))))
-   `(lazy-highlight ((,ficus-class (:foreground ,ficus-white :background ,ficus-square-a-3))))
-   `(isearch-group-1 ((,ficus-class (:foreground ,ficus-white :background ,ficus-square-a-0))))
-   `(isearch-group-2 ((,ficus-class (:foreground ,ficus-white :background ,ficus-square-a-1))))
+   `(lazy-highlight ((,ficus-class (:foreground ,ficus-white :background ,ficus-tetradic-b-3))))
+   `(isearch-group-1 ((,ficus-class (:foreground ,ficus-white :background ,ficus-tetradic-b-0))))
+   `(isearch-group-2 ((,ficus-class (:foreground ,ficus-white :background ,ficus-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,ficus-class (:inherit isearch))))
    `(match ((,ficus-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,ficus-class (:background ,ficus-tetradic-b-0 :foreground ,ficus-white))))
+   `(reb-match-1 ((,ficus-class (:background ,ficus-tetradic-b-1 :foreground ,ficus-white))))
+   `(reb-match-2 ((,ficus-class (:background ,ficus-tetradic-b-2 :foreground ,ficus-white))))
+   `(reb-match-3 ((,ficus-class (:background ,ficus-tetradic-b-3 :foreground ,ficus-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -350,9 +362,9 @@
    `(elfeed-search-feed-face ((,ficus-class (:foreground ,ficus-purple-red))))
    `(elfeed-search-title-face ((,ficus-class (:foreground ,ficus-gray))))
    `(elfeed-search-unread-title-face ((,ficus-class (:weight bold :foreground ,ficus-green))))
-   `(elfeed-search-filter-face ((,ficus-class (:weight bold :foreground ,ficus-light-blue))))
-   `(elfeed-search-last-update-face ((,ficus-class (:weight bold :foreground ,ficus-light-blue))))
-   `(elfeed-search-unread-count-face ((,ficus-class (:weight bold :foreground ,ficus-light-blue))))
+   `(elfeed-search-filter-face ((,ficus-class (:weight bold :foreground ,ficus-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,ficus-class (:weight bold :foreground ,ficus-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,ficus-class (:weight bold :foreground ,ficus-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,ficus-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,ficus-class (:inherit elfeed-search-unread-title-face))))
@@ -361,26 +373,31 @@
    `(elfeed-show-feed-face ((,ficus-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,ficus-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,ficus-class (:foreground ,ficus-success))))
+   `(elfeed-log-debug-level-face ((,ficus-class (:foreground ,ficus-change))))
+   `(elfeed-log-warn-level-face ((,ficus-class (:foreground ,ficus-warning))))
+   `(elfeed-log-error-level-face ((,ficus-class (:foreground ,ficus-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,ficus-class (:foreground ,ficus-deep-blue :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,ficus-class (:foreground ,ficus-deep-blue :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,ficus-class (:foreground ,ficus-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,ficus-class (:foreground ,ficus-light-gray :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,ficus-class (:foreground ,ficus-light-gray :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,ficus-class (:foreground ,ficus-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,ficus-class (:foreground ,ficus-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,ficus-class (:foreground ,ficus-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,ficus-class (:foreground ,ficus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,ficus-class (:foreground ,ficus-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,ficus-class (:foreground ,ficus-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,ficus-class (:foreground ,ficus-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,ficus-class (:foreground ,ficus-fg-1 :background ,ficus-bg))))
+   `(corfu-default ((,ficus-class (:foreground ,ficus-fg-1 :background ,ficus-bg-1))))
    `(corfu-current ((,ficus-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,ficus-class (:background ,ficus-shadow))))
    `(corfu-border ((,ficus-class (:background ,ficus-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,ficus-class (:foreground ,ficus-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,ficus-class (:foreground ,ficus-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,ficus-class (:foreground ,ficus-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,ficus-class (:foreground ,ficus-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,ficus-class (:foreground ,ficus-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,ficus-class (:foreground ,ficus-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,ficus-class (:foreground ,ficus-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,ficus-class (:foreground ,ficus-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,ficus-class (:foreground ,ficus-complementary-a-0 :weight bold))))
@@ -397,7 +414,7 @@
    `(devdocs-code-block ((,ficus-class (:weight bold :background ,ficus-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,ficus-class (:foreground ,ficus-white :background ,ficus-square-a-3 :inherit region))))
+   `(pdf-view-region ((,ficus-class (:foreground ,ficus-white :background ,ficus-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,ficus-class (:foreground ,ficus-white :background ,ficus-fl-builtin :inherit region))))

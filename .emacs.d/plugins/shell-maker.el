@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.98.2
+;; Version: 0.98.3
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.98.2")
+(defconst shell-maker-version "0.98.3")
 
 (require 'cl-lib)
 (require 'comint)
@@ -813,16 +813,6 @@ Return t if INPUT us cleared.  nil otherwise."
       ;; the same observers.
       (run-hooks 'shell-maker-finish-output-hook)
       nil)
-     ((not (shell-maker--curl-version-supported))
-      (shell-maker--write-reply :config shell-maker--config
-                                :reply "\nYou need curl version 7.76 or newer.\n\n"
-                                :failed t
-                                :on-output on-output)
-      (setq shell-maker--busy nil)
-      ;; Reprints the prompt without `shell-maker-finish-output', so notify
-      ;; the same observers.
-      (run-hooks 'shell-maker-finish-output-hook)
-      nil)
      ((and (shell-maker-config-validate-command
             shell-maker--config)
            (funcall (shell-maker-config-validate-command
@@ -1395,13 +1385,6 @@ returned list is of the form:
             (push (list (cons :key nil)
                         (cons :value value)) result))))
       (reverse result))))
-
-(defun shell-maker--curl-version-supported ()
-  "Return t if curl version is 7.76 or newer, nil otherwise."
-  (let ((curl-version-string (shell-command-to-string (concat shell-maker-curl-executable " --version "))))
-    (when (string-match "\\([0-9]+\\.[0-9]+\\.[0-9]+\\)" curl-version-string)
-      (let ((version (match-string 1 curl-version-string)))
-        (version<= "7.76" version)))))
 
 (defun shell-maker--json-parse-string (json)
   "Parse JSON and return the parsed data structure, nil otherwise."

@@ -51,8 +51,10 @@
       (acer-deep-brown                "#8c695a")
 
       (acer-light-blue                "#3a9187")
-      (acer-blue                      "#2134d5")
+      ;; (acer-blue                      "#2134d5")
       (acer-deep-blue                 "#1B3B4D")
+      (acer-cyan                      "#009b9b")
+      (acer-dark-cyan                 "#006969")
 
       (acer-purple                    "#8a618a")
       (acer-deep-purple               "#60366e")
@@ -61,7 +63,7 @@
 
       (acer-fg-1                      "#000000")
       (acer-fg-2                      "#3c3c3c")
-      (acer-bg                        "#f7bb78")
+      (acer-bg-1                      "#f7bb78")
       (acer-highlight                 "#e3a764")
       (acer-shadow                    "#717171")
       (acer-tooltip                   "#ffffe0")
@@ -75,7 +77,7 @@
 
       (acer-mode-line                 "#e76144")
       (acer-mode-line-inactive        "#eb8c4e")
-      (acer-mode-line-modified        "#277a6a")
+      (acer-mode-line-modified        "#CEB2D7")
       (acer-bell                      "#4478E7")
 
       (acer-tab-1                     acer-mode-line)
@@ -103,13 +105,18 @@
       (acer-diff-context              "#dcdcdc")
       (acer-smerge-base               "#C8C8F0")
 
-      (acer-square-a-0                "#af2ab9")
-      (acer-square-a-1                "#28823c")
-      (acer-square-a-2                "#d44400")
-      (acer-square-a-3                "#6496d7")
-
       (acer-complementary-a-0         "#4680DE")
-      (acer-complementary-a-1         "#DE4680"))
+      (acer-complementary-a-1         "#DE4680")
+
+      (acer-tetradic-a-0              acer-mode-line-modified)
+      (acer-tetradic-a-1              "#D7BBB2")
+      (acer-tetradic-a-2              "#B2CED7")
+      (acer-tetradic-a-3              "#BBD7B2")
+
+      (acer-tetradic-b-0              "#9D50B4")
+      (acer-tetradic-b-1              "#67B450")
+      (acer-tetradic-b-2              "#B46B50")
+      (acer-tetradic-b-3              "#5099B4"))
 
   (custom-theme-set-faces
    'guava-themes-acer
@@ -118,7 +125,7 @@
    ;; with unique colors
 
    ;; default
-   `(default ((,acer-class (:foreground ,acer-fg-1 :background ,acer-bg))))
+   `(default ((,acer-class (:foreground ,acer-fg-1 :background ,acer-bg-1))))
 
    ;; error, warning, success
    `(error ((,acer-class (:foreground ,acer-error :weight bold))))
@@ -158,7 +165,7 @@
    `(cursor ((,acer-class (:foreground ,acer-black :background ,acer-mode-line))))
 
    ;; fringe
-   `(fringe ((,acer-class (:foreground ,acer-deep-blue :background ,acer-bg))))
+   `(fringe ((,acer-class (:foreground ,acer-fl-builtin :background ,acer-bg-1))))
    `(diff-hl-change ((,acer-class (:foreground ,acer-change :background ,acer-change))))
    `(diff-hl-insert ((,acer-class (:foreground ,acer-success :background ,acer-success))))
    `(diff-hl-delete ((,acer-class (:foreground ,acer-error :background ,acer-error))))
@@ -166,8 +173,8 @@
    ;; line-number
    `(line-number ((,acer-class (:foreground ,acer-fg-1 :inherit default))))
    `(line-number-current-line ((,acer-class (:foreground ,acer-mode-line :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,acer-class (:background ,acer-tab-2 :inherit line-number))))
-   `(line-number-major-tick ((,acer-class (:background ,acer-tab-3 :inherit line-number))))
+   `(line-number-minor-tick ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-mode-line
@@ -186,7 +193,7 @@
    `(vertical-border ((,acer-class (:foreground ,acer-mode-line))))
 
    ;; header-line
-   `(header-line ((,acer-class (:inherit mode-line))))
+   `(header-line ((,acer-class (:background ,acer-tab-1 :inherit mode-line))))
    `(which-func ((,acer-class (:weight bold :foreground ,acer-mode-line-modified))))
 
    ;; tab-bar
@@ -212,8 +219,8 @@
    `(trailing-whitespace ((,acer-class (:background ,acer-error))))
 
    ;; links
-   `(link ((,acer-class (:foreground ,acer-green-cyan :underline t :weight bold))))
-   `(link-visited ((,acer-class (:foreground ,acer-blue :underline t :weight bold))))
+   `(link ((,acer-class (:foreground ,acer-cyan :underline t :weight bold))))
+   `(link-visited ((,acer-class (:foreground ,acer-dark-cyan :underline t :weight bold))))
 
    ;; outline
    `(outline-1 ((,acer-class (:foreground ,acer-purple-red :weight medium))))
@@ -226,7 +233,7 @@
    `(outline-8 ((,acer-class (:inherit outline-4))))
 
    ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
-   `(homoglyph ((,acer-class (:foreground ,acer-blue))))
+   `(homoglyph ((,acer-class (:foreground ,acer-cyan))))
    `(escape-glyph ((,acer-class (:inherit homoglyph))))
    `(nobreak-space ((,acer-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
    `(nobreak-hyphen ((,acer-class (:inherit homoglyph))))
@@ -236,7 +243,7 @@
    `(pulse-highlight-start-face ((,acer-class (:background ,acer-light-blue))))
 
    ;; help-key-binding
-   `(help-key-binding ((,acer-class (:foreground ,acer-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+   `(help-key-binding ((,acer-class (:foreground ,acer-cyan :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
 
    ;; diff
    `(diff-added ((,acer-class (:foreground ,acer-black :background ,acer-diff-added :extend t :inherit diff-changed))))
@@ -262,13 +269,13 @@
    ;; org-faces
    `(org-todo ((,acer-class (:foreground ,acer-error :weight bold))))
    `(org-done ((,acer-class (:foreground ,acer-success :weight bold))))
-   `(org-hide ((,acer-class (:foreground ,acer-bg))))
+   `(org-hide ((,acer-class (:foreground ,acer-bg-1))))
    `(org-table ((,acer-class (:foreground ,acer-deep-green))))
    `(org-table-header ((,acer-class (:inverse-video t :inherit org-table))))
    `(org-date ((,acer-class (:foreground ,acer-light-blue))))
    `(org-date-selected ((,acer-class (:foreground unspecified :inverse-video t :inherit org-date))))
-   `(org-headline-todo ((,acer-class (:foreground ,acer-square-a-0))))
-   `(org-headline-done ((,acer-class (:foreground ,acer-square-a-3))))
+   `(org-headline-todo ((,acer-class (:foreground ,acer-tetradic-b-0))))
+   `(org-headline-done ((,acer-class (:foreground ,acer-tetradic-b-3))))
    `(org-document-title ((,acer-class (:inherit font-lock-keyword-face))))
    `(org-document-info-keyword ((,acer-class (:inherit shadow))))
    `(org-meta-line ((,acer-class (:inherit font-lock-comment-face))))
@@ -278,16 +285,22 @@
    `(window-divider-first-pixel ((,acer-class (:inherit window-divider))))
    `(window-divider-last-pixel ((,acer-class (:inherit window-divider))))
 
-   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
-   `(isearch ((,acer-class (:foreground ,acer-white :background ,acer-square-a-2))))
+   ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)\([0-9]+\)" to check the group faces)
+   `(isearch ((,acer-class (:foreground ,acer-white :background ,acer-tetradic-b-2))))
    `(isearch-fail ((,acer-class (:foreground ,acer-white :background ,acer-error))))
-   `(lazy-highlight ((,acer-class (:foreground ,acer-white :background ,acer-square-a-3))))
-   `(isearch-group-1 ((,acer-class (:foreground ,acer-white :background ,acer-square-a-0))))
-   `(isearch-group-2 ((,acer-class (:foreground ,acer-white :background ,acer-square-a-1))))
+   `(lazy-highlight ((,acer-class (:foreground ,acer-white :background ,acer-tetradic-b-3))))
+   `(isearch-group-1 ((,acer-class (:foreground ,acer-white :background ,acer-tetradic-b-0))))
+   `(isearch-group-2 ((,acer-class (:foreground ,acer-white :background ,acer-tetradic-b-1))))
 
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,acer-class (:inherit isearch))))
    `(match ((,acer-class (:inherit lazy-highlight))))
+
+   ;; re-builder
+   `(reb-match-0 ((,acer-class (:background ,acer-tetradic-b-0 :foreground ,acer-white))))
+   `(reb-match-1 ((,acer-class (:background ,acer-tetradic-b-1 :foreground ,acer-white))))
+   `(reb-match-2 ((,acer-class (:background ,acer-tetradic-b-2 :foreground ,acer-white))))
+   `(reb-match-3 ((,acer-class (:background ,acer-tetradic-b-3 :foreground ,acer-white))))
 
    ;; custom
    ;; (progn (setopt custom-raised-buttons nil) (setq mouse-highlight t))
@@ -347,9 +360,9 @@
    `(elfeed-search-feed-face ((,acer-class (:foreground ,acer-purple))))
    `(elfeed-search-title-face ((,acer-class (:foreground ,acer-deep-brown))))
    `(elfeed-search-unread-title-face ((,acer-class (:weight bold :foreground ,acer-deep-purple))))
-   `(elfeed-search-filter-face ((,acer-class (:weight bold :foreground ,acer-purple-pink))))
-   `(elfeed-search-last-update-face ((,acer-class (:weight bold :foreground ,acer-purple-pink))))
-   `(elfeed-search-unread-count-face ((,acer-class (:weight bold :foreground ,acer-purple-pink))))
+   `(elfeed-search-filter-face ((,acer-class (:weight bold :foreground ,acer-tetradic-a-1))))
+   `(elfeed-search-last-update-face ((,acer-class (:weight bold :foreground ,acer-tetradic-a-1))))
+   `(elfeed-search-unread-count-face ((,acer-class (:weight bold :foreground ,acer-tetradic-a-1))))
 
    `(elfeed-show-header-face ((,acer-class (:inherit elfeed-search-date-face))))
    `(elfeed-show-author-face ((,acer-class (:inherit elfeed-search-unread-title-face))))
@@ -358,26 +371,31 @@
    `(elfeed-show-feed-face ((,acer-class (:inherit elfeed-search-feed-face))))
    `(elfeed-show-tags-face ((,acer-class (:inherit elfeed-search-tag-face))))
 
+   `(elfeed-log-info-level-face ((,acer-class (:foreground ,acer-success))))
+   `(elfeed-log-debug-level-face ((,acer-class (:foreground ,acer-change))))
+   `(elfeed-log-warn-level-face ((,acer-class (:foreground ,acer-warning))))
+   `(elfeed-log-error-level-face ((,acer-class (:foreground ,acer-error))))
+
    ;; doom-modeline
    ;; doom-modeline-buffer-file-name-style
-   `(doom-modeline-project-name ((,acer-class (:foreground ,acer-deep-purple :inherit (doom-modeline bold italic)))))
-   `(doom-modeline-project-dir ((,acer-class (:foreground ,acer-deep-purple :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-root-dir ((,acer-class (:foreground ,acer-purple :inherit (doom-modeline bold)))))
-   `(doom-modeline-project-parent-dir ((,acer-class (:foreground ,acer-purple :inherit (doom-modeline bold)))))
-   `(doom-modeline-buffer-minor-mode ((,acer-class (:foreground ,acer-purple :inherit (doom-modeline)))))
-   `(doom-modeline-buffer-modified ((,acer-class (:foreground ,acer-mode-line-modified :inherit (doom-modeline warning bold)))))
+   `(doom-modeline-project-name ((,acer-class (:foreground ,acer-tetradic-a-3 :inherit (doom-modeline bold italic)))))
+   `(doom-modeline-project-dir ((,acer-class (:foreground ,acer-tetradic-a-3 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-root-dir ((,acer-class (:foreground ,acer-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-project-parent-dir ((,acer-class (:foreground ,acer-tetradic-a-2 :inherit (doom-modeline bold)))))
+   `(doom-modeline-buffer-minor-mode ((,acer-class (:foreground ,acer-tetradic-a-1 :inherit (doom-modeline)))))
+   `(doom-modeline-buffer-modified ((,acer-class (:foreground ,acer-tetradic-a-0 :inherit (doom-modeline warning bold)))))
 
    ;; corfu
-   `(corfu-default ((,acer-class (:foreground ,acer-fg-1 :background ,acer-bg))))
+   `(corfu-default ((,acer-class (:foreground ,acer-fg-1 :background ,acer-bg-1))))
    `(corfu-current ((,acer-class (:foreground unspecified :background unspecified :extend t :inherit highlight))))
    `(corfu-bar ((,acer-class (:background ,acer-shadow))))
    `(corfu-border ((,acer-class (:background ,acer-shadow))))
 
    ;; orderless
-   `(orderless-match-face-0 ((,acer-class (:foreground ,acer-square-a-0 :weight bold))))
-   `(orderless-match-face-1 ((,acer-class (:foreground ,acer-square-a-1 :weight bold))))
-   `(orderless-match-face-2 ((,acer-class (:foreground ,acer-square-a-2 :weight bold))))
-   `(orderless-match-face-3 ((,acer-class (:foreground ,acer-square-a-3 :weight bold))))
+   `(orderless-match-face-0 ((,acer-class (:foreground ,acer-tetradic-b-0 :weight bold))))
+   `(orderless-match-face-1 ((,acer-class (:foreground ,acer-tetradic-b-1 :weight bold))))
+   `(orderless-match-face-2 ((,acer-class (:foreground ,acer-tetradic-b-2 :weight bold))))
+   `(orderless-match-face-3 ((,acer-class (:foreground ,acer-tetradic-b-3 :weight bold))))
 
    ;; prescient (vertico-prescient-enable-filtering, corfu-prescient-enable-filtering)
    `(prescient-primary-highlight ((,acer-class (:foreground ,acer-complementary-a-0 :weight bold))))
@@ -394,7 +412,7 @@
    `(devdocs-code-block ((,acer-class (:weight bold :background ,acer-highlight :extend t))))
 
    ;; pdf-tools
-   `(pdf-view-region ((,acer-class (:foreground ,acer-white :background ,acer-square-a-3 :inherit region))))
+   `(pdf-view-region ((,acer-class (:foreground ,acer-white :background ,acer-tetradic-b-3 :inherit region))))
 
    ;; idle-highlight
    `(idle-highlight ((,acer-class (:foreground ,acer-white :background ,acer-fl-builtin :inherit region))))
